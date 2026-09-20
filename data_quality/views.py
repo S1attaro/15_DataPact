@@ -1,4 +1,6 @@
+from django.http import HttpResponse
 from django.shortcuts import render
+from django.utils.html import escape
 from django.views import View
 from django.views.generic import DetailView, ListView
 
@@ -72,3 +74,21 @@ class DatasetDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         context["contracts"] = self.object.contracts.all()
         return context
+
+# ---------------------------------------------------------------
+# Function-based views
+# Author: Connor Slattery (cslat)
+# ---------------------------------------------------------------
+
+# View 1: HttpResponse (manual)
+def dataset_manual(request):
+    datasets = Dataset.objects.all()
+
+    html = "<h1>DataPact: Datasets (manual HttpResponse)</h1>"
+    html += "<p>{} datasets registered.</p>".format(datasets.count())
+    html += "<ul>"
+    for dataset in datasets:
+        html += "<li>{}</li>".format(escape(dataset.name))
+    html += "</ul>"
+
+    return HttpResponse(html)
