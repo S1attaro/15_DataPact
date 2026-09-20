@@ -208,9 +208,13 @@ CBVs (Hriday):
 
 FBVs (teammate - fill in once written):
 
-  ____________  (HttpResponse / loader.get_template FBV)
-    URL:  ____________
-    Purpose: ____________
+  data_quality.views.dataset_manual  (Connor Slattery, cslat)
+    Kind: Function-based view, django.http.HttpResponse.
+    URL:  /datasets/manual/  (name: data_quality:dataset-manual)
+    Purpose: lists the count and name of every Dataset. The HTML is
+    built as a string and returned with HttpResponse. No
+    template and no render(). Names go through escape() so odd
+    characters cannot break the page.
 
   ____________  (render() FBV)
     URL:  ____________
@@ -229,6 +233,15 @@ dataset.contracts.all() and branching on status. That could technically be
 forced into a ListView with a custom get_queryset() and annotations, but
 at that point a plain View with an explicit get() was more readable than
 fighting the generic view's assumptions.
+
+HttpResponse vs render (Connor): dataset_manual was quick to write
+because it needed no template file. Building plain HTML in Python is
+fine for a small check page or a simple text answer. It got awkward
+fast, though. The HTML sits inside string concatenation, so any layout
+change means editing Python, and there is no shared base.html or
+styling. For the real screens (registry, detail) a template is the
+better choice, which is why those views use render(). Tejas can add
+the render() side. 
 
 15. OPEN QUESTIONS FOR THE TEAM BEFORE PUSHING (Hriday, 2026-09-19)
 
@@ -254,3 +267,51 @@ fighting the generic view's assumptions.
   - Nobody has run `git init` / created the shared repo yet as far as I
     can tell from this baseline folder - Section 1 owner needs to do
     that before anyone can push branches.
+
+
+16. A2 WEEKLY UPDATE - WEEK OF 2026-09-20 (Connor)
+
+Who owns what:
+  Tejas   - settings split, render() FBV, URL integration, final QA
+  Connor  - GitHub workflow, .gitignore, .env.example, HttpResponse
+            FBV, notes
+  Hriday  - class-based views (base View, ListView, DetailView)
+  Ashok   - templates (base.html, list template, empty state)
+
+Done this week (Connor):
+  - Shared repo is S1attaro/15_DataPact (public). Baseline came in
+    through PR #1 from hriday-agarwal.
+  - PR #2: .gitignore now ignores .env, venv and editor files.
+    requirements.txt converted from UTF-16 to UTF-8.
+  - Added .env.example with placeholder values (SECRET_KEY,
+    ALLOWED_HOSTS, API_KEY).
+  - Added dataset_manual, its route, and a screenshot at
+    docs/screenshots/a2_httpresponse_view.png.
+  - Branch names look like name/task (example: connor/env-example).
+    Every change goes to main through a pull request, merged with a
+    merge commit so the branch stays visible in the history.
+
+17. REMINDERS FOR TEAMMATES (Connor)
+
+  - Pull main before you start a new branch.
+  - Copy .env.example to .env and fill in your own values. Never commit
+    .env. Run git status before every commit.
+  - To make a new SECRET_KEY:
+    python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"
+  - The old SECRET_KEY in the A1 settings.py is already in git history
+    and in the A1 ZIP. Treat it as compromised. The settings split
+    should read a new key from .env.
+  - views.py and urls.py are shared. Add code under your own labeled
+    section. Do not reorder anyone else's code.
+
+18. CHALLENGES AND RESPONSES (Connor)
+
+  - requirements.txt was UTF-16, so pip install failed until it was
+    converted.
+  - The baseline .gitignore had no .env line. Fixed before anyone
+    created a .env.
+  - settings.py still has DEBUG = True and a hardcoded key. The split
+    is Tejas's part.
+  - On the open questions in section 15: my FBV uses Dataset, the route
+    is in data_quality/urls.py with name=, and the shared repo now
+    exists, so pushing branches works.
