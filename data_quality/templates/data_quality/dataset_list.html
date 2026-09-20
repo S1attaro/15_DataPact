@@ -1,0 +1,36 @@
+{% extends "data_quality/base.html" %}
+
+{% block title %}Dataset Registry - DataPact{% endblock %}
+
+{% block content %}
+    <h1>Dataset Registry</h1>
+    <p>All datasets registered in DataPact (generic <code>ListView</code>).</p>
+
+    {% for dataset in datasets %}
+        {% if forloop.first %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Owner</th>
+                    <th>Source Team</th>
+                </tr>
+            </thead>
+            <tbody>
+        {% endif %}
+                <tr>
+                    <td><a href="{% url 'data_quality:dataset-detail' dataset.pk %}">{{ dataset.name }}</a></td>
+                    <td>{{ dataset.owner.username }}</td>
+                    <td>{{ dataset.source_team }}</td>
+                </tr>
+        {% if forloop.last %}
+            </tbody>
+        </table>
+        {% endif %}
+    {% empty %}
+        <div class="empty-state">
+            <p><strong>No datasets registered yet.</strong></p>
+            <p>Register a dataset to start writing a data contract for it.</p>
+        </div>
+    {% endfor %}
+{% endblock %}

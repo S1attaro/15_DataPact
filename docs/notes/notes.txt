@@ -1,0 +1,256 @@
+DataPact - Project 1, Assignment A1
+Design Notes
+INFO 490: Advanced AI Web-Apps Development - Team 15
+
+
+1. WHY FIVE MODELS
+
+DataPact tracks five distinct things, and each one has its own lifecycle:
+
+  Dataset         a data asset a team registers once
+  Contract        an agreed-upon schema for that dataset, at a point in time
+  ValidationRule  a single assertion about a single column
+  ValidationRun   one uploaded file checked against one contract
+  Violation       the result when one rule fails during one run
+
+Collapsing any two of these loses information. Rules cannot live on Dataset
+because different contract versions have different rules. Violations cannot
+live on ValidationRule because the same rule can fail in many runs. Runs
+cannot live on Dataset because a run is only meaningful relative to the
+contract it was judged against.
+
+Django's built-in auth.User is used for ownership and submission rather than
+writing a sixth model, so authentication and the admin site work without
+extra code.
+
+
+2. WHY CONTRACT IS ITSELF A VERSION
+
+A common alternative is Contract + ContractVersion, where Contract is a
+container and ContractVersion holds the actual columns and rules. We rejected
+that because the container would carry no data of its own - every meaningful
+field (status, rules, change note) would sit on the version, leaving Contract
+as an empty parent row.
+
+Instead, Contract carries version_number directly. Changing a contract means
+inserting a new Contract row for the same dataset with the next version
+number. This keeps one join shorter on every query and makes the version
+history a simple ordered list of Contract rows filtered by dataset.
+
+
+3. WHY VALIDATIONRUN HAS NO DATASET FOREIGN KEY
+
+ValidationRun stores contract only. The dataset is reached by
+run.contract.dataset.
+
+Storing dataset directly on ValidationRun would create two independent paths
+to the same fact. Nothing in the schema would stop a row where
+run.dataset_id = 4 and run.contract.dataset_id = 7. That row would be
+silently wrong, and every report built on it would be wrong in a way that is
+hard to detect. One path means the two answers cannot disagree.
+
+The cost is one extra join, which is acceptable at this scale.
+
+
+4. WHY CONTRACT -> VALIDATIONRUN USES PROTECT
+
+A validation run is an audit record. It states that on a specific date, a
+specific file was checked against a specific set of rules and produced a
+specific outcome.
+
+If Contract used CASCADE, deleting a contract would silently erase every run
+that referenced it, and the audit trail would disappear with no warning.
+PROTECT makes the database refuse the delete instead. A user who really wants
+to remove a contract has to deal with its history first, deliberately.
+
+
+5. WHY DATASET.OWNER -> USER USES PROTECT
+
+Ownership is accountability. If a user account is deleted and the datasets
+cascade away with it, every contract, run, and violation underneath them
+disappears too - a large amount of history removed by one action on an
+unrelated table.
+
+PROTECT forces datasets to be reassigned to a new owner before the user can be
+removed. Deactivating a user account (is_active = False) remains available and
+is the normal path for someone leaving a team.
+
+
+6. WHY VALIDATIONRUN.SUBMITTED_BY -> USER USES SET_NULL
+
+This is the opposite case. Ownership of a dataset is a live responsibility
+that must be reassigned; submitting a file is a past event that is finished.
+
+The run itself stays valid whether or not the submitter still has an account.
+SET_NULL lets the user row be removed while keeping the run, its row count,
+its status, and its violations intact. The field reads as "submitted by
+someone no longer in the system," which is accurate. This requires
+null=True on the field.
+
+
+7. WHY CONTRACT(DATASET, VERSION_NUMBER) IS UNIQUE
+
+Version numbers are only useful if they identify exactly one contract. Without
+the constraint, two rows could both claim to be version 3 of the same dataset,
+and "which rules was this run judged against?" would have two answers.
+
+The constraint is scoped to dataset, not global, so each dataset counts its
+own versions from 1.
+
+
+8. WHY VIOLATION(RUN, RULE) IS UNIQUE
+
+A Violation is an aggregated result, not one row per failing cell. It records
+that rule R failed during run N, how many rows failed, and a small sample of
+the offending values.
+
+That is one fact, so it gets one row. The constraint prevents a partially
+re-run validation from writing a second Violation for the same rule and
+inflating the failure counts. It also keeps the table small: a file with
+50,000 bad rows produces one Violation, not 50,000.
+
+
+9. IMMUTABILITY OF USED CONTRACTS
+
+Once a ValidationRun has referenced a contract, that contract is treated as
+immutable. Editing its rules afterwards would change the meaning of a run that
+already happened: a run recorded as passing could later appear to have been
+judged by rules it never saw. Changes are made by creating a new Contract
+version instead.
+
+This is currently a convention, not a constraint. A1 does not enforce it at
+the database level - nothing stops an admin from editing the rules of a used
+contract. The foreign key structure supports the rule (old runs keep pointing
+at the old contract) but does not police it. Enforcement is deferred to
+application-level validation in a later assignment.
+
+
+10. OBSERVED BEHAVIOR WHEN DELETING A USED CONTRACT
+
+Deleting a Contract that has been used by a validation run fails, and it is
+worth being precise about why, because two separate mechanisms are involved.
+
+Django first collects everything the delete would touch:
+
+  Contract -> ValidationRule is CASCADE, so the contract's rules are
+  collected for deletion.
+
+  ValidationRule -> Violation is PROTECT, so any rule that has produced a
+  violation refuses to be deleted, which blocks the cascade.
+
+  Contract -> ValidationRun is PROTECT, so the contract is independently
+  protected by its own runs.
+
+The result is a ProtectedError and no rows change. The two protections are not
+redundant. The run-level PROTECT stops the delete when a contract has been
+used at all. The violation-level PROTECT stops it in the narrower case where
+individual rules have recorded results. A contract that has never been used
+has no runs and no violations, so it deletes cleanly along with its rules -
+which is the intended behavior for a draft.
+
+
+11. DEMO SUITE RESULTS
+
+The A1 demo suite (run_a1_demos.py) passes 8 of 8 checks.
+
+The destructive checks - attempting to delete a protected user, a used
+contract, and a rule with violations - are wrapped in transactions that roll
+back after the expected ProtectedError is raised. The database is unchanged
+after the suite runs, and the suite can be run repeatedly without reseeding.
+
+
+12. DATABASE
+
+The project uses SQLite, Django's default backend. The database file is
+db.sqlite3 at the project root. No additional database service is required to
+run the project.
+
+
+=============================================
+A2 - WEEKLY PROGRESS UPDATE (Week of 2026-09-19)
+=============================================
+
+Domain model for Section 2 views: Dataset (all four views - two FBVs, two
+CBVs - must hit the same model per the assignment; team has not formally
+confirmed this yet, see the open question at the bottom of this section).
+
+13. SECTION 2 VIEWS - NAME AND PURPOSE (per view kind)
+
+CBVs (Hriday):
+
+  data_quality.views.DatasetOverviewView
+    Kind: Base CBV, inherits django.views.View, implements get().
+    URL:  /datasets/overview/  (name: data_quality:dataset-cbv-base)
+    Purpose: manually queries Dataset plus its related contracts, and
+    computes two things a generic ListView's context would not give for
+    free: how many contract versions each dataset has, and which one (if
+    any) is currently ACTIVE. This is the "Dataset Overview" screen -
+    shows why a hand-written get() earns its place: as soon as a page
+    needs a value derived by walking a relationship instead of a bare
+    field on the model, ListView's context stops being enough and you
+    want the manual control View gives you.
+
+  data_quality.views.DatasetListView
+    Kind: Generic CBV, django.views.generic.ListView.
+    URL:  /datasets/  (name: data_quality:dataset-list)
+    Purpose: the plain dataset registry (wireframe screen 1). model =
+    Dataset, context_object_name = "datasets". No custom logic needed
+    here, which is exactly when ListView is the right tool - a plain
+    "show me all the rows" page.
+
+  data_quality.views.DatasetDetailView
+    Kind: Generic CBV, django.views.generic.DetailView.
+    URL:  /datasets/<int:pk>/  (name: data_quality:dataset-detail)
+    Purpose: one dataset plus its contract version history (wireframe
+    screen 2). model = Dataset, context_object_name = "dataset"; adds
+    "contracts" to the context via get_context_data() so the template can
+    list every version, active and retired, of that dataset's contract.
+
+FBVs (teammate - fill in once written):
+
+  ____________  (HttpResponse / loader.get_template FBV)
+    URL:  ____________
+    Purpose: ____________
+
+  ____________  (render() FBV)
+    URL:  ____________
+    Purpose: ____________
+
+14. BONUS REFLECTION - WHEN EACH KIND WAS ACTUALLY USEFUL
+
+Base CBV vs Generic CBV: the generic ListView and DetailView were the
+obvious choice as soon as the page was "show me the queryset" or "show me
+one row" with nothing extra attached - writing that by hand in a base View
+would just be re-implementing get_queryset()/get_object() for no benefit.
+The base View earned its place exactly once the page needed something a
+generic view's context does not compute on its own: per-dataset contract
+counts and "which contract is active," both of which require walking
+dataset.contracts.all() and branching on status. That could technically be
+forced into a ListView with a custom get_queryset() and annotations, but
+at that point a plain View with an explicit get() was more readable than
+fighting the generic view's assumptions.
+
+15. OPEN QUESTIONS FOR THE TEAM BEFORE PUSHING (Hriday, 2026-09-19)
+
+  - Confirm Dataset as the shared model for all four Section 2 views, or
+    tell me to switch to something else. Do this BEFORE the FBVs are
+    written against a different model, or Section 2's "same domain
+    model for all four views" requirement breaks.
+  - I namespaced the app's URLs (app_name = "data_quality" in
+    data_quality/urls.py, included at '' in the project urls.py). Any
+    FBVs must be added to that same urls.py with name= and referenced in
+    templates as {% url 'data_quality:your-view-name' %}, not a bare
+    'your-view-name'.
+  - I added a minimal base.html + three templates so my views render
+    end-to-end. Whoever owns Section 3 templates should treat these as a
+    starting point to restyle/extend, not skip - dataset_list.html
+    already has {% empty %} with a message, which doubles as the
+    Section 3 empty-state deliverable.
+  - I wrote 8 Django unit tests in data_quality/tests.py covering all
+    three of my views (empty state, populated state, 404 on missing pk).
+    `python manage.py test data_quality` should stay green - teammates
+    adding FBVs to the same urls.py/views.py should re-run it before
+    pushing.
+  - Nobody has run `git init` / created the shared repo yet as far as I
+    can tell from this baseline folder - Section 1 owner needs to do
+    that before anyone can push branches.

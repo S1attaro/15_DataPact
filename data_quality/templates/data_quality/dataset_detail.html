@@ -1,0 +1,38 @@
+{% extends "data_quality/base.html" %}
+
+{% block title %}{{ dataset.name }} - DataPact{% endblock %}
+
+{% block content %}
+    <h1>{{ dataset.name }}</h1>
+    <p>Owner: {{ dataset.owner.username }} &middot; Source team: {{ dataset.source_team }}</p>
+    {% if dataset.description %}<p>{{ dataset.description }}</p>{% endif %}
+
+    <h2>Contract Versions</h2>
+    {% for contract in contracts %}
+        {% if forloop.first %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Version</th>
+                    <th>Status</th>
+                    <th>Change Note</th>
+                </tr>
+            </thead>
+            <tbody>
+        {% endif %}
+                <tr>
+                    <td>v{{ contract.version_number }}</td>
+                    <td><span class="badge badge-{{ contract.status|lower }}">{{ contract.get_status_display }}</span></td>
+                    <td>{{ contract.change_note|default:"—" }}</td>
+                </tr>
+        {% if forloop.last %}
+            </tbody>
+        </table>
+        {% endif %}
+    {% empty %}
+        <div class="empty-state">
+            <p><strong>No contract versions yet for this dataset.</strong></p>
+            <p>Create one in the Contract Editor to start defining expectations.</p>
+        </div>
+    {% endfor %}
+{% endblock %}
