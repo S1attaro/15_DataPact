@@ -1,0 +1,23 @@
+DataPact branching strategy (Team 15)
+
+Branches
+- main: always the working version. Nobody commits directly to main.
+- name/task: one short branch per task, created from main.
+  Examples: connor/env-example, connor/httpresponse-view,
+  hriday-agarwal.
+
+Workflow
+1. git checkout main, then git pull
+2. git checkout -b name/task
+3. Make small commits with clear messages.
+4. git push -u origin name/task
+5. Open a pull request into main on GitHub.
+6. Merge with "Create a merge commit" so the branch stays visible in
+   the history.
+7. Everyone pulls main before starting the next branch.
+
+Rules
+- Never commit .env. Run git status before every commit.
+- views.py and urls.py are shared. Add code under your own labeled
+  section. Do not reorder anyone else's code.
+- Run python manage.py test data_quality before opening a pull request.
