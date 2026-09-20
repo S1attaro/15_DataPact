@@ -1,0 +1,42 @@
+{% extends "data_quality/base.html" %}
+
+{% block title %}Dataset Overview - DataPact{% endblock %}
+
+{% block content %}
+    <h1>Dataset Overview</h1>
+    <p>Base CBV (<code>django.views.View</code>) - contract counts and active version are computed by hand in <code>get()</code>, not by a generic view.</p>
+
+    {% for row in rows %}
+        {% if forloop.first %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Contract Versions</th>
+                    <th>Active Contract</th>
+                </tr>
+            </thead>
+            <tbody>
+        {% endif %}
+                <tr>
+                    <td><a href="{% url 'data_quality:dataset-detail' row.dataset.pk %}">{{ row.dataset.name }}</a></td>
+                    <td>{{ row.contract_count }}</td>
+                    <td>
+                        {% if row.active_contract %}
+                            v{{ row.active_contract.version_number }}
+                        {% else %}
+                            <span class="badge badge-draft">none active</span>
+                        {% endif %}
+                    </td>
+                </tr>
+        {% if forloop.last %}
+            </tbody>
+        </table>
+        {% endif %}
+    {% empty %}
+        <div class="empty-state">
+            <p><strong>No datasets registered yet.</strong></p>
+            <p>Register a dataset to start writing a data contract for it.</p>
+        </div>
+    {% endfor %}
+{% endblock %}

@@ -1,0 +1,88 @@
+> python manage.py run_a1_demos
+
+==========================================================================
+1. FOREIGN-KEY RELATIONSHIPS
+==========================================================================
+        Dataset: Monthly Enrollment Export  (owner: tejasj2, team: Registrar)
+          Contract v4 [ACTIVE] - 11 rules, 0 runs - Added AUDIT to allowed status values after Registrar introduced the audit enrolment category.
+          Contract v3 [RETIRED] - 11 rules, 2 runs - Tightened credit_hours range to 0-24.
+          Contract v2 [RETIRED] - 6 rules, 2 runs - Added uniqueness rule on student_id.
+          Contract v1 [RETIRED] - 4 rules, 2 runs - Initial contract.
+        
+        Run: enrollment_2026_09.csv (FAILED), checked against v3, submitted by tejasj2
+          credit_hours / Range - 47 rows - resolution: Data issue
+          status / Allowed values - 4 rows - resolution: Contract updated
+        
+        Relationship-spanning query (ValidationRun -> Contract -> Dataset):
+          ValidationRun.objects.filter(contract__dataset__name=...).count() = 6
+        
+        Grouped summary of violations by column:
+          temperature_c    1 violation(s), 140 rows affected
+          credit_hours     3 violation(s), 64 rows affected
+          priority         1 violation(s), 61 rows affected
+          order_total      1 violation(s), 23 rows affected
+          term_code        1 violation(s), 8 rows affected
+          status           2 violation(s), 7 rows affected
+  PASS  Relationships traversed in both directions.
+
+==========================================================================
+2. UNIQUE CONSTRAINT - uniq_contract_dataset_version
+==========================================================================
+        Rule: a dataset cannot have two contracts with the same version number.
+        Existing versions: [1, 2, 3, 4]
+        Attempting: Contract.objects.create(dataset=<enrollment>, version_number=3)
+  PASS  IntegrityError: UNIQUE constraint failed: data_quality_contract.dataset_id, data_quality_contract.version_number
+
+==========================================================================
+3. UNIQUE CONSTRAINT - uniq_violation_run_rule
+==========================================================================
+        Rule: a run records one aggregated violation per rule, not one record per bad cell.
+        Attempting a second violation for rule 'credit_hours / Range' on the same run.
+  PASS  IntegrityError: UNIQUE constraint failed: data_quality_violation.run_id, data_quality_violation.rule_id
+
+==========================================================================
+4. UNIQUE CONSTRAINT - uniq_dataset_owner_name
+==========================================================================
+        Rule: one analyst cannot register two datasets under the same name.
+        Attempting a second 'Monthly Enrollment Export' owned by tejasj2.
+  PASS  IntegrityError: UNIQUE constraint failed: data_quality_dataset.owner_id, data_quality_dataset.name
+
+==========================================================================
+5. on_delete=CASCADE - Contract -> ValidationRule
+==========================================================================
+        A rule has no meaning outside the contract version it belongs to.
+        Contract 'Course Catalog Snapshot - v1 (DRAFT)' has 3 rules. Total rules in database: 52.
+        After deleting the contract, total rules: 49.
+  PASS  3 rules were removed with their parent contract.
+        (rolled back)
+
+==========================================================================
+6. on_delete=PROTECT - Contract <- ValidationRun
+==========================================================================
+        Deleting a contract version that has been used to validate a file
+        would leave those runs uninterpretable. A used contract is retired,
+        never deleted.
+        Contract 'Monthly Enrollment Export - v3 (RETIRED)' has 2 validation run(s).
+  PASS  ProtectedError: Cannot delete some instances of model 'Contract' because they are referenced through protected foreign keys: 'ValidationRule.contract', 'ValidationRun.contract'.
+
+==========================================================================
+7. on_delete=PROTECT - User <- Dataset.owner
+==========================================================================
+        Ownership records who is accountable for a feed, so removing an
+        account must not silently orphan the datasets it owns.
+        User 'tejasj2' owns 3 dataset(s).
+  PASS  ProtectedError: Cannot delete some instances of model 'User' because they are referenced through protected foreign keys: 'Dataset.owner'.
+
+==========================================================================
+8. on_delete=SET_NULL - User <- ValidationRun.submitted_by
+==========================================================================
+        The audit record must outlive the account. Losing who ran a check is
+        acceptable; losing the check itself is not.
+        User 'adaily' owns 0 datasets and submitted 2 run(s): ['sensors_lab3_2026_09.csv', 'enrollment_2026_07.csv']
+        After deleting the account, 2 run(s) survive.
+          sensors_lab3_2026_09.csv: submitted_by = None
+          enrollment_2026_07.csv: submitted_by = None
+  PASS  Runs preserved with submitted_by set to NULL.
+        (rolled back)
+
+All demonstrations complete. The database is unchanged.

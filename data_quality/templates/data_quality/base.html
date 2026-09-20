@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}DataPact{% endblock %}</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; margin: 2rem auto; max-width: 900px; color: #1a1a1a; }
+        nav { margin-bottom: 1.5rem; border-bottom: 1px solid #ddd; padding-bottom: 0.75rem; }
+        nav a { margin-right: 1rem; text-decoration: none; color: #2952a3; }
+        table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+        th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #eee; }
+        th { background: #f5f5f5; }
+        .badge { padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+        .badge-active, .badge-passed { background: #d4edda; color: #155724; }
+        .badge-retired, .badge-failed { background: #f8d7da; color: #721c24; }
+        .badge-draft, .badge-error { background: #fff3cd; color: #856404; }
+        .empty-state { padding: 2rem; text-align: center; color: #666; border: 1px dashed #ccc; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="{% url 'data_quality:dataset-list' %}">Dataset Registry</a>
+        <a href="{% url 'data_quality:dataset-cbv-base' %}">Dataset Overview</a>
+    </nav>
+    {% block content %}{% endblock %}
+</body>
+</html>
