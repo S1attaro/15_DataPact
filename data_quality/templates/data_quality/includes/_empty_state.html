@@ -1,0 +1,26 @@
+{% comment %}
+Reusable empty-state block - Ashok Chacko (Section 3).
+
+Every list in DataPact needs the same thing when it has nothing to show: say
+plainly that there is nothing there, and say what the user would do about it.
+Writing that three times would mean three chances for it to drift, so it is
+written once here and included wherever a {% empty %} branch fires.
+
+Include it like this (the "only" keeps the partial from seeing the rest of
+the page's context, so it can never depend on something by accident):
+
+    {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register Dataset" only %}
+
+  headline      required - the one-line fact
+  message       required - what to do next
+  action_label  optional - text for the call-to-action button
+{% endcomment %}
+<div class="empty-state">
+    <div class="empty-state__mark" aria-hidden="true"></div>
+    <p class="empty-state__headline">{{ headline }}</p>
+    <p class="empty-state__message">{{ message }}</p>
+    {% if action_label %}
+        <span class="btn btn--primary btn--disabled"
+              title="Planned for a later assignment">{{ action_label }}</span>
+    {% endif %}
+</div>

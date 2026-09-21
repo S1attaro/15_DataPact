@@ -1,0 +1,15 @@
+{% comment %}
+Reusable status pill - Ashok Chacko (Section 3).
+
+Used by the contract history table and the overview table. Keeping it in one
+file means DRAFT / ACTIVE / RETIRED are coloured the same way on every screen.
+
+    {% include "data_quality/includes/_status_badge.html" with status=contract.status label=contract.get_status_display only %}
+
+  status  required - the raw value (ACTIVE, DRAFT, RETIRED); picks the colour
+  label   optional - text to show; falls back to the raw status value
+  prefix  optional - text placed immediately before the label, e.g. "v" so a
+                     version number reads "v3". A template cannot join two
+                     strings together itself, so the partial does it here.
+{% endcomment %}
+<span class="badge badge--{{ status|lower }}">{{ prefix }}{{ label|default:status }}</span>
