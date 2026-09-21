@@ -318,9 +318,9 @@ Done this week (Connor):
     .env. Run git status before every commit.
   - To make a new SECRET_KEY:
     python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"
-  - The old SECRET_KEY in the A1 settings.py is already in git history
-    and in the A1 ZIP. Treat it as compromised. The settings split
-    should read a new key from .env.
+  - The old SECRET_KEY from the A1 settings.py is still in git history
+    and in the A1 ZIP. Treat it as compromised. The settings now read
+    SECRET_KEY from .env, so generate a new key for your own .env.
   - views.py and urls.py are shared. Add code under your own labeled
     section. Do not reorder anyone else's code.
 
@@ -330,8 +330,9 @@ Done this week (Connor):
     converted.
   - The baseline .gitignore had no .env line. Fixed before anyone
     created a .env.
-  - settings.py still has DEBUG = True and a hardcoded key. The split
-    is Tejas's part.
+  - settings.py had DEBUG = True and a hardcoded key. Tejas split it
+    into base, development, and production. SECRET_KEY now comes from
+    .env, and production sets DEBUG = False.
   - On the open questions in section 15: my FBV uses Dataset, the route
     is in data_quality/urls.py with name=, and the shared repo now
     exists, so pushing branches works.
@@ -617,3 +618,18 @@ Challenges (Tejas):
     python manage.py migrate once.
   - python manage.py test data_quality must stay at 34 passing before a
     PR.
+
+
+22. A2 SCREENSHOT INDEX (Connor)
+
+All files are in docs/screenshots/. The four Section 2 views:
+  View 1, HttpResponse:  a2_httpresponse_view.png   (/datasets/manual/)
+  View 2, render():      a2_render_view.png         (/datasets/render/)
+  View 3, base CBV:      a2_templates_overview.png  (/datasets/overview/)
+  View 4, generic CBV:   a2_templates_list_normal.png  (/datasets/)
+
+Section 3 list states:
+  Normal list:  a2_templates_list_normal.png
+  Empty list:   a2_templates_list_empty.png, a2_list_empty_state.png
+
+Production mode: a2_prod_mode.png
