@@ -1,36 +1,92 @@
 {% extends "data_quality/base.html" %}
+{% comment %}
+=============================================================================
+Wireframe screen 1 - Dashboard / Dataset Registry
+Section 3 (Templates / UI) - Ashok Chacko
+
+This template is deliberately written against ONE context variable:
+
+    datasets    an iterable of Dataset objects
+
+Nothing else is required. It does not care whether that list arrived from a
+generic ListView, from a hand-written View.get(), or from a function-based
+view calling render(). That is the whole point of section C of the
+assignment - the template is independent of how the data was passed.
+
+Currently rendered by:
+    DatasetListView (generic ListView)   ->  /datasets/
+    dataset_render  (render() FBV)       ->  /datasets/render/   [Tejas]
+
+To reuse it from a function-based view, that is all it takes:
+
+    return render(request, "data_quality/dataset_list.html",
+                  {"datasets": Dataset.objects.select_related("owner"),
+                   "view_label": "Function-based view - render()"})
+
+Optional context:
+    view_label  small caption naming the view kind that rendered the page.
+                Defaults to the ListView, so the CBV needs no extra code.
+=============================================================================
+{% endcomment %}
 
 {% block title %}Dataset Registry - DataPact{% endblock %}
 
-{% block content %}
-    <h1>Dataset Registry</h1>
-    <p>All datasets registered in DataPact (generic <code>ListView</code>).</p>
+{% block page_title %}My Datasets{% endblock %}
 
-    {% for dataset in datasets %}
-        {% if forloop.first %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Owner</th>
-                    <th>Source Team</th>
-                </tr>
-            </thead>
+{% block page_subtitle %}
+    <p class="page__subtitle">
+        {{ datasets|length }} recurring dataset{{ datasets|length|pluralize }} registered in DataPact.
+    </p>
+{% endblock %}
+
+{% block page_actions %}
+    <span class="btn btn--primary btn--disabled"
+          title="Registering datasets is planned for a later assignment">+ Register Dataset</span>
+{% endblock %}
+
+{% block content %}
+    <p class="viewchip">Rendered by: <code>{{ view_label|default:"Generic CBV - ListView (DatasetListView)" }}</code></p>
+
+    <div class="panel">
+        <table class="datatable">
+            {% comment %}
+                The header is hidden when there are no rows, so the empty state
+                is not sitting underneath column titles that describe nothing.
+            {% endcomment %}
+            {% if datasets %}
+                <thead>
+                    <tr>
+                        <th scope="col">Dataset</th>
+                        <th scope="col">Owner</th>
+                        <th scope="col">Source Team</th>
+                        <th scope="col">Registered</th>
+                    </tr>
+                </thead>
+            {% endif %}
             <tbody>
-        {% endif %}
-                <tr>
-                    <td><a href="{% url 'data_quality:dataset-detail' dataset.pk %}">{{ dataset.name }}</a></td>
-                    <td>{{ dataset.owner.username }}</td>
-                    <td>{{ dataset.source_team }}</td>
-                </tr>
-        {% if forloop.last %}
+                {% for dataset in datasets %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'data_quality:dataset-detail' dataset.pk %}">{{ dataset.name }}</a>
+                        </td>
+                        <td>{{ dataset.owner.username }}</td>
+                        <td>{{ dataset.source_team }}</td>
+                        <td class="muted">{{ dataset.created_at|date:"Y-m-d" }}</td>
+                    </tr>
+                {% empty %}
+                    {% comment %}
+                        The branch below runs only when the loop above produced
+                        zero rows. It replaces a separate "is this list empty?"
+                        check and keeps the normal case and the empty case
+                        readable side by side.
+                    {% endcomment %}
+                    <tr class="is-emptyrow">
+                        <td colspan="4">
+                            {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register Dataset" only %}
+                        </td>
+                    </tr>
+                {% endfor %}
             </tbody>
         </table>
-        {% endif %}
-    {% empty %}
-        <div class="empty-state">
-            <p><strong>No datasets registered yet.</strong></p>
-            <p>Register a dataset to start writing a data contract for it.</p>
-        </div>
-    {% endfor %}
+    </div>
 {% endblock %}

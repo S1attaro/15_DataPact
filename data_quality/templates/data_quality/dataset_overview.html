@@ -1,42 +1,69 @@
 {% extends "data_quality/base.html" %}
+{% comment %}
+=============================================================================
+Dataset Overview - the contract-health view of the registry
+Section 3 (Templates / UI) - Ashok Chacko
+
+Context expected (supplied by DatasetOverviewView, a base django.views.View):
+    rows    a list of dicts, each one:
+              dataset          a Dataset
+              contract_count   how many contract versions it has
+              active_contract  the ACTIVE Contract, or None
+
+Note the shape: this page cannot reuse dataset_list.html, because it is not
+showing a list of Datasets. It is showing values the view computed by walking
+dataset.contracts - which is exactly why the team used a hand-written View
+here instead of a generic ListView.
+=============================================================================
+{% endcomment %}
 
 {% block title %}Dataset Overview - DataPact{% endblock %}
 
-{% block content %}
-    <h1>Dataset Overview</h1>
-    <p>Base CBV (<code>django.views.View</code>) - contract counts and active version are computed by hand in <code>get()</code>, not by a generic view.</p>
+{% block page_title %}Dataset Overview{% endblock %}
 
-    {% for row in rows %}
-        {% if forloop.first %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Contract Versions</th>
-                    <th>Active Contract</th>
-                </tr>
-            </thead>
+{% block page_subtitle %}
+    <p class="page__subtitle">Contract coverage for every registered dataset.</p>
+{% endblock %}
+
+{% block content %}
+    <p class="viewchip">Rendered by: <code>Base CBV - django.views.View (DatasetOverviewView)</code></p>
+
+    <div class="panel">
+        <table class="datatable">
+            {% if rows %}
+                <thead>
+                    <tr>
+                        <th scope="col">Dataset</th>
+                        <th scope="col">Source Team</th>
+                        <th scope="col">Contract Versions</th>
+                        <th scope="col">Active Contract</th>
+                    </tr>
+                </thead>
+            {% endif %}
             <tbody>
-        {% endif %}
-                <tr>
-                    <td><a href="{% url 'data_quality:dataset-detail' row.dataset.pk %}">{{ row.dataset.name }}</a></td>
-                    <td>{{ row.contract_count }}</td>
-                    <td>
-                        {% if row.active_contract %}
-                            v{{ row.active_contract.version_number }}
-                        {% else %}
-                            <span class="badge badge-draft">none active</span>
-                        {% endif %}
-                    </td>
-                </tr>
-        {% if forloop.last %}
+                {% for row in rows %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'data_quality:dataset-detail' row.dataset.pk %}">{{ row.dataset.name }}</a>
+                        </td>
+                        <td>{{ row.dataset.source_team }}</td>
+                        <td class="num">{{ row.contract_count }}</td>
+                        <td>
+                            {% if row.active_contract %}
+                                {% include "data_quality/includes/_status_badge.html" with status="ACTIVE" prefix="v" label=row.active_contract.version_number only %}
+                            {% else %}
+                                {% include "data_quality/includes/_status_badge.html" with status="DRAFT" label="none active" only %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr class="is-emptyrow">
+                        <td colspan="4">
+                            {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register Dataset" only %}
+                        </td>
+                    </tr>
+                {% endfor %}
             </tbody>
         </table>
-        {% endif %}
-    {% empty %}
-        <div class="empty-state">
-            <p><strong>No datasets registered yet.</strong></p>
-            <p>Register a dataset to start writing a data contract for it.</p>
-        </div>
-    {% endfor %}
+    </div>
 {% endblock %}

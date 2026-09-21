@@ -1,38 +1,103 @@
 {% extends "data_quality/base.html" %}
+{% comment %}
+=============================================================================
+Wireframe screen 2 - Dataset Detail
+Section 3 (Templates / UI) - Ashok Chacko
+
+Context expected (supplied by DatasetDetailView, a generic DetailView):
+    dataset     one Dataset
+    contracts   that dataset's Contract versions, newest version first
+
+The contract-version table has its own {% empty %} branch, because a dataset
+can legitimately exist before anyone has written expectations for it, and
+that is a different situation from "no datasets exist at all".
+=============================================================================
+{% endcomment %}
 
 {% block title %}{{ dataset.name }} - DataPact{% endblock %}
 
-{% block content %}
-    <h1>{{ dataset.name }}</h1>
-    <p>Owner: {{ dataset.owner.username }} &middot; Source team: {{ dataset.source_team }}</p>
-    {% if dataset.description %}<p>{{ dataset.description }}</p>{% endif %}
+{% block breadcrumbs %}
+    <p class="breadcrumbs">
+        <a href="{% url 'data_quality:dataset-list' %}">Datasets</a> / {{ dataset.name }}
+    </p>
+{% endblock %}
 
-    <h2>Contract Versions</h2>
-    {% for contract in contracts %}
-        {% if forloop.first %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Version</th>
-                    <th>Status</th>
-                    <th>Change Note</th>
-                </tr>
-            </thead>
+{% block page_title %}{{ dataset.name }}{% endblock %}
+
+{% block page_subtitle %}
+    <p class="page__subtitle">Source: {{ dataset.source_team }} &middot; Owner: {{ dataset.owner.username }}</p>
+{% endblock %}
+
+{% block page_actions %}
+    <span class="btn btn--disabled"
+          title="Uploading files is planned for a later assignment">Upload New File</span>
+{% endblock %}
+
+{% block content %}
+    <p class="viewchip">Rendered by: <code>Generic CBV - DetailView (DatasetDetailView)</code></p>
+
+    <div class="panel">
+        <div class="panel__head"><h2 class="panel__title">Dataset</h2></div>
+        <div class="panel__body">
+            <dl class="factlist">
+                <div>
+                    <dt>Source team</dt>
+                    <dd>{{ dataset.source_team }}</dd>
+                </div>
+                <div>
+                    <dt>Owner</dt>
+                    <dd>{{ dataset.owner.username }}</dd>
+                </div>
+                <div>
+                    <dt>Registered</dt>
+                    <dd>{{ dataset.created_at|date:"Y-m-d" }}</dd>
+                </div>
+                <div>
+                    <dt>Contract versions</dt>
+                    <dd>{{ contracts|length }}</dd>
+                </div>
+            </dl>
+            {% if dataset.description %}
+                <p class="prose" style="margin-top:1.25rem;">{{ dataset.description }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel__head">
+            <h2 class="panel__title">Contract versions</h2>
+            <span class="btn btn--disabled"
+                  title="The contract editor is wireframe screen 3 - not built yet">View / Edit Rules</span>
+        </div>
+        <table class="datatable">
+            {% if contracts %}
+                <thead>
+                    <tr>
+                        <th scope="col">Version</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Rules</th>
+                        <th scope="col">Change note</th>
+                    </tr>
+                </thead>
+            {% endif %}
             <tbody>
-        {% endif %}
-                <tr>
-                    <td>v{{ contract.version_number }}</td>
-                    <td><span class="badge badge-{{ contract.status|lower }}">{{ contract.get_status_display }}</span></td>
-                    <td>{{ contract.change_note|default:"—" }}</td>
-                </tr>
-        {% if forloop.last %}
+                {% for contract in contracts %}
+                    <tr>
+                        <td>v{{ contract.version_number }}</td>
+                        <td>
+                            {% include "data_quality/includes/_status_badge.html" with status=contract.status label=contract.get_status_display only %}
+                        </td>
+                        <td class="num">{{ contract.rules.count }}</td>
+                        <td class="muted">{{ contract.change_note|default:"&mdash;" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr class="is-emptyrow">
+                        <td colspan="4">
+                            {% include "data_quality/includes/_empty_state.html" with headline="No contract versions yet for this dataset." message="Write a contract to record what every incoming file is expected to contain." action_label="+ New Contract Version" only %}
+                        </td>
+                    </tr>
+                {% endfor %}
             </tbody>
         </table>
-        {% endif %}
-    {% empty %}
-        <div class="empty-state">
-            <p><strong>No contract versions yet for this dataset.</strong></p>
-            <p>Create one in the Contract Editor to start defining expectations.</p>
-        </div>
-    {% endfor %}
+    </div>
 {% endblock %}
