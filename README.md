@@ -12,8 +12,8 @@ Hriday Agarwal, Ashok Chacko, Tejas Jaggi, Connor Slattery
 
 This repo holds the A1 data model and the A2 work so far.
 
-- Done: the class-based views (Hriday), the HttpResponse view, `.gitignore`, `.env.example`, and the docs (Connor).
-- Still to come: the split settings and the render() view (Tejas), and the final templates (Ashok).
+- Done: the class-based views (Hriday), the HttpResponse view, `.gitignore`, `.env.example`, and the docs (Connor), and the templates (Ashok).
+- Still to come: the split settings and the render() view (Tejas).
 
 ## Setup
 
@@ -93,6 +93,47 @@ Then open http://127.0.0.1:8000/datasets/. Production settings are not set up ye
 | `/datasets/<id>/` | `DatasetDetailView` | Class-based, DetailView |
 | `/admin/` | Django admin | Built in |
 
+## Templates
+
+Every page extends one base template, so the navigation, stylesheet, page
+header and footer are written once.
+
+```
+data_quality/templates/data_quality/
+  base.html                    site shell: <head>, CSS, top nav, page header, footer
+  dataset_list.html            wireframe screen 1, the dataset registry
+  dataset_detail.html          wireframe screen 2, one dataset and its contracts
+  dataset_overview.html        contract coverage per dataset
+  includes/
+    _empty_state.html          the shared "nothing here yet" block
+    _status_badge.html         the shared DRAFT / ACTIVE / RETIRED pill
+```
+
+Blocks a page can fill in: `title`, `extra_head`, `breadcrumbs`, `page_title`,
+`page_subtitle`, `page_actions`, `content`.
+
+`dataset_list.html` is written against a single context variable, `datasets`,
+so it does not depend on which kind of view rendered it. Any view can reuse it:
+
+```python
+return render(request, "data_quality/dataset_list.html", {
+    "datasets": Dataset.objects.select_related("owner"),
+    "view_label": "Function-based view - render()",
+})
+```
+
+`view_label` is optional. It fills the small caption under the page title that
+names the view kind, and falls back to naming the `ListView` when it is absent.
+
+Each list has an empty state written as `{% for %} ... {% empty %}`, not as a
+separate `{% if %}` check. `data_quality/tests.py` asserts on the empty-state
+wording, so reword one and fix its test in the same commit.
+
+The CSS is inline in `base.html` rather than in `static/` on purpose:
+`runserver` stops serving static files once `DEBUG = False`, so an external
+stylesheet would load in dev and 404 in prod. Inline CSS looks the same in both
+modes with no `collectstatic` step.
+
 ## Tests
 
 ```
@@ -112,7 +153,9 @@ Run these before you open a pull request.
   .gitignore
   db.sqlite3            demo database
   datapact_project/     settings and root URLs
-  data_quality/         models, views, urls, templates, tests
+  data_quality/         models, views, urls, tests
+    templates/
+      data_quality/     base.html, page templates, includes/ partials
   docs/
     notes/              notes.txt, with weekly updates from each teammate
     wireframes/v1/      wireframes PDF

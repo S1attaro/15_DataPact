@@ -315,3 +315,151 @@ Done this week (Connor):
   - On the open questions in section 15: my FBV uses Dataset, the route
     is in data_quality/urls.py with name=, and the shared repo now
     exists, so pushing branches works.
+
+19. A2 WEEKLY UPDATE - WEEK OF 2026-09-21 (Ashok)
+=============================================
+
+Section 3 (Templates / UI). Everything below is in
+data_quality/templates/data_quality/.
+
+Template files and what each one is for:
+
+  base.html
+    The site shell. Owns <head>, the stylesheet, the DATAPACT top
+    navigation, the page header (breadcrumb, <h1>, subtitle, action
+    buttons) and the footer. No other template repeats any of that.
+    Blocks a child can fill: title, extra_head, breadcrumbs,
+    page_title, page_subtitle, page_actions, content.
+
+  dataset_list.html         extends base.html  (wireframe screen 1)
+    The dataset registry table. Written against exactly one context
+    variable, "datasets", so any view that can produce a list of
+    Dataset objects can render it.
+
+  dataset_detail.html       extends base.html  (wireframe screen 2)
+    One dataset, its facts, and its contract version history.
+    Context: "dataset" and "contracts".
+
+  dataset_overview.html     extends base.html
+    Contract coverage per dataset. Context: "rows".
+
+  includes/_empty_state.html
+    The shared "there is nothing here yet" block. Included from all
+    three {% empty %} branches with a different headline and message
+    each time, so the empty states look identical everywhere without
+    the markup being written three times.
+
+  includes/_status_badge.html
+    The shared DRAFT / ACTIVE / RETIRED pill. Included from the
+    contract history table and the overview table.
+
+Empty states (Section 3 deliverable):
+
+  /datasets/          "No datasets registered yet." plus what to do
+                      about it. Wording matches the wireframe.
+  /datasets/<id>/     "No contract versions yet for this dataset."
+  /datasets/overview/ same message as the registry.
+
+  All three come from a {% for %} ... {% empty %} ... {% endfor %}
+  loop, not from an {% if %} check, so the normal case and the empty
+  case sit next to each other in the file. The table's <thead> is
+  hidden when the loop is empty so the message is not sitting under
+  column titles that describe nothing.
+
+Template reuse (Section 3 deliverable C):
+
+  dataset_list.html takes only "datasets" and nothing else. It does
+  not know or care which kind of view rendered it.
+
+  TEJAS - this is the render() FBV. Two lines, no new template:
+
+      def dataset_render(request):
+          return render(request, "data_quality/dataset_list.html", {
+              "datasets": Dataset.objects.select_related("owner"),
+              "view_label": "Function-based view - render()",
+          })
+
+  "view_label" is optional. It fills the small dashed caption under
+  the page title that names the view kind, which is what makes the
+  four A2 screenshots tell the grader apart at a glance. If it is
+  left out the caption falls back to naming the ListView.
+
+  Route to add in data_quality/urls.py, in the FBV section:
+
+      path("datasets/render/", views.dataset_render, name="dataset-render"),
+
+  Once that is merged, one template file is serving both /datasets/
+  (generic ListView) and /datasets/render/ (function-based view),
+  which is the "reuse the same template for both views" item.
+
+Why the CSS is inline in base.html and not in static/:
+
+  runserver does not serve static files once DEBUG = False. Since the
+  project has to be demonstrated in prod mode too, a stylesheet in
+  data_quality/static/ would load in dev and silently 404 in prod,
+  and every page would be grading-day unstyled. Inline CSS in the one
+  template every page inherits looks identical in both modes and
+  needs no collectstatic step. TEJAS - if you add WhiteNoise or a
+  STATICFILES_STORAGE setting during the settings split, tell me and
+  I will move it out into a real .css file.
+
+Kept deliberately:
+
+  - The exact strings "No datasets registered yet" and "No contract
+    versions yet" - data_quality/tests.py asserts on both of them.
+    If you reword an empty state, fix the test in the same commit.
+  - Hriday's context variable names (datasets, dataset, contracts,
+    rows). No view code was changed for Section 3.
+
+Not built, and why:
+
+  - "+ Register Dataset", "Upload New File" and "View / Edit Rules"
+    render as greyed-out buttons with a tooltip. The wireframes show
+    them, but the forms behind them are not part of A2, and a button
+    that navigates nowhere is worse than one that says it is not
+    ready yet.
+  - "Upload" and "Quality History" are greyed out in the top nav for
+    the same reason (wireframe screens 4 and 6).
+  - Wireframe screen 2 has a "Current Data Contract" summary panel.
+    Showing it properly needs the active contract picked out in the
+    view, the way DatasetOverviewView already does it, rather than
+    looped over in the template. HRIDAY - if you want that panel,
+    add "active_contract" to DatasetDetailView.get_context_data()
+    and I will build it. I did not want to change your view or your
+    tests for a cosmetic panel.
+
+Screenshots added in docs/screenshots/:
+  a2_templates_list_normal.png     registry with 7 datasets
+  a2_templates_list_empty.png      registry empty state
+  a2_templates_detail.png          dataset detail, 4 contract versions
+  a2_templates_detail_empty.png    dataset detail, no contracts yet
+  a2_templates_overview.png        base-CBV overview page
+  a2_templates_overview_empty.png  base-CBV overview empty state
+
+  The empty-state shots were taken against a throwaway SQLite file, not
+  by deleting rows from db.sqlite3. There is a second settings module
+  in my scratch folder that points DATABASES at an empty file, and the
+  shots were taken from a second runserver on port 8766. The committed
+  db.sqlite3 was never touched, so the demo data is still intact.
+
+Checks run before opening the PR:
+  python manage.py test data_quality   ->  8 tests, OK
+
+Challenges:
+
+  - First attempt would not render at all: I wrote the explanatory
+    comments as {# ... #} across several lines. Django's {# #} has to
+    fit on one line, so the tag never closed and the {% empty %} I
+    had written inside the comment text was parsed as a real tag.
+    TemplateSyntaxError on every page. Multi-line notes have to use
+    {% comment %} ... {% endcomment %}, which is what they use now.
+  - Tried to print "v3" in the overview's active-contract badge with
+    stringformat:"v%s". That filter puts a "%" in front of whatever
+    you give it, so the format string was invalid and the badge came
+    out blank. Gave the badge partial an optional "prefix" variable
+    instead, since a Django template cannot join two strings itself.
+  - Checked the registry at phone width and the last column was cut
+    off with no way to reach it, because the panel that rounds the
+    table's corners was set to overflow: hidden. Changed it to
+    overflow: auto, which still clips the corners but lets a wide
+    table scroll sideways instead of hiding data.
