@@ -216,9 +216,18 @@ FBVs (teammate - fill in once written):
     template and no render(). Names go through escape() so odd
     characters cannot break the page.
 
-  ____________  (render() FBV)
-    URL:  ____________
-    Purpose: ____________
+  data_quality.views.dataset_render  (Tejas Jaggi, tejasj2)
+    Kind: Function-based view, django.shortcuts.render().
+    URL:  /datasets/render/  (name: data_quality:dataset-render)
+    Purpose: the same dataset registry as DatasetListView, built the
+    "shortcut" way the assignment describes: query the model
+    (Dataset.objects.select_related("owner") - the template prints each
+    owner's username, so the join avoids one query per row), put the
+    queryset in a context dict under the key "datasets", and hand both to
+    render(). It deliberately reuses data_quality/dataset_list.html: the
+    template does not know whether a generic ListView or a plain function
+    supplied "datasets", which is the Section 3 "same template for both
+    views" point.
 
 14. BONUS REFLECTION - WHEN EACH KIND WAS ACTUALLY USEFUL
 
@@ -242,6 +251,17 @@ change means editing Python, and there is no shared base.html or
 styling. For the real screens (registry, detail) a template is the
 better choice, which is why those views use render(). Tejas can add
 the render() side. 
+
+render() (Tejas): the render() view is three lines that do exactly what
+the HttpResponse view does by hand - fetch, pack into a context, return -
+without any HTML in Python. What made it worth having as a separate view
+kind is that it let the FBV point at the template Hriday already wrote
+for the ListView. Nothing in dataset_list.html changed, and the page is
+byte-for-byte the same registry; only the way the data arrived differed.
+That is the moment "templates independent of how data is passed" stopped
+being a slogan: the FBV and the generic CBV share one template, and the
+test suite checks they render the same rows. HttpResponse still earns its
+place for tiny diagnostic pages where a template file would be overhead.
 
 15. OPEN QUESTIONS FOR THE TEAM BEFORE PUSHING (Hriday, 2026-09-19)
 
@@ -463,3 +483,137 @@ Challenges:
     table's corners was set to overflow: hidden. Changed it to
     overflow: auto, which still clips the corners but lets a wide
     table scroll sideways instead of hiding data.
+
+20. A2 WEEKLY UPDATE - WEEK OF 2026-09-21 (Tejas)
+
+Branch: tejas/a2-settings-render (settings split, render() FBV, tests,
+evidence). Everything below is on that branch until the PR merges.
+
+Done this week (Tejas):
+  - Split settings (Section 1A). datapact_project/settings.py moved with
+    git mv to datapact_project/settings/base.py, plus __init__.py,
+    development.py and production.py. base.py holds everything shared;
+    development.py sets DEBUG = True; production.py sets DEBUG = False.
+    DEBUG is not defined in base.py and is not read from the environment,
+    so neither mode can inherit the other's value.
+  - Mode selection. manage.py defaults to
+    datapact_project.settings.development; wsgi.py and asgi.py default to
+    datapact_project.settings.production. All three use setdefault(), so
+    DJANGO_SETTINGS_MODULE or --settings=... overrides. Production mode
+    locally:
+      python manage.py runserver --settings=datapact_project.settings.production
+  - .env / SECRET_KEY (Section 1B). base.py loads <repo>/.env with
+    python-dotenv (real environment variables win over the file).
+    SECRET_KEY = require_env("SECRET_KEY"): a missing or blank key raises
+    ImproperlyConfigured telling you to copy .env.example to .env. There
+    is no fallback key anywhere in code. production.py additionally
+    refuses any key starting with "django-insecure-" (the A1 key that is
+    already in git history starts that way) and the .env.example
+    placeholder. The old key is gone from settings.
+  - ALLOWED_HOSTS. Parsed from a comma-separated env value in base.py
+    (whitespace stripped, empties dropped). development.py falls back to
+    localhost/127.0.0.1 when unset; production.py raises if empty.
+  - API_KEY. Read in base.py as API_KEY = os.getenv("API_KEY", "").
+    Nothing uses it yet; it exists so any future key lives in .env, not
+    code. .env.example keeps the dummy value.
+  - BASE_DIR. settings/base.py is one level deeper than settings.py was,
+    so BASE_DIR is now Path(__file__).resolve().parent.parent.parent.
+    DATABASES still points at <repo>/db.sqlite3; a test asserts this so
+    the demo database cannot silently move.
+  - DATABASE_NAME (development only, optional). Set DATABASE_NAME in .env
+    (e.g. db.local.sqlite3, ignored by Git via *.local.sqlite3) and
+    runserver/admin use that file instead of the committed demo
+    db.sqlite3. Relative names resolve from the repo root. production.py
+    ignores it. This is how the empty-state screenshot was taken without
+    touching db.sqlite3. Not an assignment requirement - a convenience so
+    nobody has to wipe the demo data to show the empty state.
+  - render() FBV (Section 2, View 2): data_quality.views.dataset_render at
+    /datasets/render/ (name data_quality:dataset-render). Details in
+    section 13. The route was the commented line Connor left in urls.py.
+  - Tests. I added 17 to data_quality/tests.py (with Ashok's 9 the
+    suite is now 34, all green):
+      DatasetRenderViewTests (8): URL name/path resolve to the view; 200
+        with dataset_list.html and base.html; context["datasets"] is a
+        Dataset QuerySet; populated state lists every dataset and hides
+        the empty message; empty state shows "No datasets registered
+        yet"; FBV and ListView use the same template and rows; rendering
+        three datasets with three owners is exactly one SQL query; the
+        live response carries the "Function-based view - render()" caption.
+      SettingsSplitTests (9): DB path is <repo>/db.sqlite3 in both
+        modes; development DEBUG True + host fallback; production DEBUG
+        False + host parsing; production rejects empty ALLOWED_HOSTS;
+        production rejects django-insecure-/placeholder keys; development
+        accepts them (only production refuses); require_env() rejects
+        missing/blank values with the .env.example hint; no literal
+        SECRET_KEY assignment in any settings file; DATABASE_NAME only
+        affects development.
+    Hriday's 8 tests are untouched and still pass.
+  - Evidence in docs/screenshots:
+      a2_render_view.png       /datasets/render/, 7 demo datasets
+      a2_list_empty_state.png  /datasets/render/ against an empty
+                               DATABASE_NAME database: "No datasets
+                               registered yet."
+      a2_prod_mode.png         runserver output with
+                               --settings=datapact_project.settings.production
+                               ("using settings 'datapact_project.
+                               settings.production'"), the 200 response,
+                               and the plain "Not Found" 404 page that
+                               only appears when DEBUG is False.
+    a2_render_view.png is a full browser-window capture (address bar
+    shows /datasets/render/). The empty-state and production page
+    renders were produced with headless Chrome, so they show the page
+    without an address bar; their route is evidenced by the server log
+    in a2_prod_mode.png and by the URL tests.
+  - requirements.txt: python-dotenv==1.2.3 added. .gitignore: .env.*
+    (except .env.example) and *.local.sqlite3 added. .env.example: one
+    comment per variable and the optional DATABASE_NAME line.
+
+Outstanding / depends on a teammate:
+  - Ashok's Section 3 rebuild (PR #7) is merged and integrated into
+    this branch. dataset_list.html takes an optional "view_label"
+    caption (section 19); dataset_render now passes
+    "Function-based view - render()", and a test asserts the live
+    /datasets/render/ response shows it (not the ListView default).
+  - Answer to Ashok's question in section 19: the settings split adds
+    no STATICFILES_STORAGE / WhiteNoise. Inline CSS in base.html is the
+    right call for now; it renders the same in both modes (checked).
+  - The three a2_*.png files below were re-captured after PR #7 and
+    the view_label change, so they show Ashok's templates as main
+    serves them, with the FBV caption visible.
+  - Hriday: Section 2 asks for four screenshots; the Base CBV and Generic
+    CBV ones are not in docs/screenshots yet.
+  - Team: the sample docs layout shows branching_strategy/diagram.png; we
+    have branching_strategy.txt. Confirm the instructor (27guptamohit)
+    is a collaborator.
+
+Challenges (Tejas):
+  - BASE_DIR depth after the move is the one place the split can silently
+    break A1: get it wrong and Django creates an empty db.sqlite3 inside
+    datapact_project/ and every page shows the empty state. Caught by
+    checking showmigrations still reports [X] 0001_initial and by a test.
+  - Settings modules validate at import time, so the tests reload
+    base + mode modules under a patched os.environ and restore them in
+    tearDown; Django's test runner also rewrites settings.DATABASES, so
+    the DB-path test reads the module, not django.conf.settings.
+  - runserver with DEBUG = False serves no static files, so /admin/ has
+    no CSS in production mode. That is expected, not a bug.
+  - manage.py, wsgi.py, asgi.py and the old settings.py are stored with
+    CRLF in git, so `git diff --check` reports "trailing whitespace" on
+    every changed line in those files. That is the existing convention,
+    not new whitespace.
+
+
+21. REMINDERS FOR TEAMMATES (Tejas)
+
+  - After pulling main: pip install -r requirements.txt (python-dotenv is
+    new), then copy .env.example to .env and set SECRET_KEY. Every
+    manage.py command now fails with a clear message until .env exists.
+  - datapact_project.settings no longer works as a settings module; use
+    datapact_project.settings.development (manage.py already does). Fix
+    any IDE run configuration that still names the old module.
+  - Do not commit db.sqlite3 changes. If it shows as modified after
+    running the server, restore it with git checkout -- db.sqlite3. For
+    experiments, set DATABASE_NAME=db.local.sqlite3 in .env and run
+    python manage.py migrate once.
+  - python manage.py test data_quality must stay at 34 passing before a
+    PR.

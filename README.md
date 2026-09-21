@@ -12,8 +12,8 @@ Hriday Agarwal, Ashok Chacko, Tejas Jaggi, Connor Slattery
 
 This repo holds the A1 data model and the A2 work so far.
 
-- Done: the class-based views (Hriday), the HttpResponse view, `.gitignore`, `.env.example`, and the docs (Connor), and the templates (Ashok).
-- Still to come: the split settings and the render() view (Tejas).
+- Done: the class-based views (Hriday), the HttpResponse view, `.gitignore`, `.env.example`, and the docs (Connor), the templates (Ashok), the split settings, the render() view, and the tests (Tejas).
+- Still to come: later assignments build on this base.
 
 ## Setup
 
@@ -47,7 +47,7 @@ pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Fill in your own values. Do not commit `.env`. Git ignores it. The current `settings.py` does not read it yet. That changes with the split settings.
+Fill in your own values. Do not commit `.env`. Git ignores it. Settings read `.env` on startup; without a `SECRET_KEY` every `manage.py` command stops with a message telling you to create the file.
 
 5. The repo already includes `db.sqlite3` with demo data, so you can skip this step. To reset the database, run:
 
@@ -64,9 +64,10 @@ python manage.py seed_demo
 
 | Name | Purpose |
 | --- | --- |
-| `SECRET_KEY` | Django secret key. Make your own for `.env`. |
+| `SECRET_KEY` | Django secret key. Required. Make your own for `.env`. Production mode refuses keys that start with `django-insecure-`. |
 | `ALLOWED_HOSTS` | Comma-separated hosts. Use `localhost,127.0.0.1` locally. |
 | `API_KEY` | A dummy value for now. There is no external API yet. |
+| `DATABASE_NAME` | Optional, development only. Set it to `db.local.sqlite3` to work against a throwaway database (ignored by Git) instead of the demo `db.sqlite3`. Run `python manage.py migrate` once after setting it. |
 
 To make a new secret key:
 
@@ -80,14 +81,22 @@ python -c "from django.core.management.utils import get_random_secret_key as g; 
 python manage.py runserver
 ```
 
-Then open http://127.0.0.1:8000/datasets/. Production settings are not set up yet and will be added with the split settings.
+Then open http://127.0.0.1:8000/datasets/.
+
+`manage.py` uses the development settings (`DEBUG = True`). To run with the production settings (`DEBUG = False`, `ALLOWED_HOSTS` required):
+
+```
+python manage.py runserver --settings=datapact_project.settings.production
+```
+
+`wsgi.py` and `asgi.py` default to the production settings. `DJANGO_SETTINGS_MODULE` overrides either default. Static files (admin CSS) are not served in production mode by `runserver`; that is normal.
 
 ## Pages
 
 | URL | View | Kind |
 | --- | --- | --- |
 | `/datasets/manual/` | `dataset_manual` | Function-based, HttpResponse |
-| `/datasets/render/` | not written yet | Function-based, render() |
+| `/datasets/render/` | `dataset_render` | Function-based, render() |
 | `/datasets/overview/` | `DatasetOverviewView` | Class-based, View |
 | `/datasets/` | `DatasetListView` | Class-based, ListView |
 | `/datasets/<id>/` | `DatasetDetailView` | Class-based, DetailView |
@@ -140,7 +149,7 @@ modes with no `collectstatic` step.
 python manage.py test data_quality
 ```
 
-Run these before you open a pull request.
+34 tests: the three class-based views, the templates, the render() view, and the settings split. Run them before you open a pull request.
 
 ## Project layout
 
@@ -152,7 +161,8 @@ Run these before you open a pull request.
   .env.example          placeholder values, safe to commit
   .gitignore
   db.sqlite3            demo database
-  datapact_project/     settings and root URLs
+  datapact_project/     root URLs, wsgi, asgi
+    settings/           base.py (shared), development.py, production.py
   data_quality/         models, views, urls, tests
     templates/
       data_quality/     base.html, page templates, includes/ partials

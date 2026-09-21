@@ -92,3 +92,21 @@ def dataset_manual(request):
     html += "</ul>"
 
     return HttpResponse(html)
+
+
+# View 2: render() (shortcut)
+def dataset_render(request):
+    """
+    Same dataset registry as DatasetListView, but built by a plain function:
+    query the model, put the queryset in a context dict, hand both to
+    render(). It reuses dataset_list.html on purpose - the template does not
+    care whether a generic CBV or a function supplied the "datasets" key.
+    """
+    datasets = Dataset.objects.select_related("owner")
+    context = {
+        "datasets": datasets,
+        # Optional caption dataset_list.html shows under the title; without it
+        # the template names the ListView, which would be wrong here.
+        "view_label": "Function-based view - render()",
+    }
+    return render(request, "data_quality/dataset_list.html", context)
