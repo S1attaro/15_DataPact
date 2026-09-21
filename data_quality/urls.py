@@ -12,5 +12,5 @@ urlpatterns = [
 
     # --- FBVs (teammate section - add here once written) ---
     path("datasets/manual/", views.dataset_manual, name="dataset-manual"),
-    # path("datasets/render/", views.dataset_render, name="dataset-render"),
+    path("datasets/render/", views.dataset_render, name="dataset-render"),
 ]

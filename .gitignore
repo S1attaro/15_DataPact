@@ -1,4 +1,6 @@
 .env
+.env.*
+!.env.example
 venv/
 .venv/
 __pycache__/
@@ -7,3 +9,4 @@ __pycache__/
 *.iml
 .vscode/
 .DS_Store
+*.local.sqlite3
