@@ -137,7 +137,11 @@ identical in both dev and prod mode without a collectstatic step.
             background: var(--surface);
             border: 1px solid var(--line);
             border-radius: var(--radius);
-            overflow: hidden;
+            /* auto, not hidden: it still clips the table's square corners to
+               the panel's rounded ones, but on a narrow screen a wide table
+               becomes scrollable instead of having its last column cut off
+               with no way to reach it. */
+            overflow: auto;
             margin-bottom: 1.5rem;
         }
         .panel__head {
