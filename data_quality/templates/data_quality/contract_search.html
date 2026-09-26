@@ -1,0 +1,193 @@
+{% extends "data_quality/base.html" %}
+{% comment %}
+=============================================================================
+A3 Section 2 - ORM queries, search (GET + POST), aggregations
+Author: Hriday Agarwal
+
+Two independent tools on one page:
+  1. A GET search over Contract (bookmarkable - the filters live in the
+     query string, so reloading or sharing the URL reproduces the result).
+  2. A POST lookup over Violation (deliberately not GET - see the docstring
+     on ContractSearchView.post for why).
+
+Context this template expects:
+  total_contracts       int, count of every Contract row
+  status_breakdown      queryset of {"status": ..., "total": ...}
+  filtered_contracts    queryset of Contract, already filtered by the view
+  query, status         the GET form's current values (may be "")
+  status_choices        Contract.Status.choices, for the <select>
+  violation_query, violation_resolution   the POST form's current values
+  resolution_choices    Violation.Resolution.choices, for the <select>
+  violation_results     None before a POST; a queryset after one
+=============================================================================
+{% endcomment %}
+
+{% block title %}Contracts - DataPact{% endblock %}
+
+{% block page_title %}Contracts{% endblock %}
+
+{% block page_subtitle %}
+    <p class="page__subtitle">
+        {{ total_contracts }} contract version{{ total_contracts|pluralize }} across every dataset.
+    </p>
+{% endblock %}
+
+{% block content %}
+    <p class="viewchip">Rendered by: <code>ContractSearchView (django.views.View, GET + POST)</code></p>
+
+    <div class="panel">
+        <div class="panel__head">
+            <h2 class="panel__title">Contract status breakdown</h2>
+        </div>
+        <div class="panel__body">
+            <table class="datatable">
+                <thead>
+                    <tr>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="num">Contracts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in status_breakdown %}
+                        <tr>
+                            <td>{% include "data_quality/includes/_status_badge.html" with status=row.status only %}</td>
+                            <td class="num">{{ row.total }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr class="is-emptyrow">
+                            <td colspan="2">
+                                {% include "data_quality/includes/_empty_state.html" with headline="No contracts exist yet." message="Aggregations have nothing to summarize until a contract is created." only %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel__head">
+            <h2 class="panel__title">Search contracts</h2>
+        </div>
+        <div class="panel__body">
+            <p class="prose">
+                This form submits with <strong>GET</strong>. The search terms end up in the
+                URL, so this exact result is shareable and safe to bookmark or reload.
+            </p>
+            <form method="get" action="{% url 'data_quality:contract-search' %}">
+                <label for="q">Dataset name contains</label>
+                <input type="text" id="q" name="q" value="{{ query }}" placeholder="e.g. Enrollment">
+
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                    <option value="">Any</option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if value == status %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit" class="btn btn--primary">Search</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel__head">
+            <h2 class="panel__title">Matching contracts</h2>
+        </div>
+        <table class="datatable">
+            {% if filtered_contracts %}
+                <thead>
+                    <tr>
+                        <th scope="col">Dataset</th>
+                        <th scope="col">Version</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Change note</th>
+                    </tr>
+                </thead>
+            {% endif %}
+            <tbody>
+                {% for contract in filtered_contracts %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'data_quality:dataset-detail' contract.dataset.pk %}">{{ contract.dataset.name }}</a>
+                        </td>
+                        <td>v{{ contract.version_number }}</td>
+                        <td>{% include "data_quality/includes/_status_badge.html" with status=contract.status only %}</td>
+                        <td class="muted">{{ contract.change_note|default:"—" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr class="is-emptyrow">
+                        <td colspan="4">
+                            {% include "data_quality/includes/_empty_state.html" with headline="No contracts match that search." message="Try a different dataset name or clear the status filter." only %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="panel">
+        <div class="panel__head">
+            <h2 class="panel__title">Look up violations</h2>
+        </div>
+        <div class="panel__body">
+            <p class="prose">
+                This form submits with <strong>POST</strong> on purpose. A violation's evidence
+                can include literal values copied out of the source file, so this lookup is kept
+                out of the URL, browser history, and any link someone might share.
+            </p>
+            <form method="post" action="{% url 'data_quality:contract-search' %}">
+                {% csrf_token %}
+                <label for="dataset">Dataset name contains</label>
+                <input type="text" id="dataset" name="dataset" value="{{ violation_query }}" placeholder="e.g. Enrollment">
+
+                <label for="resolution">Resolution</label>
+                <select id="resolution" name="resolution">
+                    <option value="">Any</option>
+                    {% for value, label in resolution_choices %}
+                        <option value="{{ value }}" {% if value == violation_resolution %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit" class="btn btn--primary">Look up violations</button>
+            </form>
+        </div>
+    </div>
+
+    {% if violation_results is not None %}
+        <div class="panel">
+            <div class="panel__head">
+                <h2 class="panel__title">Violation results</h2>
+            </div>
+            <table class="datatable">
+                {% if violation_results %}
+                    <thead>
+                        <tr>
+                            <th scope="col">Dataset</th>
+                            <th scope="col">Column / Rule</th>
+                            <th scope="col" class="num">Failed rows</th>
+                            <th scope="col">Resolution</th>
+                        </tr>
+                    </thead>
+                {% endif %}
+                <tbody>
+                    {% for violation in violation_results %}
+                        <tr>
+                            <td>{{ violation.rule.contract.dataset.name }}</td>
+                            <td>{{ violation.rule.column_name }} - {{ violation.rule.get_rule_type_display }}</td>
+                            <td class="num">{{ violation.failed_row_count }}</td>
+                            <td>{{ violation.get_resolution_display }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr class="is-emptyrow">
+                            <td colspan="4">
+                                {% include "data_quality/includes/_empty_state.html" with headline="No violations matched that lookup." message="Try a different dataset name or clear the resolution filter." only %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

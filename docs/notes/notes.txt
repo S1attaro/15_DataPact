@@ -633,3 +633,83 @@ Section 3 list states:
   Empty list:   a2_templates_list_empty.png, a2_list_empty_state.png
 
 Production mode: a2_prod_mode.png
+
+
+=============================================
+A3 - WEEKLY PROGRESS UPDATE (Week of 2026-09-26) - Hriday, Section 2
+=============================================
+
+23. SECTION 2 (ORM QUERIES & DATA PRESENTATION) - WHAT WAS BUILT
+
+View:  data_quality.views.ContractSearchView
+Kind:  django.views.View, handles both get() and post()
+URL:   /contracts/search/  (name: data_quality:contract-search)
+Template: data_quality/templates/data_quality/contract_search.html
+
+One page, four rubric items, on purpose kept in one view so the "same link
+vs. hide the data" contrast is visible on a single screen instead of split
+across two unrelated pages:
+
+  - Basic query: every Contract, with its Dataset via select_related.
+  - GET search (bookmarkable): ?q=<dataset name, icontains>&status=<exact>.
+    The filters live in the query string, so reloading, bookmarking, or
+    sharing the URL reproduces the same result. This is the "same link
+    should keep working" case from the assignment.
+  - POST search (deliberately hides the data): a second form on the same
+    page looks up Violation by dataset name and resolution, submitted with
+    POST instead of GET. Reason: Violation.sample_values can hold literal
+    values copied out of the source file - exactly the row-level data
+    DataPact exists to check. A GET would put that lookup in the URL, where
+    it sits in browser history, the server access log, and any link someone
+    copies to share the page. POST keeps the search terms, and the fact
+    that the lookup ran at all, out of all three.
+  - Relationship spanning: Contract has no name field, so the GET filter
+    crosses the FK with dataset__name__icontains. The POST filter crosses
+    two FKs: rule__contract__dataset__name__icontains.
+  - Field lookups used: __icontains (partial, case-insensitive text match)
+    and __exact (status / resolution, exact match against a fixed set of
+    choices - icontains would be wrong here since "ACTIVE" and "ACTIVE"
+    are either equal or not, there is no "partial" status).
+  - Aggregations: total_contracts is a plain .count(); status_breakdown is
+    Contract.objects.values("status").annotate(total=Count("id")), a
+    grouped summary independent of whatever the GET filter is doing.
+  - Templates: {% for %} / {% empty %} on both the contract table and the
+    violation table, reusing the team's existing _empty_state.html and
+    _status_badge.html partials (Ashok, Section 3) rather than writing new
+    markup for "nothing found."
+
+24. WHY POST FOR A SEARCH FORM (not a data-modifying action)
+
+The assignment's Section 5 also has a POST form, but that one is for
+create/submit (data modification). This POST is different: it does not
+change anything in the database, it is a read-only lookup that is POST
+only to avoid the URL/history/log exposure described above. Both are
+legitimate uses of POST; conflating "POST always means writing data" would
+have been the wrong lesson to take from this section, so the two are kept
+on separate pages (Section 2's /contracts/search/ vs. Section 5's page) to
+keep that distinction visible to whoever reviews this.
+
+25. TESTS (Hriday)
+
+13 new tests in data_quality/tests.py: ContractSearchViewGetTests (7) and
+ContractSearchViewPostTests (6). Cover: unfiltered list + total count,
+dataset-name filter, status filter, both combined, no-match empty state,
+grouped aggregation counts, empty-database aggregation, POST leaving GET
+context untouched, POST dataset filter, POST resolution filter, POST with
+no filters, POST no-match empty state, and a CSRF-enforcement check
+(Django's test Client skips CSRF by default; the last test turns
+enforce_csrf_checks back on and asserts a token-less POST gets a 403,
+which is what actually proves the view is protected rather than merely
+not complaining about a missing token in tests).
+
+python manage.py test data_quality: 47 passing (34 from A2 + 13 new).
+
+26. OPEN ITEMS FOR THE TEAM
+
+  - Nav link: base.html's top nav (Ashok, Section 3) does not yet link to
+    /contracts/search/. Not added here on purpose - base.html is Section 3's
+    file. Ashok, whenever you touch it next, a "Contracts" link next to
+    "Datasets" would make this page discoverable without a direct URL.
+  - This page and Section 5's page are intentionally separate URLs so a
+    grader (or teammate) can tell "POST used to hide a search" apart from
+    "POST used to create/modify data" at a glance.
