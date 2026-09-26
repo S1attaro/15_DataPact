@@ -10,7 +10,10 @@ urlpatterns = [
     path("datasets/", views.DatasetListView.as_view(), name="dataset-list"),
     path("datasets/<int:pk>/", views.DatasetDetailView.as_view(), name="dataset-detail"),
 
-    # --- FBVs (teammate section - add here once written) ---
+    # --- FBVs ---
     path("datasets/manual/", views.dataset_manual, name="dataset-manual"),
     path("datasets/render/", views.dataset_render, name="dataset-render"),
+
+    # --- A3 Section 5: forms and user input (Hriday) ---
+    path("datasets/manage/", views.DatasetManageView.as_view(), name="dataset-manage"),
 ]
