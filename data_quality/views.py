@@ -2,7 +2,6 @@ from django.contrib import messages
 from django.db.models import Count
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
-from django.urls import reverse
 from django.utils.html import escape
 from django.views import View
 from django.views.generic import DetailView, ListView
@@ -190,10 +189,7 @@ class DatasetManageView(View):
         if form.is_valid():
             dataset = form.save()
             messages.success(request, f'Registered dataset "{dataset.name}".')
-            redirect_url = reverse("data_quality:dataset-manage")
-            if team:
-                redirect_url = f"{redirect_url}?team={team}"
-            return redirect(redirect_url)
+            return redirect(dataset.get_absolute_url())
 
         context = {
             "datasets": self._datasets(team),

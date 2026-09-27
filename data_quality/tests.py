@@ -635,12 +635,11 @@ class DatasetManageViewPostTests(TestCase):
         payload.update(overrides)
         return payload
 
-    def test_valid_post_creates_dataset_and_redirects(self):
+    def test_valid_post_creates_dataset_and_redirects_to_its_detail_page(self):
         response = self.client.post(reverse("data_quality:dataset-manage"), self._payload())
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(
-            Dataset.objects.filter(name="Facilities Work Orders", owner=self.owner).exists()
-        )
+        dataset = Dataset.objects.get(name="Facilities Work Orders", owner=self.owner)
+        self.assertEqual(response.url, dataset.get_absolute_url())
 
     def test_redirect_target_shows_success_message(self):
         response = self.client.post(
