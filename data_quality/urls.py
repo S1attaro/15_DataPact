@@ -19,4 +19,7 @@ urlpatterns = [
 
     # --- Section 5: forms and user input (Hriday) ---
     path("datasets/manage/", views.DatasetManageView.as_view(), name="dataset-manage"),
+
+    # --- API (Section 6, owned by Connor) ---
+    path("api/datasets/", views.dataset_api, name="dataset-api"),
 ]

@@ -636,10 +636,42 @@ Production mode: a2_prod_mode.png
 
 
 =============================================
+A3 - WEEKLY PROGRESS UPDATE (Week of 2026-09-26) - Connor, Section 6
+=============================================
+
+23. A3 SECTION 6 - API PLAN (Connor)
+
+Endpoint: data_quality.views.dataset_api
+URL: /api/datasets/ (name: data_quality:dataset-api)
+Kind: Function-based view, django.http.JsonResponse.
+
+What it serves: the same Dataset registry the other views show
+(id, name, owner username, source team, description, created_at),
+serialized as JSON instead of rendered HTML.
+
+Filtering: optional query params, applied to the same queryset the
+list/render views use:
+  ?owner=<username>        -> owner__username
+  ?source_team=<team>      -> source_team__iexact
+
+HttpResponse vs JsonResponse: dataset_manual (Section 2) and
+dataset_api answer the same underlying question - "what datasets are
+registered?" - but return different Content-Types. dataset_manual
+sends text/html and a browser renders it as a page; dataset_api sends
+application/json and a browser (or any HTTP client) treats it as
+structured data, not markup. Same query, same model, different
+response type.
+
+Screenshots: docs/screenshots/a3_api_datasets.png (unfiltered),
+docs/screenshots/a3_api_datasets_filtered_owner.png (?owner=cslat),
+docs/screenshots/a3_api_datasets_filtered_team.png (?source_team=Operations)
+
+
+=============================================
 A3 - WEEKLY PROGRESS UPDATE (Week of 2026-09-26) - Hriday, Section 2
 =============================================
 
-23. SECTION 2 (ORM QUERIES & DATA PRESENTATION)
+24. SECTION 2 (ORM QUERIES & DATA PRESENTATION)
 
 View:  data_quality.views.ContractSearchView (django.views.View)
 URL:   /contracts/search/  (name: data_quality:contract-search)
@@ -656,12 +688,12 @@ Template: data_quality/templates/data_quality/contract_search.html
     (values("status").annotate(total=Count("id"))).
   - Reuses Ashok's _empty_state.html / _status_badge.html partials.
 
-24. TESTS
+25. TESTS
 
 13 new tests (ContractSearchViewGetTests, ContractSearchViewPostTests).
 python manage.py test data_quality: 47 passing (34 from A2 + 13 new).
 
-25. OPEN ITEMS FOR THE TEAM
+26. OPEN ITEMS FOR THE TEAM
 
   - base.html's nav doesn't link to /contracts/search/ yet - leaving that
     to Ashok since it's his file.
@@ -671,7 +703,7 @@ python manage.py test data_quality: 47 passing (34 from A2 + 13 new).
 A3 - WEEKLY PROGRESS UPDATE (Week of 2026-09-26) - Hriday, Section 5
 =============================================
 
-26. SECTION 5 (FORMS & USER INPUT)
+27. SECTION 5 (FORMS & USER INPUT)
 
 View:  data_quality.views.DatasetManageView (django.views.View)
 Form:  data_quality.forms.DatasetForm (ModelForm, model = Dataset)
@@ -688,14 +720,19 @@ Template: data_quality/templates/data_quality/dataset_manage.html
     (base.html has no messages block - that's Ashok's file).
   - No sign-up flow yet, so owner is a <select> over the seeded users.
 
-27. TESTS
+28. TESTS
 
 10 new tests (DatasetManageViewGetTests, DatasetManageViewPostTests).
-python manage.py test data_quality: 44 passing on this branch (cut from
-main before Section 2's branch merged, so its 13 tests aren't here yet -
-once both land the total should be 57).
+python manage.py test data_quality: 57 passing (34 from A2 + 13 from
+Section 2 + 10 from Section 5).
 
-28. OPEN ITEMS FOR THE TEAM
+29. OPEN ITEMS FOR THE TEAM
 
   - base.html's nav doesn't link to /datasets/manage/ yet - leaving that
     to Ashok.
+  - Dataset.get_absolute_url() was added in data_quality/models.py to
+    support DatasetManageView's redirect after a successful POST
+    (redirect(dataset.get_absolute_url())), per A3 Section 1's
+    requirement that it exists and is actually used. If Tejas's Section 1
+    work also defines it, keep one copy - they should be identical
+    (reverse("data_quality:dataset-detail", kwargs={"pk": self.pk})).
