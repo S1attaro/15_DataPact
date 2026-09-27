@@ -1,4 +1,4 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.utils.html import escape
 from django.views import View
@@ -110,3 +110,45 @@ def dataset_render(request):
         "view_label": "Function-based view - render()",
     }
     return render(request, "data_quality/dataset_list.html", context)
+
+
+# ---------------------------------------------------------------
+# API views (Section 6)
+# Author: Connor Slattery (cslat)
+# ---------------------------------------------------------------
+
+def dataset_api(request):
+    """
+    JSON API for the dataset registry. Returns JsonResponse
+    (application/json), unlike dataset_manual above which returns
+    HttpResponse (text/html) for the same data.
+
+    Optional filters via query params:
+      ?owner=cslat
+      ?source_team=Operations
+    """
+    datasets = Dataset.objects.select_related("owner")
+
+    owner = request.GET.get("owner")
+    if owner:
+        datasets = datasets.filter(owner__username=owner)
+
+    source_team = request.GET.get("source_team")
+    if source_team:
+        datasets = datasets.filter(source_team__iexact=source_team)
+
+    data = [
+        {
+            "id": dataset.id,
+            "name": dataset.name,
+            "owner": dataset.owner.username,
+            "source_team": dataset.source_team,
+            "description": dataset.description,
+            "created_at": dataset.created_at.isoformat(),
+        }
+        for dataset in datasets
+    ]
+
+    return JsonResponse({"count": len(data), "datasets": data})
+
+
