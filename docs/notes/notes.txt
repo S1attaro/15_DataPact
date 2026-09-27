@@ -633,3 +633,30 @@ Section 3 list states:
   Empty list:   a2_templates_list_empty.png, a2_list_empty_state.png
 
 Production mode: a2_prod_mode.png
+
+23. A3 SECTION 6 - API PLAN (Connor)
+
+Endpoint: data_quality.views.dataset_api
+URL: /api/datasets/ (name: data_quality:dataset-api)
+Kind: Function-based view, django.http.JsonResponse.
+
+What it serves: the same Dataset registry the other views show
+(id, name, owner username, source team, description, created_at),
+serialized as JSON instead of rendered HTML.
+
+Filtering: optional query params, applied to the same queryset the
+list/render views use:
+  ?owner=<username>        -> owner__username
+  ?source_team=<team>      -> source_team__iexact
+
+HttpResponse vs JsonResponse: dataset_manual (Section 2) and
+dataset_api answer the same underlying question - "what datasets are
+registered?" - but return different Content-Types. dataset_manual
+sends text/html and a browser renders it as a page; dataset_api sends
+application/json and a browser (or any HTTP client) treats it as
+structured data, not markup. Same query, same model, different
+response type.
+
+Screenshots: docs/screenshots/a3_api_datasets.png (unfiltered),
+docs/screenshots/a3_api_datasets_filtered_owner.png (?owner=cslat),
+docs/screenshots/a3_api_datasets_filtered_team.png (?source_team=Operations)

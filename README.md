@@ -102,6 +102,20 @@ python manage.py runserver --settings=datapact_project.settings.production
 | `/datasets/<id>/` | `DatasetDetailView` | Class-based, DetailView |
 | `/admin/` | Django admin | Built in |
 
+
+## API
+
+`/api/datasets/` returns the dataset registry as JSON (`JsonResponse`, `Content-Type: application/json`) instead of rendered HTML. Compare with `/datasets/manual/`, which returns the same underlying data as `HttpResponse` (`Content-Type: text/html`).
+
+Optional filters via query parameters:
+- `?owner=<username>` — datasets owned by that user
+- `?source_team=<team>` — datasets from that source team (case-insensitive)
+
+Example:
+```
+GET /api/datasets/?owner=cslat
+```
+
 ## Templates
 
 Every page extends one base template, so the navigation, stylesheet, page
