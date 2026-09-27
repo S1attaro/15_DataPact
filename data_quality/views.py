@@ -77,35 +77,17 @@ class DatasetDetailView(DetailView):
         return context
 
 # ---------------------------------------------------------------
-# A3 Section 2: ORM queries, search (GET + POST), and aggregations
+# Section 2: ORM queries, search (GET + POST), aggregations
 # Author: Hriday Agarwal
 # ---------------------------------------------------------------
 
 class ContractSearchView(View):
-    """
-    One page, two independent search tools over data that sits two models
-    away from Dataset: Contract (Contract -> Dataset) and Violation
-    (Violation -> ValidationRule -> Contract -> Dataset).
-
-    GET: search Contracts by dataset name / status. This is the case where
-    the same link should keep working - the filters live in the query
-    string, so the URL is shareable and bookmarkable, and reloading it
-    reproduces the same result.
-
-    POST: look up Violations by dataset name / resolution. This is
-    deliberately POST rather than GET. A Violation's sample_values field can
-    hold literal row values copied out of the source file - exactly the kind
-    of data DataPact exists to police. Putting that lookup in a GET query
-    string would leave it sitting in browser history, the server access log,
-    and any link someone copies to share the page. POST keeps the search
-    terms (and the fact that this lookup was run at all) out of all three.
-    """
+    """GET searches Contract, POST looks up Violation (kept off GET since
+    sample_values can hold raw values from the source file)."""
 
     template_name = "data_quality/contract_search.html"
 
     def _status_breakdown(self):
-        # Grouped aggregation: how many contracts sit in each lifecycle
-        # status, independent of whatever the GET filter is doing.
         return (
             Contract.objects.values("status")
             .annotate(total=Count("id"))
@@ -120,8 +102,6 @@ class ContractSearchView(View):
 
         filtered_contracts = contracts
         if query:
-            # Relationship spanning: Contract has no name of its own, so the
-            # lookup crosses the FK to Dataset with a double underscore.
             filtered_contracts = filtered_contracts.filter(
                 dataset__name__icontains=query
             )
@@ -150,8 +130,6 @@ class ContractSearchView(View):
             "rule", "rule__contract", "rule__contract__dataset"
         )
         if violation_query:
-            # Relationship spanning two hops deep: Violation -> rule ->
-            # contract -> dataset -> name.
             violation_results = violation_results.filter(
                 rule__contract__dataset__name__icontains=violation_query
             )

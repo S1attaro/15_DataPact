@@ -444,12 +444,11 @@ class SettingsSplitTests(TestCase):
 
 
 # ---------------------------------------------------------------
-# A3 Section 2: ContractSearchView (ORM search, aggregations)
+# Section 2: ContractSearchView
 # Author: Hriday Agarwal
 # ---------------------------------------------------------------
 
 class ContractSearchViewGetTests(TestCase):
-    """GET: Contract search by dataset name / status, plus aggregations."""
 
     def setUp(self):
         self.owner = User.objects.create_user("owner1", password="pw")
@@ -475,11 +474,9 @@ class ContractSearchViewGetTests(TestCase):
         self.assertTemplateUsed(response, "data_quality/contract_search.html")
         self.assertEqual(response.context["total_contracts"], 3)
         self.assertEqual(len(response.context["filtered_contracts"]), 3)
-        # POST-only context should be untouched by a GET request.
         self.assertIsNone(response.context["violation_results"])
 
     def test_query_param_filters_by_related_dataset_name(self):
-        # Relationship spanning: Contract has no "name" field of its own.
         response = self.client.get(reverse("data_quality:contract-search"), {"q": "Enrollment"})
         contracts = list(response.context["filtered_contracts"])
         self.assertEqual(len(contracts), 2)
@@ -517,8 +514,6 @@ class ContractSearchViewGetTests(TestCase):
 
 
 class ContractSearchViewPostTests(TestCase):
-    """POST: Violation lookup by related dataset name / resolution."""
-
     def setUp(self):
         owner = User.objects.create_user("owner1", password="pw")
         dataset = Dataset.objects.create(
@@ -555,7 +550,6 @@ class ContractSearchViewPostTests(TestCase):
         self.assertIsNone(response.context["violation_results"])
 
     def test_post_filters_by_related_dataset_name(self):
-        # Two hops: Violation -> rule -> contract -> dataset -> name.
         response = self.client.post(
             reverse("data_quality:contract-search"), {"dataset": "Enrollment", "resolution": ""}
         )
@@ -584,9 +578,6 @@ class ContractSearchViewPostTests(TestCase):
         self.assertContains(response, "No violations matched that lookup.")
 
     def test_post_requires_csrf_token_from_a_real_browser_form(self):
-        # Django's test Client bypasses CSRF by default; enforce=True restores
-        # the real check, so this proves the view is protected by the
-        # CsrfViewMiddleware rather than merely not object to a missing token.
         self.client.handler.enforce_csrf_checks = True
         response = self.client.post(
             reverse("data_quality:contract-search"), {"dataset": "", "resolution": ""}
