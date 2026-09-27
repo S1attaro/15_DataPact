@@ -1,0 +1,101 @@
+{% extends "data_quality/base.html" %}
+{% comment %} Section 5 - Hriday {% endcomment %}
+
+{% block title %}Manage Datasets - DataPact{% endblock %}
+
+{% block page_title %}Manage Datasets{% endblock %}
+
+{% block page_subtitle %}
+    <p class="page__subtitle">Filter the registry, or register a new dataset.</p>
+{% endblock %}
+
+{% block content %}
+    <p class="viewchip">Rendered by: <code>DatasetManageView (django.views.View, GET + POST)</code></p>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="panel">
+                <div class="panel__body">{{ message }}</div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="panel">
+        <div class="panel__head">
+            <h2 class="panel__title">Filter by source team</h2>
+        </div>
+        <div class="panel__body">
+            <form method="get" action="{% url 'data_quality:dataset-manage' %}">
+                <label for="team">Source team contains</label>
+                <input type="text" id="team" name="team" value="{{ team }}" placeholder="e.g. Registrar">
+                <button type="submit" class="btn btn--primary">Filter</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel__head">
+            <h2 class="panel__title">Datasets</h2>
+        </div>
+        <table class="datatable">
+            {% if datasets %}
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Owner</th>
+                        <th scope="col">Source Team</th>
+                    </tr>
+                </thead>
+            {% endif %}
+            <tbody>
+                {% for dataset in datasets %}
+                    <tr>
+                        <td><a href="{% url 'data_quality:dataset-detail' dataset.pk %}">{{ dataset.name }}</a></td>
+                        <td>{{ dataset.owner.username }}</td>
+                        <td>{{ dataset.source_team }}</td>
+                    </tr>
+                {% empty %}
+                    <tr class="is-emptyrow">
+                        <td colspan="3">
+                            {% include "data_quality/includes/_empty_state.html" with headline="No datasets match that filter." message="Try a different source team, or register one below." only %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="panel">
+        <div class="panel__head">
+            <h2 class="panel__title">Register a new dataset</h2>
+        </div>
+        <div class="panel__body">
+            {% if form.non_field_errors %}
+                <p class="prose">{{ form.non_field_errors }}</p>
+            {% endif %}
+
+            <form method="post" action="{% url 'data_quality:dataset-manage' %}">
+                {% csrf_token %}
+                <input type="hidden" name="team" value="{{ team }}">
+
+                <label for="{{ form.name.id_for_label }}">Name</label>
+                {{ form.name }}
+                {{ form.name.errors }}
+
+                <label for="{{ form.owner.id_for_label }}">Owner</label>
+                {{ form.owner }}
+                {{ form.owner.errors }}
+
+                <label for="{{ form.source_team.id_for_label }}">Source Team</label>
+                {{ form.source_team }}
+                {{ form.source_team.errors }}
+
+                <label for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+                {{ form.description.errors }}
+
+                <button type="submit" class="btn btn--primary">Register Dataset</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

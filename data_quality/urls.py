@@ -10,9 +10,15 @@ urlpatterns = [
     path("datasets/", views.DatasetListView.as_view(), name="dataset-list"),
     path("datasets/<int:pk>/", views.DatasetDetailView.as_view(), name="dataset-detail"),
 
-    # --- FBVs (teammate section - add here once written) ---
+    # --- FBVs ---
     path("datasets/manual/", views.dataset_manual, name="dataset-manual"),
     path("datasets/render/", views.dataset_render, name="dataset-render"),
+
+    # --- Section 2: ORM search + aggregations (Hriday) ---
+    path("contracts/search/", views.ContractSearchView.as_view(), name="contract-search"),
+
+    # --- Section 5: forms and user input (Hriday) ---
+    path("datasets/manage/", views.DatasetManageView.as_view(), name="dataset-manage"),
 
     # --- API (Section 6, owned by Connor) ---
     path("api/datasets/", views.dataset_api, name="dataset-api"),

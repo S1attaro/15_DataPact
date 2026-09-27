@@ -634,6 +634,11 @@ Section 3 list states:
 
 Production mode: a2_prod_mode.png
 
+
+=============================================
+A3 - WEEKLY PROGRESS UPDATE (Week of 2026-09-26) - Connor, Section 6
+=============================================
+
 23. A3 SECTION 6 - API PLAN (Connor)
 
 Endpoint: data_quality.views.dataset_api
@@ -660,3 +665,74 @@ response type.
 Screenshots: docs/screenshots/a3_api_datasets.png (unfiltered),
 docs/screenshots/a3_api_datasets_filtered_owner.png (?owner=cslat),
 docs/screenshots/a3_api_datasets_filtered_team.png (?source_team=Operations)
+
+
+=============================================
+A3 - WEEKLY PROGRESS UPDATE (Week of 2026-09-26) - Hriday, Section 2
+=============================================
+
+24. SECTION 2 (ORM QUERIES & DATA PRESENTATION)
+
+View:  data_quality.views.ContractSearchView (django.views.View)
+URL:   /contracts/search/  (name: data_quality:contract-search)
+Template: data_quality/templates/data_quality/contract_search.html
+
+  - GET: search Contract by dataset name (icontains) and status (exact).
+    Filters live in the query string so the URL is shareable/reloadable.
+  - POST: look up Violation by dataset name and resolution. Kept off GET
+    since sample_values can hold raw values from the source file - a GET
+    would leave that in the URL, browser history, and server logs.
+  - Relationship spanning: dataset__name__icontains, and two hops deep on
+    the violation side, rule__contract__dataset__name__icontains.
+  - Aggregations: total contract count, plus a grouped status breakdown
+    (values("status").annotate(total=Count("id"))).
+  - Reuses Ashok's _empty_state.html / _status_badge.html partials.
+
+25. TESTS
+
+13 new tests (ContractSearchViewGetTests, ContractSearchViewPostTests).
+python manage.py test data_quality: 47 passing (34 from A2 + 13 new).
+
+26. OPEN ITEMS FOR THE TEAM
+
+  - base.html's nav doesn't link to /contracts/search/ yet - leaving that
+    to Ashok since it's his file.
+
+
+=============================================
+A3 - WEEKLY PROGRESS UPDATE (Week of 2026-09-26) - Hriday, Section 5
+=============================================
+
+27. SECTION 5 (FORMS & USER INPUT)
+
+View:  data_quality.views.DatasetManageView (django.views.View)
+Form:  data_quality.forms.DatasetForm (ModelForm, model = Dataset)
+URL:   /datasets/manage/  (name: data_quality:dataset-manage)
+Template: data_quality/templates/data_quality/dataset_manage.html
+
+  - GET: filters the dataset list by source team (?team=..., icontains).
+  - POST: registers a new Dataset. Protected by {% csrf_token %}. Required
+    fields and the (owner, name) uniqueness constraint are enforced through
+    form.is_valid() (validate_unique()), not a try/except around save().
+  - Post/Redirect/Get on success, carrying the team filter through so a
+    page refresh can't resubmit the registration.
+  - Success feedback via django.contrib.messages, shown on this page only
+    (base.html has no messages block - that's Ashok's file).
+  - No sign-up flow yet, so owner is a <select> over the seeded users.
+
+28. TESTS
+
+10 new tests (DatasetManageViewGetTests, DatasetManageViewPostTests).
+python manage.py test data_quality: 57 passing (34 from A2 + 13 from
+Section 2 + 10 from Section 5).
+
+29. OPEN ITEMS FOR THE TEAM
+
+  - base.html's nav doesn't link to /datasets/manage/ yet - leaving that
+    to Ashok.
+  - Dataset.get_absolute_url() was added in data_quality/models.py to
+    support DatasetManageView's redirect after a successful POST
+    (redirect(dataset.get_absolute_url())), per A3 Section 1's
+    requirement that it exists and is actually used. If Tejas's Section 1
+    work also defines it, keep one copy - they should be identical
+    (reverse("data_quality:dataset-detail", kwargs={"pk": self.pk})).

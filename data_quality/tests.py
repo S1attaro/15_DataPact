@@ -14,7 +14,7 @@ from django.test import TestCase
 from django.urls import resolve, reverse
 
 from . import views
-from .models import Contract, Dataset
+from .models import Contract, Dataset, ValidationRule, Violation
 
 
 class DatasetOverviewViewTests(TestCase):
@@ -441,3 +441,239 @@ class SettingsSplitTests(TestCase):
             "production", SECRET_KEY=VALID_TEST_KEY, ALLOWED_HOSTS="localhost", DATABASE_NAME="db.local.sqlite3"
         )
         self.assertEqual(Path(prod.DATABASES["default"]["NAME"]), REPO_ROOT / "db.sqlite3")
+
+
+# ---------------------------------------------------------------
+# Section 2: ContractSearchView
+# Author: Hriday Agarwal
+# ---------------------------------------------------------------
+
+class ContractSearchViewGetTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("owner1", password="pw")
+        self.enrollment = Dataset.objects.create(
+            name="Monthly Enrollment Export", owner=self.owner, source_team="Registrar"
+        )
+        self.sales = Dataset.objects.create(
+            name="Weekly Sales Extract", owner=self.owner, source_team="Finance"
+        )
+        Contract.objects.create(
+            dataset=self.enrollment, version_number=1, status=Contract.Status.RETIRED
+        )
+        Contract.objects.create(
+            dataset=self.enrollment, version_number=2, status=Contract.Status.ACTIVE
+        )
+        Contract.objects.create(
+            dataset=self.sales, version_number=1, status=Contract.Status.DRAFT
+        )
+
+    def test_no_filter_lists_every_contract_and_correct_total(self):
+        response = self.client.get(reverse("data_quality:contract-search"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "data_quality/contract_search.html")
+        self.assertEqual(response.context["total_contracts"], 3)
+        self.assertEqual(len(response.context["filtered_contracts"]), 3)
+        self.assertIsNone(response.context["violation_results"])
+
+    def test_query_param_filters_by_related_dataset_name(self):
+        response = self.client.get(reverse("data_quality:contract-search"), {"q": "Enrollment"})
+        contracts = list(response.context["filtered_contracts"])
+        self.assertEqual(len(contracts), 2)
+        self.assertTrue(all(c.dataset_id == self.enrollment.pk for c in contracts))
+
+    def test_status_param_filters_exact(self):
+        response = self.client.get(reverse("data_quality:contract-search"), {"status": "ACTIVE"})
+        contracts = list(response.context["filtered_contracts"])
+        self.assertEqual(len(contracts), 1)
+        self.assertEqual(contracts[0].status, Contract.Status.ACTIVE)
+
+    def test_query_and_status_combine(self):
+        response = self.client.get(
+            reverse("data_quality:contract-search"), {"q": "Enrollment", "status": "RETIRED"}
+        )
+        contracts = list(response.context["filtered_contracts"])
+        self.assertEqual(len(contracts), 1)
+        self.assertEqual(contracts[0].version_number, 1)
+
+    def test_no_match_shows_empty_state(self):
+        response = self.client.get(reverse("data_quality:contract-search"), {"q": "Nonexistent"})
+        self.assertEqual(len(response.context["filtered_contracts"]), 0)
+        self.assertContains(response, "No contracts match that search.")
+
+    def test_status_breakdown_groups_and_counts(self):
+        response = self.client.get(reverse("data_quality:contract-search"))
+        breakdown = {row["status"]: row["total"] for row in response.context["status_breakdown"]}
+        self.assertEqual(breakdown, {"ACTIVE": 1, "DRAFT": 1, "RETIRED": 1})
+
+    def test_empty_database_aggregation_shows_empty_state(self):
+        Contract.objects.all().delete()
+        response = self.client.get(reverse("data_quality:contract-search"))
+        self.assertEqual(response.context["total_contracts"], 0)
+        self.assertContains(response, "No contracts exist yet.")
+
+
+class ContractSearchViewPostTests(TestCase):
+    def setUp(self):
+        owner = User.objects.create_user("owner1", password="pw")
+        dataset = Dataset.objects.create(
+            name="Monthly Enrollment Export", owner=owner, source_team="Registrar"
+        )
+        other_dataset = Dataset.objects.create(
+            name="Weekly Sales Extract", owner=owner, source_team="Finance"
+        )
+        contract = Contract.objects.create(
+            dataset=dataset, version_number=1, status=Contract.Status.ACTIVE
+        )
+        other_contract = Contract.objects.create(
+            dataset=other_dataset, version_number=1, status=Contract.Status.ACTIVE
+        )
+        rule = ValidationRule.objects.create(
+            contract=contract, column_name="credit_hours", rule_type=ValidationRule.RuleType.RANGE
+        )
+        other_rule = ValidationRule.objects.create(
+            contract=other_contract, column_name="amount", rule_type=ValidationRule.RuleType.RANGE
+        )
+        run = contract.runs.create(file_name="f.csv", row_count=10, status="FAILED")
+        other_run = other_contract.runs.create(file_name="g.csv", row_count=5, status="FAILED")
+        self.violation = Violation.objects.create(
+            run=run, rule=rule, failed_row_count=3, message="out of range",
+            resolution=Violation.Resolution.OPEN,
+        )
+        self.other_violation = Violation.objects.create(
+            run=other_run, rule=other_rule, failed_row_count=1, message="out of range",
+            resolution=Violation.Resolution.DATA_ISSUE,
+        )
+
+    def test_get_does_not_run_the_violation_lookup(self):
+        response = self.client.get(reverse("data_quality:contract-search"))
+        self.assertIsNone(response.context["violation_results"])
+
+    def test_post_filters_by_related_dataset_name(self):
+        response = self.client.post(
+            reverse("data_quality:contract-search"), {"dataset": "Enrollment", "resolution": ""}
+        )
+        self.assertEqual(response.status_code, 200)
+        results = list(response.context["violation_results"])
+        self.assertEqual(results, [self.violation])
+
+    def test_post_filters_by_resolution_exact(self):
+        response = self.client.post(
+            reverse("data_quality:contract-search"), {"dataset": "", "resolution": "DATA_ISSUE"}
+        )
+        results = list(response.context["violation_results"])
+        self.assertEqual(results, [self.other_violation])
+
+    def test_post_with_no_filters_returns_all_violations(self):
+        response = self.client.post(
+            reverse("data_quality:contract-search"), {"dataset": "", "resolution": ""}
+        )
+        self.assertEqual(len(response.context["violation_results"]), 2)
+
+    def test_post_no_match_shows_empty_state(self):
+        response = self.client.post(
+            reverse("data_quality:contract-search"), {"dataset": "Nonexistent", "resolution": ""}
+        )
+        self.assertEqual(len(response.context["violation_results"]), 0)
+        self.assertContains(response, "No violations matched that lookup.")
+
+    def test_post_requires_csrf_token_from_a_real_browser_form(self):
+        self.client.handler.enforce_csrf_checks = True
+        response = self.client.post(
+            reverse("data_quality:contract-search"), {"dataset": "", "resolution": ""}
+        )
+        self.assertEqual(response.status_code, 403)
+
+
+# ---------------------------------------------------------------
+# Section 5: DatasetManageView
+# Author: Hriday Agarwal
+# ---------------------------------------------------------------
+
+class DatasetManageViewGetTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("owner1", password="pw")
+        self.registrar_ds = Dataset.objects.create(
+            name="Monthly Enrollment Export", owner=self.owner, source_team="Registrar"
+        )
+        self.finance_ds = Dataset.objects.create(
+            name="Weekly Sales Extract", owner=self.owner, source_team="Finance"
+        )
+
+    def test_no_filter_lists_every_dataset(self):
+        response = self.client.get(reverse("data_quality:dataset-manage"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "data_quality/dataset_manage.html")
+        self.assertEqual(len(response.context["datasets"]), 2)
+
+    def test_team_query_param_filters_by_source_team(self):
+        response = self.client.get(reverse("data_quality:dataset-manage"), {"team": "Regist"})
+        datasets = list(response.context["datasets"])
+        self.assertEqual(datasets, [self.registrar_ds])
+        self.assertEqual(response.context["team"], "Regist")
+
+    def test_no_match_shows_empty_state(self):
+        response = self.client.get(reverse("data_quality:dataset-manage"), {"team": "Nonexistent"})
+        self.assertEqual(len(response.context["datasets"]), 0)
+        self.assertContains(response, "No datasets match that filter.")
+
+    def test_get_form_is_unbound_and_has_no_errors(self):
+        response = self.client.get(reverse("data_quality:dataset-manage"))
+        self.assertFalse(response.context["form"].is_bound)
+
+
+class DatasetManageViewPostTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("owner1", password="pw")
+
+    def _payload(self, **overrides):
+        payload = {
+            "name": "Facilities Work Orders",
+            "owner": self.owner.pk,
+            "source_team": "Operations",
+            "description": "",
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_valid_post_creates_dataset_and_redirects_to_its_detail_page(self):
+        response = self.client.post(reverse("data_quality:dataset-manage"), self._payload())
+        self.assertEqual(response.status_code, 302)
+        dataset = Dataset.objects.get(name="Facilities Work Orders", owner=self.owner)
+        self.assertEqual(response.url, dataset.get_absolute_url())
+
+    def test_redirect_target_shows_success_message(self):
+        response = self.client.post(
+            reverse("data_quality:dataset-manage"), self._payload(), follow=True
+        )
+        messages = list(response.context["messages"])
+        self.assertEqual(len(messages), 1)
+        self.assertIn("Facilities Work Orders", str(messages[0]))
+
+    def test_missing_required_field_is_rejected_without_creating_a_row(self):
+        response = self.client.post(reverse("data_quality:dataset-manage"), self._payload(name=""))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Dataset.objects.filter(source_team="Operations").exists())
+        self.assertTrue(response.context["form"].errors)
+
+    def test_duplicate_owner_and_name_is_rejected_by_model_constraint(self):
+        Dataset.objects.create(
+            name="Facilities Work Orders", owner=self.owner, source_team="Operations"
+        )
+        response = self.client.post(reverse("data_quality:dataset-manage"), self._payload())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            Dataset.objects.filter(name="Facilities Work Orders", owner=self.owner).count(), 1
+        )
+        self.assertTrue(response.context["form"].errors)
+
+    def test_team_filter_survives_a_failed_submission(self):
+        response = self.client.post(
+            reverse("data_quality:dataset-manage"), self._payload(name="", team="Operations")
+        )
+        self.assertEqual(response.context["team"], "Operations")
+
+    def test_post_requires_csrf_token_from_a_real_browser_form(self):
+        self.client.handler.enforce_csrf_checks = True
+        response = self.client.post(reverse("data_quality:dataset-manage"), self._payload())
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(Dataset.objects.filter(source_team="Operations").exists())

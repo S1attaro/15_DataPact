@@ -100,6 +100,8 @@ python manage.py runserver --settings=datapact_project.settings.production
 | `/datasets/overview/` | `DatasetOverviewView` | Class-based, View |
 | `/datasets/` | `DatasetListView` | Class-based, ListView |
 | `/datasets/<id>/` | `DatasetDetailView` | Class-based, DetailView |
+| `/contracts/search/` | `ContractSearchView` | Class-based, View (GET search + POST lookup) |
+| `/datasets/manage/` | `DatasetManageView` | Class-based, View (GET filter + POST create) |
 | `/admin/` | Django admin | Built in |
 
 
@@ -163,7 +165,51 @@ modes with no `collectstatic` step.
 python manage.py test data_quality
 ```
 
-34 tests: the three class-based views, the templates, the render() view, and the settings split. Run them before you open a pull request.
+57 tests: the three A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, and `DatasetManageView`. Run them before you open a pull request.
+
+## A3, Section 2 & Section 5 (Hriday)
+
+### Section 2 - ORM Queries & Data Presentation (`/contracts/search/`)
+
+| Rubric item | Evidence |
+| --- | --- |
+| Search (GET + POST) + filter works | GET search by dataset name/status, and a POST lookup on `Violation` |
+| Relationship-spanning query | `dataset__name__icontains` (Contract → Dataset), `rule__contract__dataset__name__icontains` (Violation, two hops) |
+| Aggregations (total + grouping) | total contract count, plus `values("status").annotate(total=Count("id"))` |
+| Template clarity & `{% empty %}` | empty-state message when a search has no matches |
+
+GET search filtered to one dataset (`?q=Enrollment`):
+
+![Contract search - GET result filtered by dataset name](docs/screenshots/a3/s2_get_search.png)
+
+Same page after the POST violation lookup (aggregation panel + violation results):
+
+![Contract search - aggregation panel and POST violation results](docs/screenshots/a3/s2_post_violation.png)
+
+Empty state when a search has no matches:
+
+![Contract search - no results, empty-state message](docs/screenshots/a3/s2_empty_state.png)
+
+### Section 5 - Forms & User Input (`/datasets/manage/`)
+
+| Rubric item | Evidence |
+| --- | --- |
+| GET form works | filters the dataset list by source team via `?team=...` |
+| POST form works | registers a new `Dataset`, success message shown, Post/Redirect/Get |
+| CSRF correctly implemented | POST without a token is rejected (403); with the real token it succeeds (302) |
+| CBV adapted for input handling | one `DatasetManageView(View)` implements both `get()` and `post()` |
+
+GET filter:
+
+![Dataset manage - GET filter by source team](docs/screenshots/a3/s5_get_filter.png)
+
+POST create (success message + new row):
+
+![Dataset manage - POST create, success message and new dataset in the list](docs/screenshots/a3/s5_post_create.png)
+
+CSRF enforcement:
+
+![CSRF proof - rejected without a token, accepted with one](docs/screenshots/a3/s5_csrf_proof.png)
 
 ## Project layout
 
