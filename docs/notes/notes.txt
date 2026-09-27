@@ -665,3 +665,37 @@ python manage.py test data_quality: 47 passing (34 from A2 + 13 new).
 
   - base.html's nav doesn't link to /contracts/search/ yet - leaving that
     to Ashok since it's his file.
+
+
+=============================================
+A3 - WEEKLY PROGRESS UPDATE (Week of 2026-09-26) - Hriday, Section 5
+=============================================
+
+26. SECTION 5 (FORMS & USER INPUT)
+
+View:  data_quality.views.DatasetManageView (django.views.View)
+Form:  data_quality.forms.DatasetForm (ModelForm, model = Dataset)
+URL:   /datasets/manage/  (name: data_quality:dataset-manage)
+Template: data_quality/templates/data_quality/dataset_manage.html
+
+  - GET: filters the dataset list by source team (?team=..., icontains).
+  - POST: registers a new Dataset. Protected by {% csrf_token %}. Required
+    fields and the (owner, name) uniqueness constraint are enforced through
+    form.is_valid() (validate_unique()), not a try/except around save().
+  - Post/Redirect/Get on success, carrying the team filter through so a
+    page refresh can't resubmit the registration.
+  - Success feedback via django.contrib.messages, shown on this page only
+    (base.html has no messages block - that's Ashok's file).
+  - No sign-up flow yet, so owner is a <select> over the seeded users.
+
+27. TESTS
+
+10 new tests (DatasetManageViewGetTests, DatasetManageViewPostTests).
+python manage.py test data_quality: 44 passing on this branch (cut from
+main before Section 2's branch merged, so its 13 tests aren't here yet -
+once both land the total should be 57).
+
+28. OPEN ITEMS FOR THE TEAM
+
+  - base.html's nav doesn't link to /datasets/manage/ yet - leaving that
+    to Ashok.

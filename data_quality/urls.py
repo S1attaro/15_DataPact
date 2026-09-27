@@ -14,6 +14,9 @@ urlpatterns = [
     path("datasets/manual/", views.dataset_manual, name="dataset-manual"),
     path("datasets/render/", views.dataset_render, name="dataset-render"),
 
-    # --- A3 Section 2: ORM search + aggregations (Hriday) ---
+    # --- Section 2: ORM search + aggregations (Hriday) ---
     path("contracts/search/", views.ContractSearchView.as_view(), name="contract-search"),
+
+    # --- Section 5: forms and user input (Hriday) ---
+    path("datasets/manage/", views.DatasetManageView.as_view(), name="dataset-manage"),
 ]

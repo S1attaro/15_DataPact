@@ -449,7 +449,6 @@ class SettingsSplitTests(TestCase):
 # ---------------------------------------------------------------
 
 class ContractSearchViewGetTests(TestCase):
-
     def setUp(self):
         self.owner = User.objects.create_user("owner1", password="pw")
         self.enrollment = Dataset.objects.create(
@@ -583,3 +582,99 @@ class ContractSearchViewPostTests(TestCase):
             reverse("data_quality:contract-search"), {"dataset": "", "resolution": ""}
         )
         self.assertEqual(response.status_code, 403)
+
+
+# ---------------------------------------------------------------
+# Section 5: DatasetManageView
+# Author: Hriday Agarwal
+# ---------------------------------------------------------------
+
+class DatasetManageViewGetTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("owner1", password="pw")
+        self.registrar_ds = Dataset.objects.create(
+            name="Monthly Enrollment Export", owner=self.owner, source_team="Registrar"
+        )
+        self.finance_ds = Dataset.objects.create(
+            name="Weekly Sales Extract", owner=self.owner, source_team="Finance"
+        )
+
+    def test_no_filter_lists_every_dataset(self):
+        response = self.client.get(reverse("data_quality:dataset-manage"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "data_quality/dataset_manage.html")
+        self.assertEqual(len(response.context["datasets"]), 2)
+
+    def test_team_query_param_filters_by_source_team(self):
+        response = self.client.get(reverse("data_quality:dataset-manage"), {"team": "Regist"})
+        datasets = list(response.context["datasets"])
+        self.assertEqual(datasets, [self.registrar_ds])
+        self.assertEqual(response.context["team"], "Regist")
+
+    def test_no_match_shows_empty_state(self):
+        response = self.client.get(reverse("data_quality:dataset-manage"), {"team": "Nonexistent"})
+        self.assertEqual(len(response.context["datasets"]), 0)
+        self.assertContains(response, "No datasets match that filter.")
+
+    def test_get_form_is_unbound_and_has_no_errors(self):
+        response = self.client.get(reverse("data_quality:dataset-manage"))
+        self.assertFalse(response.context["form"].is_bound)
+
+
+class DatasetManageViewPostTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("owner1", password="pw")
+
+    def _payload(self, **overrides):
+        payload = {
+            "name": "Facilities Work Orders",
+            "owner": self.owner.pk,
+            "source_team": "Operations",
+            "description": "",
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_valid_post_creates_dataset_and_redirects(self):
+        response = self.client.post(reverse("data_quality:dataset-manage"), self._payload())
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            Dataset.objects.filter(name="Facilities Work Orders", owner=self.owner).exists()
+        )
+
+    def test_redirect_target_shows_success_message(self):
+        response = self.client.post(
+            reverse("data_quality:dataset-manage"), self._payload(), follow=True
+        )
+        messages = list(response.context["messages"])
+        self.assertEqual(len(messages), 1)
+        self.assertIn("Facilities Work Orders", str(messages[0]))
+
+    def test_missing_required_field_is_rejected_without_creating_a_row(self):
+        response = self.client.post(reverse("data_quality:dataset-manage"), self._payload(name=""))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Dataset.objects.filter(source_team="Operations").exists())
+        self.assertTrue(response.context["form"].errors)
+
+    def test_duplicate_owner_and_name_is_rejected_by_model_constraint(self):
+        Dataset.objects.create(
+            name="Facilities Work Orders", owner=self.owner, source_team="Operations"
+        )
+        response = self.client.post(reverse("data_quality:dataset-manage"), self._payload())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            Dataset.objects.filter(name="Facilities Work Orders", owner=self.owner).count(), 1
+        )
+        self.assertTrue(response.context["form"].errors)
+
+    def test_team_filter_survives_a_failed_submission(self):
+        response = self.client.post(
+            reverse("data_quality:dataset-manage"), self._payload(name="", team="Operations")
+        )
+        self.assertEqual(response.context["team"], "Operations")
+
+    def test_post_requires_csrf_token_from_a_real_browser_form(self):
+        self.client.handler.enforce_csrf_checks = True
+        response = self.client.post(reverse("data_quality:dataset-manage"), self._payload())
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(Dataset.objects.filter(source_team="Operations").exists())

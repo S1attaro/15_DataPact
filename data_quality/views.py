@@ -1,10 +1,13 @@
+from django.contrib import messages
 from django.db.models import Count
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils.html import escape
 from django.views import View
 from django.views.generic import DetailView, ListView
 
+from .forms import DatasetForm
 from .models import Contract, Dataset, Violation
 
 
@@ -150,6 +153,52 @@ class ContractSearchView(View):
             "violation_query": violation_query,
             "violation_resolution": violation_resolution,
             "violation_results": violation_results,
+        }
+        return render(request, self.template_name, context)
+
+
+# ---------------------------------------------------------------
+# Section 5: forms and user input
+# Author: Hriday Agarwal
+# ---------------------------------------------------------------
+
+class DatasetManageView(View):
+    """GET filters the dataset list by source team, POST registers a new
+    one (Post/Redirect/Get on success)."""
+
+    template_name = "data_quality/dataset_manage.html"
+
+    def _datasets(self, team):
+        datasets = Dataset.objects.select_related("owner")
+        if team:
+            datasets = datasets.filter(source_team__icontains=team)
+        return datasets
+
+    def get(self, request):
+        team = request.GET.get("team", "").strip()
+        context = {
+            "datasets": self._datasets(team),
+            "team": team,
+            "form": DatasetForm(),
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request):
+        team = request.POST.get("team", "").strip()
+        form = DatasetForm(request.POST)
+
+        if form.is_valid():
+            dataset = form.save()
+            messages.success(request, f'Registered dataset "{dataset.name}".')
+            redirect_url = reverse("data_quality:dataset-manage")
+            if team:
+                redirect_url = f"{redirect_url}?team={team}"
+            return redirect(redirect_url)
+
+        context = {
+            "datasets": self._datasets(team),
+            "team": team,
+            "form": form,
         }
         return render(request, self.template_name, context)
 
