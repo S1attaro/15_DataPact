@@ -736,3 +736,191 @@ Section 2 + 10 from Section 5).
     requirement that it exists and is actually used. If Tejas's Section 1
     work also defines it, keep one copy - they should be identical
     (reverse("data_quality:dataset-detail", kwargs={"pk": self.pk})).
+
+
+=============================================
+A3 - WEEKLY PROGRESS UPDATE (Week of 2026-09-27) - Tejas, Sections 1 & 4
+=============================================
+
+30. SECTION 1 (URL LINKING & NAVIGATION)
+
+Home page:
+  View:     data_quality.views.home (function-based)
+  URL:      /  (name: data_quality:home)
+  Template: data_quality/templates/data_quality/home.html
+
+  Before this, "/" returned a 404 and the only way into the site was to
+  already know a URL. The page is deliberately small: three counts that
+  say whether there is anything to look at (datasets, validation runs,
+  open violations), and a card per real section. Every one of those links
+  is built with {% url %}, so renaming a route in urls.py moves the links
+  with it instead of leaving dead ends on the landing page.
+
+Navigation:
+  base.html's nav now has three working links - Datasets, Overview and
+  Quality History - plus "Upload", which is still a disabled placeholder
+  because wireframe screen 4 does not exist yet. "Quality History" was
+  already sitting there as a disabled placeholder for wireframe screen 6;
+  Section 4 built that screen, so it became a real link. The site brand
+  now points at "/" rather than at the dataset list.
+
+  Answering Hriday's open item in section 26: /contracts/search/ and
+  /datasets/manage/ are still not in the top nav - the nav is built from
+  the wireframes and those two screens were not in them. Both are linked
+  from the home page instead, so nothing is unreachable. If Ashok wants
+  them in the nav, that is his file and his call.
+
+Detail pages by primary key:
+  /datasets/<int:pk>/ (name: data_quality:dataset-detail) already existed
+  from A2. Each row of the registry links to its own dataset.
+
+31. WHICH FEATURE get_absolute_url() IS USEFUL FOR
+
+Dataset.get_absolute_url() was added by Hriday in models.py:
+
+    def get_absolute_url(self):
+        return reverse("data_quality:dataset-detail", kwargs={"pk": self.pk})
+
+The feature it earns its place in is "register a dataset, then go look at
+it". DatasetManageView's POST handler creates a Dataset and then has to
+send the browser somewhere; without this method the view would have to
+know how a dataset's URL is spelled and rebuild it from the primary key:
+
+    return redirect(dataset.get_absolute_url())      # what it does now
+
+The same argument applies to every list that links to a dataset. Four
+templates were each rebuilding the same URL by hand:
+
+    <a href="{% url 'data_quality:dataset-detail' dataset.pk %}">   before
+    <a href="{{ dataset.get_absolute_url }}">                       after
+
+changed in dataset_list.html, dataset_overview.html, contract_search.html
+and dataset_manage.html. The point is not that it is shorter. It is that
+"where does a dataset live?" is now answered in exactly one place. If the
+route ever becomes /datasets/<slug>/, one method changes and every link
+in the project follows; before, five call sites would have had to be
+found and fixed by hand, and any that were missed would 404 silently.
+
+32. SECTION 4 (DATA VISUALIZATION - MATPLOTLIB)
+
+  Aggregation + drawing: data_quality/charts.py
+  Page view:  data_quality.views.quality_history
+  Page URL:   /quality/  (name: data_quality:quality-history)
+  Image view: data_quality.views.run_outcomes_chart
+  Image URL:  /quality/run-outcomes.png  (name: data_quality:run-outcomes-chart)
+  Template:   data_quality/templates/data_quality/quality_history.html
+
+What it shows: how many validation runs ended PASSED, FAILED or ERROR.
+On the current demo data that is 4 / 7 / 1 out of 12 runs.
+
+Why this chart and not another one: DataPact's whole claim is "know when
+your data breaks". Run outcomes are the headline answer to that. It was
+also the only candidate where every category actually has records - a
+chart of violations by rule type would have had two permanently empty
+bars on this data (NOT_NULL and UNIQUE rules have never failed), and
+there is no severity field on Violation to chart at all.
+
+The ORM query:
+
+    ValidationRun.objects.values("status").annotate(total=Count("id"))
+
+Grain: one ValidationRun is one file checked against one contract
+version, so a dataset contributes one row per file it has submitted. The
+count is of runs, not of failed rows - failed_row_count lives on
+Violation, which is a different grain, and mixing the two would produce a
+number that means nothing.
+
+Runs against retired contract versions are included on purpose. What
+happened in September does not stop being history because the contract it
+was judged against has since been superseded.
+
+Two things the query deliberately does not leave to the database. A
+status with no runs is filled in as 0 rather than dropped, so the chart
+keeps a fixed set of bars instead of silently losing one; and the order
+comes from ValidationRun.Status.choices, not from whatever order rows
+come back in, so the x-axis does not reshuffle itself between page loads.
+
+Memory and the image endpoint:
+  - matplotlib.use("Agg") pins the backend. Agg draws into memory with no
+    window system; without it, matplotlib on a machine with no display
+    can fail outright.
+  - The figure is written to an io.BytesIO buffer and returned as
+    HttpResponse(..., content_type="image/png"). Nothing is written to
+    disk: the picture is derived from the database and changes whenever a
+    run is recorded, so caching it as a file would mean owning cache
+    invalidation for something that takes milliseconds to draw.
+  - Drawing uses Figure + FigureCanvasAgg directly rather than pyplot.
+    This was changed after code review. pyplot keeps one process-wide
+    registry of every figure it creates, and Django answers requests on
+    threads - runserver does by default, and so does any real WSGI server
+    - so two people opening the chart at once would be mutating that
+    shared registry from two threads. A Figure built directly owns no
+    global state: it is an ordinary object, garbage-collected when the
+    request ends, so there is nothing to race on and nothing to leak.
+    Two tests cover it: one hits the endpoint repeatedly and asserts the
+    number of live Figure objects does not grow, the other asserts the
+    pyplot registry stays empty. Both fail if the code is changed back to
+    plt.subplots(). This is the kind of bug that never shows up until the
+    page has been hit a few thousand times.
+
+Empty database: the endpoint still returns a valid PNG rather than a 500
+or a broken image. The bars are drawn at zero and the image says "No
+validation runs recorded yet" on its face, because an all-zero chart with
+no explanation looks like something failed to load.
+
+Accessibility: the <img> alt text is generated from the same numbers the
+chart is drawn from ("Passed: 4 runs. Failed: 7 runs. Error: 1 run."),
+and the page repeats the figures in a plain table underneath. An image on
+its own would put the numbers out of reach of a screen reader, and out of
+reach of anyone whose connection drops the image.
+
+33. TESTS
+
+31 new tests. python manage.py test data_quality: 88 passing
+(57 before this branch + 31 new).
+
+  HomePageTests, NavigationTests, DatasetUrlTests - "/" resolves and
+  renders, nav has at least three links and all of them return 200,
+  get_absolute_url matches the pk route, following a registry link lands
+  on that dataset, and no template hard-codes an application path.
+
+  RunOutcomeAggregationTests - grouping, zero-fill, model ordering, empty
+  database, and that the aggregation is a single query.
+
+  RunOutcomesChartTests, QualityHistoryPageTests - the endpoint returns
+  image/png with real PNG bytes, still returns a PNG with no runs
+  recorded, leaves no matplotlib figures open, redraws when the data
+  changes, and the page embeds the chart through a reversed URL with
+  descriptive alt text.
+
+34. DEPENDENCY
+
+matplotlib==3.11.2 added to requirements.txt, verified against the
+project's Python 3.14. After pulling this branch, run
+
+    pip install -r requirements.txt
+
+again or /quality/ will fail to import.
+
+35. OPEN ITEMS FOR THE TEAM
+
+  - Section 3 (Ashok) is still to come. Below roughly 620px the site
+    overflows sideways - the nav, the footer and wide tables all run off
+    the right edge. That is base.html's layout, not anything added this
+    week: /datasets/ does the same thing on main today. Flagging it for
+    whoever does the styling pass.
+  - The chart is served by a Django view, not from static/, so it is not
+    affected by collectstatic or by DEBUG=False. Section 3 does not need
+    to do anything to keep it working.
+  - Screenshot naming is inconsistent across A3: Connor used flat names
+    (a3_api_datasets.png), Hriday used docs/screenshots/a3/sN_*.png.
+    These sections follow Hriday's, as docs/screenshots/a3/s1_*.png and
+    s4_*.png. Worth settling on one before submission.
+  - Connor's dataset_api has no tests. Not blocking anything, but it is
+    the only view in the project without coverage.
+
+Screenshots: docs/screenshots/a3/s1_home.png (home page),
+s1_navigation.png (nav working - Overview reached from the nav bar),
+s1_detail_via_link.png (dataset detail opened from a registry link),
+s4_quality_history.png (Quality History page with the chart),
+s4_chart_endpoint.png (/quality/run-outcomes.png on its own).
