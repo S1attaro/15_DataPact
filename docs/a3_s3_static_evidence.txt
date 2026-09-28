@@ -1,0 +1,53 @@
+DataPact - A3 Section 3 evidence: static files and cache busting
+Captured 2026-09-28 by Ashok Chacko.
+
+The dev and prod screenshots look identical on purpose - that is the
+point of the change. What differs is the URL the stylesheet is served
+under, and that is only visible in the response, so it is recorded here.
+
+===================================================================
+1. DEVELOPMENT MODE  (DEBUG = True, django.contrib.staticfiles)
+===================================================================
+
+$ curl -s http://127.0.0.1:8801/datasets/ | grep datapact.css
+    <link rel="stylesheet" href="/static/data_quality/css/datapact.css">
+
+$ curl -sI http://127.0.0.1:8801/static/data_quality/css/datapact.css
+    HTTP/1.1 200 OK
+    Content-Type: text/css
+    (no Cache-Control: the dev server does not want anything cached)
+
+===================================================================
+2. PRODUCTION MODE  (DEBUG = False, WhiteNoise + hashed filenames)
+===================================================================
+
+$ python manage.py collectstatic --settings=datapact_project.settings.production
+    129 static files copied, 387 post-processed.
+
+$ curl -s http://127.0.0.1:8802/datasets/ | grep datapact.css
+    <link rel="stylesheet" href="/static/data_quality/css/datapact.e5ab6567e31e.css">
+
+$ curl -sI http://127.0.0.1:8802/static/data_quality/css/datapact.e5ab6567e31e.css
+    HTTP/1.1 200 OK
+    Content-Type: text/css; charset="utf-8"
+    Cache-Control: max-age=315360000, public, immutable
+
+The filename now carries a hash of the file's contents, and the response
+says the browser may cache it for 10 years and never revalidate.
+That pair is what makes it safe: the URL cannot go stale, because
+editing the CSS produces a different hash and therefore a different URL.
+
+$ curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8802/static/data_quality/css/datapact.css
+    200   (the un-hashed name is still served, un-cached)
+
+===================================================================
+3. MANIFEST
+===================================================================
+
+staticfiles/staticfiles.json, written by collectstatic, is what
+{% static %} reads to turn a plain name into the hashed one:
+
+    data_quality/css/datapact.css
+      -> data_quality/css/datapact.e5ab6567e31e.css
+    data_quality/img/datapact-logo.svg
+      -> data_quality/img/datapact-logo.80e188605662.svg
