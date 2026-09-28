@@ -267,7 +267,7 @@ identical in both dev and prod mode without a collectstatic step.
 <body>
     <header class="topbar">
         <div class="topbar__inner">
-            <a class="brand" href="{% url 'data_quality:dataset-list' %}">DATA<span>PACT</span></a>
+            <a class="brand" href="{% url 'data_quality:home' %}">DATA<span>PACT</span></a>
             <nav class="mainnav">
                 {% comment %}
                     request.resolver_match.url_name is the name= of the route
@@ -279,7 +279,8 @@ identical in both dev and prod mode without a collectstatic step.
                 <a href="{% url 'data_quality:dataset-cbv-base' %}"
                    class="{% if request.resolver_match.url_name == 'dataset-cbv-base' %}is-active{% endif %}">Overview</a>
                 <span class="mainnav__planned" title="Wireframe screen 4 - not built yet">Upload</span>
-                <span class="mainnav__planned" title="Wireframe screen 6 - not built yet">Quality History</span>
+                <a href="{% url 'data_quality:quality-history' %}"
+                   class="{% if request.resolver_match.url_name == 'quality-history' %}is-active{% endif %}">Quality History</a>
             </nav>
         </div>
     </header>

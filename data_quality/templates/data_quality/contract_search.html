@@ -85,7 +85,7 @@
                 {% for contract in filtered_contracts %}
                     <tr>
                         <td>
-                            <a href="{% url 'data_quality:dataset-detail' contract.dataset.pk %}">{{ contract.dataset.name }}</a>
+                            <a href="{{ contract.dataset.get_absolute_url }}">{{ contract.dataset.name }}</a>
                         </td>
                         <td>v{{ contract.version_number }}</td>
                         <td>{% include "data_quality/includes/_status_badge.html" with status=contract.status only %}</td>
