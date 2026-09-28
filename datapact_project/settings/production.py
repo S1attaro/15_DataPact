@@ -51,6 +51,17 @@ STORAGES = {
     },
 }
 
+# Let WhiteNoise also serve files straight from each app's static/ folder,
+# not only from STATIC_ROOT.
+#
+# Normally production serves the collected copy and nothing else, which is
+# faster and catches a forgotten collectstatic loudly. This project is marked
+# by someone running it from a fresh clone, and an unstyled site with a 404 on
+# the stylesheet is a worse first impression than a slightly slower lookup. So
+# the site is styled whether or not collectstatic has run; running it is still
+# what turns on the content hashing and the immutable cache header above.
+WHITENOISE_USE_FINDERS = True
+
 # HTTPS-only hardening (SECURE_SSL_REDIRECT, secure cookies, HSTS) is left off
 # on purpose: it would break the plain-http local production-mode run that A2
 # asks us to demonstrate. Enable it together with a real HTTPS deployment.

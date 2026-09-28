@@ -32,3 +32,22 @@ class CacheBustedStaticFilesStorage(CompressedManifestStaticFilesStorage):
     """
 
     manifest_strict = False
+
+    def hashed_name(self, name, content=None, filename=None):
+        """
+        Fall back to the plain name when the file is not in STATIC_ROOT.
+
+        manifest_strict = False on its own is not enough. With no manifest
+        entry, the base class tries to compute the hash from the collected
+        copy of the file - and if collectstatic never ran there is no
+        collected copy, so it raises ValueError and the page 500s anyway.
+        Catching that returns the un-hashed name instead.
+
+        Paired with WHITENOISE_USE_FINDERS in production.py, which lets
+        WhiteNoise serve that un-hashed name straight from the app's
+        static/ folder, so the site is styled either way.
+        """
+        try:
+            return super().hashed_name(name, content, filename)
+        except ValueError:
+            return name

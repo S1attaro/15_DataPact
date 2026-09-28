@@ -1,5 +1,6 @@
 import importlib
 import os
+import tempfile
 import re
 import sys
 from pathlib import Path
@@ -747,6 +748,31 @@ class CacheBustingStorageTests(TestCase):
         from datapact_project.storages import CacheBustedStaticFilesStorage
 
         self.assertFalse(CacheBustedStaticFilesStorage.manifest_strict)
+
+    def test_storage_falls_back_to_the_plain_name_when_nothing_is_collected(self):
+        """
+        Regression. manifest_strict = False alone was not enough: with no
+        manifest the base class still tries to hash the collected copy of the
+        file, and on a fresh clone there is no collected copy, so it raised
+        ValueError and every production page returned 500.
+        """
+        from datapact_project.storages import CacheBustedStaticFilesStorage
+
+        with tempfile.TemporaryDirectory() as empty_static_root:
+            storage = CacheBustedStaticFilesStorage(location=empty_static_root)
+            self.assertEqual(
+                storage.hashed_name("data_quality/css/datapact.css"),
+                "data_quality/css/datapact.css",
+            )
+
+    def test_production_serves_uncollected_files_through_the_finders(self):
+        """
+        The fallback above only yields a working page if something can serve
+        that plain name. WhiteNoise serves STATIC_ROOT alone unless told to
+        use the finders too, and STATIC_ROOT is empty before collectstatic.
+        """
+        production = importlib.import_module("datapact_project.settings.production")
+        self.assertTrue(production.WHITENOISE_USE_FINDERS)
 
     def test_production_uses_the_cache_busting_backend(self):
         production = importlib.import_module("datapact_project.settings.production")

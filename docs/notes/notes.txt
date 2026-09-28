@@ -857,13 +857,38 @@ and the flash message renders exactly once.
 
 32. CHALLENGES
 
-  - First version of production.py checked for staticfiles.json at
-    import time and raised ImproperlyConfigured if collectstatic had not
-    run. It broke three of Tejas's settings tests instantly, because
-    importing a settings module is not the same as serving a request.
-    Replaced with CacheBustedStaticFilesStorage (manifest_strict =
-    False), which falls back to the un-hashed name instead of raising.
-    A grader who skips collectstatic still gets a working, styled site.
+  - Making production survive a missing collectstatic took three tries,
+    and the first two both looked finished.
+
+    1. production.py checked for staticfiles.json at import time and
+       raised ImproperlyConfigured. It broke three of Tejas's settings
+       tests instantly: importing a settings module is not the same as
+       serving a request, and the test suite imports it.
+
+    2. Replaced that with CacheBustedStaticFilesStorage and
+       manifest_strict = False. I wrote it up as fixed. It was not -
+       I had not actually run production mode without staticfiles/.
+       When I did, every page still returned 500. manifest_strict only
+       skips the "missing manifest entry" error; the base class then
+       tries to hash the collected copy of the file, and on a fresh
+       clone there is no collected copy, so it raises ValueError from
+       one line further down.
+
+    3. What works: override hashed_name() to return the plain name when
+       that ValueError fires, and set WHITENOISE_USE_FINDERS = True so
+       WhiteNoise will serve that plain name out of the app's static/
+       folder. Both halves are needed - without the second, the URL
+       falls back correctly and then 404s, because WhiteNoise only
+       serves STATIC_ROOT and STATIC_ROOT is empty.
+
+    Verified both ways this time, not assumed: with staticfiles/ moved
+    aside the page is 200 and the CSS is 200 at the plain name; with it
+    restored the URL carries the hash and the immutable cache header.
+    Two regression tests cover it.
+
+    The lesson I actually take from this: "the fallback handles it" is
+    a claim about behaviour, and I had written it in a commit message
+    before running the thing it describes.
   - The screenshots for dev and prod are byte-identical, which looks
     like a mistake in a folder of evidence. Kept both, and wrote
     docs/a3_s3_static_evidence.txt to carry the part a screenshot
