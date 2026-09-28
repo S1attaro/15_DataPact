@@ -10,3 +10,5 @@ __pycache__/
 .vscode/
 .DS_Store
 *.local.sqlite3
+# collectstatic output (generated; source lives in data_quality/static/)
+staticfiles/

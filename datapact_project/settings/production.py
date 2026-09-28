@@ -28,6 +28,29 @@ if SECRET_KEY.startswith('django-insecure-') or SECRET_KEY == 'replace-with-a-ne
         "get_random_secret_key as g; print(g())\" and put it in .env."
     )
 
+# Static files (Section 3, Ashok)
+#
+# CompressedManifestStaticFilesStorage renames every file to include a hash of
+# its contents at collectstatic time - datapact.css becomes
+# datapact.<hash>.css - and rewrites {% static %} to point at that name. That
+# is the cache-busting the rubric asks about: the URL changes only when the
+# file changes, so browsers and CDNs can cache it forever and still pick up an
+# edit immediately. It also writes a pre-compressed .gz/.br alongside each file
+# for WhiteNoise to serve.
+#
+# Run `python manage.py collectstatic` before serving in production mode.
+# If it has not been run, CacheBustedStaticFilesStorage falls back to the
+# plain filename rather than raising, so the site still renders - see
+# datapact_project/storages.py.
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'datapact_project.storages.CacheBustedStaticFilesStorage',
+    },
+}
+
 # HTTPS-only hardening (SECURE_SSL_REDIRECT, secure cookies, HSTS) is left off
 # on purpose: it would break the plain-http local production-mode run that A2
 # asks us to demonstrate. Enable it together with a real HTTPS deployment.
