@@ -12,13 +12,11 @@
 {% block content %}
     <p class="viewchip">Rendered by: <code>DatasetManageView (django.views.View, GET + POST)</code></p>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="panel">
-                <div class="panel__body">{{ message }}</div>
-            </div>
-        {% endfor %}
-    {% endif %}
+    {% comment %}
+        The success message this page sets is rendered by base.html now, for
+        every page at once (Section 3). The local loop that used to live here
+        would show it a second time.
+    {% endcomment %}
 
     <div class="panel">
         <div class="panel__head">
