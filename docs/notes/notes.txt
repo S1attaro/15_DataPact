@@ -1127,8 +1127,14 @@ route returns 200 in both modes.
 
 My five screenshots were re-captured after the merge, because the
 originals were taken before Ashok's stylesheet existed and no longer
-matched what the site looks like. Ashok's own Section 3 screenshots
-still show Quality History as a greyed-out placeholder rather than the
-live link it now is; the CSS behaviour they were taken to demonstrate is
-unaffected, so I have left his evidence alone rather than re-shooting
-someone else's work. Worth a look before submission.
+matched what the site looks like.
+
+Ashok's four Section 3 screenshots were re-captured too: they still
+showed Quality History greyed out as a placeholder rather than the live
+link it now is. Same pages, same framing, same 2x capture scale, same
+filenames - only the nav differs. Shot separately from the development
+and production servers, s3_css_applied.png and s3_prod_mode_css.png came
+out byte-identical again, which is exactly the point that pair was there
+to make: both modes render the same and only the URL differs
+(datapact.css against the hashed datapact.a6a827b9dff1.css). The CSS,
+logo, form styling and cache busting they demonstrate are unchanged.
