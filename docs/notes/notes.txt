@@ -736,3 +736,171 @@ Section 2 + 10 from Section 5).
     requirement that it exists and is actually used. If Tejas's Section 1
     work also defines it, keep one copy - they should be identical
     (reverse("data_quality:dataset-detail", kwargs={"pk": self.pk})).
+
+
+=============================================
+A3 - WEEKLY PROGRESS UPDATE (Week of 2026-09-28) - Ashok, Section 3
+=============================================
+
+30. SECTION 3 (STATIC FILES & UI STYLING)
+
+Files:
+  data_quality/static/data_quality/css/datapact.css   whole-site stylesheet
+  data_quality/static/data_quality/img/datapact-logo.svg  logo + favicon
+  datapact_project/storages.py                        cache-busting storage
+
+STATIC FILE ORGANIZATION CHOICE (asked for by the rubric)
+
+App level, not project level: data_quality/static/data_quality/...
+
+  The app owns these files the same way it owns its templates, so they
+  travel with it. The app-directories finder is on by default, which
+  means no STATICFILES_DIRS entry and one less thing in settings that
+  can be wrong.
+
+  The doubled folder name is not a typo. Everything under every app's
+  static/ is flattened into one namespace by collectstatic, so a bare
+  css/style.css in two apps would collide and one would silently win.
+  Nesting under the app name makes the path unique. Same reasoning as
+  templates/data_quality/.
+
+  A project-level static/ would have been the alternative. It suits
+  assets that belong to the site rather than to one app - a favicon for
+  the whole domain, a shared brand kit. We have one app, so that would
+  have been a directory in settings for no gain today.
+
+CACHE BUSTING (rubric asks for the explanation; implemented for the bonus)
+
+  The problem: a browser told to cache datapact.css for a year will keep
+  serving the old copy after we edit it. Tell it not to cache, and every
+  page load re-downloads the file for no reason.
+
+  The fix is to make the filename depend on the contents. In production,
+  collectstatic hashes each file and writes a copy under the hashed name:
+
+    datapact.css  ->  datapact.e5ab6567e31e.css
+
+  and records the mapping in staticfiles/staticfiles.json. {% static %}
+  reads the manifest, so base.html emits the hashed URL. WhiteNoise then
+  serves it with:
+
+    Cache-Control: max-age=315360000, public, immutable
+
+  Ten years, never revalidate. That is safe precisely because the name
+  changes: edit the CSS and the hash changes, so the next page asks for a
+  URL nothing has cached. Stale CSS stops being possible, and nobody has
+  to remember to hard-refresh.
+
+  Development skips all of this. DEBUG = True serves the plain filename
+  straight from the app folder, so an edit shows up on reload.
+
+  Full transcript of both modes: docs/a3_s3_static_evidence.txt.
+
+WHY THE CSS COULD NOT JUST BE MOVED
+
+  In A2 I kept the stylesheet inline in base.html, and said in section 19
+  that a file under static/ would load in dev and 404 in prod, because
+  runserver serves no static files once DEBUG = False. Tejas confirmed
+  that in section 20. Section 3 requires real static files, so the fix
+  had to come with it rather than after it.
+
+  WhiteNoise (whitenoise==6.11.0, new in requirements.txt) is now the
+  first middleware after SecurityMiddleware and serves STATIC_ROOT in
+  production. Both modes now look identical, which is what the two
+  screenshots show - s3_css_applied.png and s3_prod_mode_css.png are the
+  same image on purpose. The difference is in the URL, not the pixels,
+  which is why the evidence file exists.
+
+TEJAS - settings files I touched, all in labelled blocks:
+  settings/base.py    WhiteNoise middleware, STATIC_ROOT
+  settings/production.py  STORAGES -> datapact_project.storages
+  storages.py         new file
+  requirements.txt    whitenoise==6.11.0
+  .gitignore          staticfiles/ (generated output)
+  Everything else in those files is untouched. Re-run pip install -r
+  requirements.txt after pulling.
+
+UI WORK
+
+  - Logo: an SVG mark (document outline, three data rows, green check)
+    in the top bar and as the favicon. Second static asset on purpose -
+    it shows the pipeline handles more than CSS.
+  - Forms: the Section 2 and Section 5 pages had no form styling at all,
+    because base.html had never needed any. Added rules for label,
+    input, select, textarea, focus rings, buttons, and Django's own
+    .errorlist and .helptext. These target bare elements rather than
+    classes, so Hriday's templates pick the styling up without being
+    rewritten.
+  - Flash messages: base.html now renders django.contrib.messages for
+    every page, coloured by message.tags. Removed the local copy in
+    dataset_manage.html so the message no longer renders twice.
+  - Panels got a 1px shadow; nav wraps and inputs go full width on a
+    phone.
+
+HANDOFFS I PICKED UP (sections 26 and 29)
+
+  - base.html nav now links /contracts/search/ ("Contracts") and
+    /datasets/manage/ ("Manage"), both with the active-page underline.
+  - base.html has the messages block Hriday asked for. HRIDAY - your
+    success message now appears on the dataset detail page it redirects
+    to, which it could not do before; there is a test for it.
+
+31. TESTS
+
+11 new (StaticAssetTests, CacheBustingStorageTests, SiteChromeTests).
+python manage.py test data_quality: 68 passing (57 before + 11).
+
+The useful ones: staticfiles.finders actually locates both assets
+(a {% static %} URL is only a string otherwise), the page contains no
+<style> block any more, WhiteNoise sits in the right middleware slot,
+and the flash message renders exactly once.
+
+32. CHALLENGES
+
+  - Making production survive a missing collectstatic took three tries,
+    and the first two both looked finished.
+
+    1. production.py checked for staticfiles.json at import time and
+       raised ImproperlyConfigured. It broke three of Tejas's settings
+       tests instantly: importing a settings module is not the same as
+       serving a request, and the test suite imports it.
+
+    2. Replaced that with CacheBustedStaticFilesStorage and
+       manifest_strict = False. I wrote it up as fixed. It was not -
+       I had not actually run production mode without staticfiles/.
+       When I did, every page still returned 500. manifest_strict only
+       skips the "missing manifest entry" error; the base class then
+       tries to hash the collected copy of the file, and on a fresh
+       clone there is no collected copy, so it raises ValueError from
+       one line further down.
+
+    3. What works: override hashed_name() to return the plain name when
+       that ValueError fires, and set WHITENOISE_USE_FINDERS = True so
+       WhiteNoise will serve that plain name out of the app's static/
+       folder. Both halves are needed - without the second, the URL
+       falls back correctly and then 404s, because WhiteNoise only
+       serves STATIC_ROOT and STATIC_ROOT is empty.
+
+    Verified both ways this time, not assumed: with staticfiles/ moved
+    aside the page is 200 and the CSS is 200 at the plain name; with it
+    restored the URL carries the hash and the immutable cache header.
+    Two regression tests cover it.
+
+    The lesson I actually take from this: "the fallback handles it" is
+    a claim about behaviour, and I had written it in a commit message
+    before running the thing it describes.
+  - The screenshots for dev and prod are byte-identical, which looks
+    like a mistake in a folder of evidence. Kept both, and wrote
+    docs/a3_s3_static_evidence.txt to carry the part a screenshot
+    cannot show.
+
+33. OPEN ITEMS
+
+  - TEJAS: your branch tejas/a3-section1-section4 also edits base.html's
+    nav (brand -> home, Quality History -> a real link). We will conflict
+    in that one block. Mine adds Contracts and Manage next to it; yours
+    adds home and Quality History. The resolution is to keep all of it.
+    Whoever merges second, ping me and I will resolve it.
+  - Sections 1 and 4 are still unmerged, so /quality/ and the home page
+    at / do not exist on main yet. Nav still shows Quality History as a
+    greyed-out planned item until that lands.

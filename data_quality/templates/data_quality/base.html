@@ -1,3 +1,4 @@
+{% load static %}
 {% comment %}
 =============================================================================
 DataPact - base template
@@ -20,10 +21,12 @@ Blocks a child template can override:
   page_actions    primary buttons on the right of the page header
   content         the body of the page (this is the one every child fills)
 
-Styling note: the CSS lives inline in this file on purpose rather than in
-data_quality/static/. Django's dev server does not serve static files when
-DEBUG = False, so an inline stylesheet is the one version that looks
-identical in both dev and prod mode without a collectstatic step.
+Styling note (changed in A3): the stylesheet used to live inline in this
+file, because runserver serves no static files once DEBUG = False and an
+inline <style> was the only version that looked identical in both modes.
+A3 Section 3 requires real static files, so the CSS moved to
+data_quality/static/data_quality/css/datapact.css and WhiteNoise now serves
+it in production. See docs/notes/notes.txt section 30.
 =============================================================================
 {% endcomment %}
 <!DOCTYPE html>
@@ -32,242 +35,17 @@ identical in both dev and prod mode without a collectstatic step.
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}DataPact{% endblock %}</title>
-    <style>
-        /* ---- design tokens ------------------------------------------- */
-        :root {
-            --ink:        #16202c;
-            --ink-soft:   #5a6672;
-            --ink-faint:  #8b959f;
-            --line:       #e3e7ec;
-            --surface:    #ffffff;
-            --canvas:     #f6f7f9;
-            --bar:        #16202c;
-            --accent:     #2f5bd7;
-            --pass-bg:    #e3f4e8;  --pass-ink:   #1d6b36;
-            --fail-bg:    #fce4e4;  --fail-ink:   #a12a2a;
-            --warn-bg:    #fdf3d8;  --warn-ink:   #855c11;
-            --radius:     8px;
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-            margin: 0;
-            background: var(--canvas);
-            color: var(--ink);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                         Helvetica, Arial, sans-serif;
-            font-size: 15px;
-            line-height: 1.5;
-        }
-
-        /* ---- top navigation ------------------------------------------ */
-        .topbar { background: var(--bar); color: #fff; }
-
-        .topbar__inner {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 0 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 2rem;
-            min-height: 56px;
-        }
-
-        .brand {
-            color: #fff;
-            text-decoration: none;
-            font-weight: 700;
-            letter-spacing: 0.14em;
-            font-size: 0.95rem;
-        }
-        .brand span { color: #8fb0ff; }
-
-        .mainnav { display: flex; gap: 1.5rem; font-size: 0.9rem; }
-
-        .mainnav a {
-            color: #c4ccd6;
-            text-decoration: none;
-            padding: 0.25rem 0;
-            border-bottom: 2px solid transparent;
-        }
-        .mainnav a:hover { color: #fff; }
-        .mainnav a.is-active { color: #fff; border-bottom-color: #8fb0ff; }
-
-        /* Screens 4-6 of the wireframes are not built yet. They are shown
-           greyed out so the navigation matches the design without pointing
-           at URLs that do not exist. */
-        .mainnav__planned { color: #5d6875; cursor: not-allowed; }
-
-        /* ---- page frame ---------------------------------------------- */
-        .page { max-width: 1000px; margin: 0 auto; padding: 1.75rem 1.5rem 3rem; }
-
-        .breadcrumbs { font-size: 0.85rem; color: var(--ink-faint); margin-bottom: 1rem; }
-        .breadcrumbs a { color: var(--ink-soft); text-decoration: none; }
-        .breadcrumbs a:hover { color: var(--accent); text-decoration: underline; }
-
-        .page__header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin-bottom: 1.5rem;
-        }
-        .page__title { margin: 0; font-size: 1.6rem; letter-spacing: -0.01em; }
-        .page__subtitle { margin: 0.35rem 0 0; color: var(--ink-soft); font-size: 0.9rem; }
-
-        /* ---- buttons -------------------------------------------------- */
-        .btn {
-            display: inline-block;
-            padding: 0.5rem 0.9rem;
-            border-radius: var(--radius);
-            font-size: 0.88rem;
-            font-weight: 600;
-            text-decoration: none;
-            border: 1px solid var(--line);
-            background: var(--surface);
-            color: var(--ink);
-        }
-        .btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-        .btn--disabled { opacity: 0.45; cursor: not-allowed; }
-
-        /* ---- panels and tables ---------------------------------------- */
-        .panel {
-            background: var(--surface);
-            border: 1px solid var(--line);
-            border-radius: var(--radius);
-            /* auto, not hidden: it still clips the table's square corners to
-               the panel's rounded ones, but on a narrow screen a wide table
-               becomes scrollable instead of having its last column cut off
-               with no way to reach it. */
-            overflow: auto;
-            margin-bottom: 1.5rem;
-        }
-        .panel__head {
-            padding: 0.85rem 1.1rem;
-            border-bottom: 1px solid var(--line);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-        }
-        .panel__title {
-            margin: 0;
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.09em;
-            text-transform: uppercase;
-            color: var(--ink-soft);
-        }
-        .panel__body { padding: 1.1rem; }
-
-        .datatable { width: 100%; border-collapse: collapse; }
-        .datatable th {
-            text-align: left;
-            padding: 0.6rem 1.1rem;
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.07em;
-            text-transform: uppercase;
-            color: var(--ink-soft);
-            background: #fafbfc;
-            border-bottom: 1px solid var(--line);
-        }
-        .datatable td { padding: 0.75rem 1.1rem; border-bottom: 1px solid #f0f2f5; }
-        .datatable tbody tr:last-child td { border-bottom: none; }
-        .datatable tbody tr:hover { background: #fafbfd; }
-        .datatable a { color: var(--accent); text-decoration: none; font-weight: 600; }
-        .datatable a:hover { text-decoration: underline; }
-        .datatable .num { text-align: right; font-variant-numeric: tabular-nums; }
-        .datatable .muted { color: var(--ink-faint); }
-
-        /* A row that holds nothing but the empty state should not look
-           like a data row. */
-        .datatable .is-emptyrow td { border-bottom: none; padding: 0; }
-        .datatable tbody tr.is-emptyrow:hover { background: transparent; }
-
-        /* ---- badges and chips ----------------------------------------- */
-        .badge {
-            display: inline-block;
-            padding: 0.15rem 0.55rem;
-            border-radius: 999px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            background: #eef0f3;
-            color: var(--ink-soft);
-        }
-        .badge--active, .badge--passed { background: var(--pass-bg); color: var(--pass-ink); }
-        .badge--retired, .badge--failed { background: var(--fail-bg); color: var(--fail-ink); }
-        .badge--draft, .badge--error   { background: var(--warn-bg); color: var(--warn-ink); }
-
-        /* Small label naming the view kind that rendered the page. It makes
-           the A2 screenshots self-describing. */
-        .viewchip {
-            display: inline-block;
-            margin-bottom: 1rem;
-            padding: 0.2rem 0.6rem;
-            border: 1px dashed var(--line);
-            border-radius: 999px;
-            font-size: 0.75rem;
-            color: var(--ink-faint);
-            background: var(--surface);
-        }
-        .viewchip code { font-size: 0.75rem; color: var(--ink-soft); }
-
-        /* ---- empty state ---------------------------------------------- */
-        .empty-state {
-            padding: 3rem 1.5rem;
-            text-align: center;
-            color: var(--ink-soft);
-        }
-        .empty-state__mark {
-            width: 40px; height: 40px;
-            margin: 0 auto 0.9rem;
-            border: 2px dashed var(--ink-faint);
-            border-radius: var(--radius);
-            opacity: 0.55;
-        }
-        .empty-state__headline { margin: 0 0 0.35rem; font-weight: 700; color: var(--ink); }
-        .empty-state__message  { margin: 0 0 1.1rem; font-size: 0.9rem; }
-
-        /* ---- definition list used on the detail page ------------------ */
-        .factlist { display: flex; flex-wrap: wrap; gap: 1.75rem; margin: 0; }
-        .factlist div { min-width: 120px; }
-        .factlist dt {
-            font-size: 0.7rem;
-            font-weight: 700;
-            letter-spacing: 0.07em;
-            text-transform: uppercase;
-            color: var(--ink-faint);
-        }
-        .factlist dd { margin: 0.2rem 0 0; }
-
-        .prose { color: var(--ink-soft); max-width: 62ch; }
-
-        /* ---- footer ---------------------------------------------------- */
-        .sitefoot {
-            border-top: 1px solid var(--line);
-            padding: 1.25rem 1.5rem;
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--ink-faint);
-        }
-
-        @media (max-width: 620px) {
-            .topbar__inner { flex-wrap: wrap; gap: 0.75rem; padding: 0.75rem 1rem; }
-            .page { padding: 1.25rem 1rem 2rem; }
-            .factlist { gap: 1rem; }
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'data_quality/css/datapact.css' %}">
+    <link rel="icon" href="{% static 'data_quality/img/datapact-logo.svg' %}">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
     <header class="topbar">
         <div class="topbar__inner">
-            <a class="brand" href="{% url 'data_quality:dataset-list' %}">DATA<span>PACT</span></a>
+            <a class="brand" href="{% url 'data_quality:dataset-list' %}">
+                <img class="brand__logo" src="{% static 'data_quality/img/datapact-logo.svg' %}" alt="">
+                DATA<span>PACT</span>
+            </a>
             <nav class="mainnav">
                 {% comment %}
                     request.resolver_match.url_name is the name= of the route
@@ -278,6 +56,10 @@ identical in both dev and prod mode without a collectstatic step.
                    class="{% if request.resolver_match.url_name == 'dataset-list' %}is-active{% endif %}">Datasets</a>
                 <a href="{% url 'data_quality:dataset-cbv-base' %}"
                    class="{% if request.resolver_match.url_name == 'dataset-cbv-base' %}is-active{% endif %}">Overview</a>
+                <a href="{% url 'data_quality:contract-search' %}"
+                   class="{% if request.resolver_match.url_name == 'contract-search' %}is-active{% endif %}">Contracts</a>
+                <a href="{% url 'data_quality:dataset-manage' %}"
+                   class="{% if request.resolver_match.url_name == 'dataset-manage' %}is-active{% endif %}">Manage</a>
                 <span class="mainnav__planned" title="Wireframe screen 4 - not built yet">Upload</span>
                 <span class="mainnav__planned" title="Wireframe screen 6 - not built yet">Quality History</span>
             </nav>
@@ -285,6 +67,20 @@ identical in both dev and prod mode without a collectstatic step.
     </header>
 
     <main class="page">
+        {% comment %}
+            django.contrib.messages, rendered once here so every page gets
+            flash messages instead of each template repeating the loop.
+            message.tags carries the level (success, error, warning, info),
+            which becomes the modifier class the stylesheet colours.
+        {% endcomment %}
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li class="message message--{{ message.tags|default:'info' }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
         {% block breadcrumbs %}{% endblock %}
 
         <div class="page__header">

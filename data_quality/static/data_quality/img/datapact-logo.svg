@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="DataPact">
+  <title>DataPact</title>
+  <!-- The contract: a rounded document outline. -->
+  <rect x="3" y="2" width="22" height="28" rx="4"
+        fill="none" stroke="#8fb0ff" stroke-width="2.5"/>
+  <!-- Three rows of expected data, shortest last. -->
+  <rect x="8"  y="9"  width="12" height="2.2" rx="1.1" fill="#8fb0ff" opacity="0.85"/>
+  <rect x="8"  y="14" width="12" height="2.2" rx="1.1" fill="#8fb0ff" opacity="0.55"/>
+  <rect x="8"  y="19" width="7"  height="2.2" rx="1.1" fill="#8fb0ff" opacity="0.35"/>
+  <!-- The check: the file matched its contract. -->
+  <path d="M18 23.5l4 4 7.5-9" fill="none" stroke="#ffffff"
+        stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M18 23.5l4 4 7.5-9" fill="none" stroke="#3ddc84"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
