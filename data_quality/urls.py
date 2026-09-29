@@ -5,6 +5,9 @@ from . import views
 app_name = "data_quality"
 
 urlpatterns = [
+    # --- Home and navigation (Section 1, Tejas) ---
+    path("", views.home, name="home"),
+
     # --- CBVs (this section owned by Hriday) ---
     path("datasets/overview/", views.DatasetOverviewView.as_view(), name="dataset-cbv-base"),
     path("datasets/", views.DatasetListView.as_view(), name="dataset-list"),
@@ -19,6 +22,14 @@ urlpatterns = [
 
     # --- Section 5: forms and user input (Hriday) ---
     path("datasets/manage/", views.DatasetManageView.as_view(), name="dataset-manage"),
+
+    # --- Section 4: quality analytics (Tejas) ---
+    path("quality/", views.quality_history, name="quality-history"),
+    path(
+        "quality/run-outcomes.png",
+        views.run_outcomes_chart,
+        name="run-outcomes-chart",
+    ),
 
     # --- API (Section 6, owned by Connor) ---
     path("api/datasets/", views.dataset_api, name="dataset-api"),

@@ -42,7 +42,7 @@ it in production. See docs/notes/notes.txt section 30.
 <body>
     <header class="topbar">
         <div class="topbar__inner">
-            <a class="brand" href="{% url 'data_quality:dataset-list' %}">
+            <a class="brand" href="{% url 'data_quality:home' %}">
                 <img class="brand__logo" src="{% static 'data_quality/img/datapact-logo.svg' %}" alt="">
                 DATA<span>PACT</span>
             </a>
@@ -61,7 +61,8 @@ it in production. See docs/notes/notes.txt section 30.
                 <a href="{% url 'data_quality:dataset-manage' %}"
                    class="{% if request.resolver_match.url_name == 'dataset-manage' %}is-active{% endif %}">Manage</a>
                 <span class="mainnav__planned" title="Wireframe screen 4 - not built yet">Upload</span>
-                <span class="mainnav__planned" title="Wireframe screen 6 - not built yet">Quality History</span>
+                <a href="{% url 'data_quality:quality-history' %}"
+                   class="{% if request.resolver_match.url_name == 'quality-history' %}is-active{% endif %}">Quality History</a>
             </nav>
         </div>
     </header>

@@ -1,0 +1,103 @@
+{% extends "data_quality/base.html" %}
+{% comment %}
+=============================================================================
+Home page - A3 Section 1 (URL linking & navigation), Tejas Jaggi
+
+Context expected (supplied by the home() function-based view):
+    dataset_count         how many datasets are registered
+    run_count             how many validation runs have been recorded
+    open_violation_count  violations nobody has triaged yet
+
+Every link on this page is built with {% templatetag openblock %} url {% templatetag closeblock %}, so renaming a route
+in urls.py moves the links with it instead of leaving dead ends here.
+
+The styling below is scoped to this page on purpose. Section 3 (Ashok) owns
+the site-wide stylesheet in base.html; this only adds a card grid that base
+does not have, and it does so with base's own colour variables so the two
+stay in step.
+=============================================================================
+{% endcomment %}
+
+{% block title %}DataPact - Know when your data breaks, and why{% endblock %}
+
+{% block extra_head %}
+    <style>
+        .cardgrid {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        }
+        .card {
+            display: block;
+            padding: 1.1rem 1.25rem;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            text-decoration: none;
+            color: inherit;
+        }
+        .card:hover,
+        .card:focus-visible { border-color: var(--accent); }
+        .card__title { font-weight: 700; color: var(--accent); }
+        .card__note { margin: 0.35rem 0 0; color: var(--ink-soft); font-size: 0.9rem; }
+    </style>
+{% endblock %}
+
+{% block page_title %}DataPact{% endblock %}
+
+{% block page_subtitle %}
+    <p class="page__subtitle">
+        Define what a recurring dataset is supposed to contain, check every new
+        file against that contract, and keep the evidence.
+    </p>
+{% endblock %}
+
+{% block content %}
+    <div class="panel">
+        <div class="panel__head"><h2 class="panel__title">At a glance</h2></div>
+        <div class="panel__body">
+            <dl class="factlist">
+                <div>
+                    <dt>Datasets registered</dt>
+                    <dd>{{ dataset_count }}</dd>
+                </div>
+                <div>
+                    <dt>Validation runs</dt>
+                    <dd>{{ run_count }}</dd>
+                </div>
+                <div>
+                    <dt>Open violations</dt>
+                    <dd>{{ open_violation_count }}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <div class="panel" style="margin-top: 1.25rem;">
+        <div class="panel__head"><h2 class="panel__title">Where to go next</h2></div>
+        <div class="panel__body">
+            <div class="cardgrid">
+                <a class="card" href="{% url 'data_quality:dataset-list' %}">
+                    <span class="card__title">Datasets</span>
+                    <p class="card__note">Every registered dataset and who owns it.</p>
+                </a>
+                <a class="card" href="{% url 'data_quality:dataset-cbv-base' %}">
+                    <span class="card__title">Overview</span>
+                    <p class="card__note">Contract coverage and the active version per dataset.</p>
+                </a>
+                <a class="card" href="{% url 'data_quality:quality-history' %}">
+                    <span class="card__title">Quality History</span>
+                    <p class="card__note">How validation runs have been turning out.</p>
+                </a>
+                <a class="card" href="{% url 'data_quality:contract-search' %}">
+                    <span class="card__title">Contracts</span>
+                    <p class="card__note">Search contract versions and their violations.</p>
+                </a>
+                <a class="card" href="{% url 'data_quality:dataset-manage' %}">
+                    <span class="card__title">Register a dataset</span>
+                    <p class="card__note">Add a new data feed for DataPact to watch.</p>
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

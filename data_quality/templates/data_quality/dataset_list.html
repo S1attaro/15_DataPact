@@ -67,7 +67,7 @@ Optional context:
                 {% for dataset in datasets %}
                     <tr>
                         <td>
-                            <a href="{% url 'data_quality:dataset-detail' dataset.pk %}">{{ dataset.name }}</a>
+                            <a href="{{ dataset.get_absolute_url }}">{{ dataset.name }}</a>
                         </td>
                         <td>{{ dataset.owner.username }}</td>
                         <td>{{ dataset.source_team }}</td>

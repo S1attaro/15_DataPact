@@ -103,6 +103,7 @@ Skip that step and the pages still render, just without the content hash in the 
 
 | URL | View | Kind |
 | --- | --- | --- |
+| `/` | `home` | Function-based, render() |
 | `/datasets/manual/` | `dataset_manual` | Function-based, HttpResponse |
 | `/datasets/render/` | `dataset_render` | Function-based, render() |
 | `/datasets/overview/` | `DatasetOverviewView` | Class-based, View |
@@ -110,6 +111,8 @@ Skip that step and the pages still render, just without the content hash in the 
 | `/datasets/<id>/` | `DatasetDetailView` | Class-based, DetailView |
 | `/contracts/search/` | `ContractSearchView` | Class-based, View (GET search + POST lookup) |
 | `/datasets/manage/` | `DatasetManageView` | Class-based, View (GET filter + POST create) |
+| `/quality/` | `quality_history` | Function-based, render() |
+| `/quality/run-outcomes.png` | `run_outcomes_chart` | Function-based, PNG via HttpResponse |
 | `/admin/` | Django admin | Built in |
 
 
@@ -204,7 +207,7 @@ A full request/response transcript of both modes is in
 python manage.py test data_quality
 ```
 
-57 tests: the three A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, and `DatasetManageView`. Run them before you open a pull request.
+102 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, and the home page, navigation and Quality History chart. Run them before you open a pull request.
 
 ## A3, Section 2 & Section 5 (Hriday)
 
@@ -250,6 +253,50 @@ CSRF enforcement:
 
 ![CSRF proof - rejected without a token, accepted with one](docs/screenshots/a3/s5_csrf_proof.png)
 
+## A3, Section 1 & Section 4 (Tejas)
+
+### Section 1 - URL Linking & Navigation
+
+The site now has a home page at `/`. It shows three counts (datasets,
+validation runs, open violations) and links to every real section of the app.
+The top navigation carries three working links - Datasets, Overview and
+Quality History - and every link in the project is built with `{% url %}` or
+`get_absolute_url()`, so no template hard-codes a path.
+
+Dataset detail pages are keyed by primary key (`/datasets/<int:pk>/`), and the
+registry, overview, contract search and dataset manage pages all link to a
+dataset through `{{ dataset.get_absolute_url }}` rather than rebuilding that
+URL by hand. `Dataset.get_absolute_url()` is also what `DatasetManageView`
+redirects to after a successful POST, so "where does a dataset live?" is
+answered in exactly one place.
+
+### Section 4 - Data Visualization (`/quality/`)
+
+Quality History charts how DataPact's validation runs have turned out. The
+numbers come from the ORM:
+
+```python
+ValidationRun.objects.values("status").annotate(total=Count("id"))
+```
+
+One `ValidationRun` is one file checked against one contract version, so the
+chart counts runs, not rows. A status with no runs is kept at zero and the bar
+order comes from the model rather than the database, so the axis stays stable.
+
+The chart itself is drawn by Matplotlib in `data_quality/charts.py` on the
+`Agg` backend, written to a `BytesIO` buffer and served straight from memory by
+a Django view at `/quality/run-outcomes.png` with `content_type="image/png"` -
+nothing is written to disk. Drawing goes through `Figure`/`FigureCanvasAgg`
+rather than `pyplot`, because `pyplot`'s figure registry is process-wide and
+Django answers requests on threads. With an empty database the endpoint still
+returns a valid PNG that says so on its face. The page embeds the image through a reversed URL, gives it alt text
+generated from the same numbers, and repeats those numbers in a table so they
+are available without the image.
+
+Screenshots: `docs/screenshots/a3/s1_home.png`, `s1_navigation.png`,
+`s1_detail_via_link.png`, `s4_quality_history.png`, `s4_chart_endpoint.png`.
+
+
 ## Project layout
 
 ```
@@ -262,7 +309,7 @@ CSRF enforcement:
   db.sqlite3            demo database
   datapact_project/     root URLs, wsgi, asgi
     settings/           base.py (shared), development.py, production.py
-  data_quality/         models, views, urls, forms, tests
+  data_quality/         models, views, urls, charts, forms, tests
     static/
       data_quality/     datapact.css, datapact-logo.svg
     templates/

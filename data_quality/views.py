@@ -6,8 +6,9 @@ from django.utils.html import escape
 from django.views import View
 from django.views.generic import DetailView, ListView
 
+from . import charts
 from .forms import DatasetForm
-from .models import Contract, Dataset, Violation
+from .models import Contract, Dataset, ValidationRun, Violation
 
 
 class DatasetOverviewView(View):
@@ -276,3 +277,53 @@ def dataset_api(request):
     return JsonResponse({"count": len(data), "datasets": data})
 
 
+# ---------------------------------------------------------------
+# Home page, navigation and quality analytics (A3 Sections 1 and 4)
+# Author: Tejas Jaggi (tejasj2)
+# ---------------------------------------------------------------
+
+
+def home(request):
+    """
+    Landing page at the site root.
+
+    Before this existed, "/" was a 404 and the only way into the site was to
+    know a URL by heart. It is deliberately small: three counts that say
+    whether there is anything to look at, and a signpost to each real section.
+    """
+    context = {
+        "dataset_count": Dataset.objects.count(),
+        "run_count": ValidationRun.objects.count(),
+        "open_violation_count": Violation.objects.filter(
+            resolution=Violation.Resolution.OPEN
+        ).count(),
+    }
+    return render(request, "data_quality/home.html", context)
+
+
+def quality_history(request):
+    """
+    Quality History: how validation runs have been turning out.
+
+    The page shows the chart image and the same numbers in a table, so the
+    figures are available to a screen reader and to anyone who cannot see the
+    image, not only to someone looking at the picture.
+    """
+    outcomes = charts.run_outcome_counts()
+    context = {
+        "outcomes": outcomes,
+        "run_total": sum(total for _, _, total in outcomes),
+    }
+    return render(request, "data_quality/quality_history.html", context)
+
+
+def run_outcomes_chart(request):
+    """
+    The Quality History chart as a PNG, served straight from memory.
+
+    Matplotlib writes into a BytesIO buffer rather than a file on disk: the
+    image is derived from the database and changes whenever a run is recorded,
+    so writing it out would mean owning a cache and its invalidation for a
+    picture that takes milliseconds to draw.
+    """
+    return HttpResponse(charts.render_run_outcomes_png(), content_type="image/png")

@@ -16,7 +16,8 @@ from django.test import TestCase
 from django.urls import resolve, reverse
 
 from . import views
-from .models import Contract, Dataset, ValidationRule, Violation
+from . import charts
+from .models import Contract, Dataset, ValidationRule, ValidationRun, Violation
 
 
 class DatasetOverviewViewTests(TestCase):
@@ -848,3 +849,310 @@ class SiteChromeTests(TestCase):
             follow=True,
         )
         self.assertEqual(response.content.decode().count('class="message message--'), 1)
+
+# A3 Section 1 (URL linking & navigation) and Section 4 (Matplotlib
+# visualization)
+# Author: Tejas Jaggi (tejasj2)
+# ---------------------------------------------------------------
+
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+TEMPLATE_DIR = Path(__file__).resolve().parent / "templates" / "data_quality"
+
+
+def nav_links(html):
+    """Return every href in the site header of a rendered page."""
+    header = html[html.index("<header"):html.index("</header>")]
+    return re.findall(r'<a[^>]+href="([^"]+)"', header)
+
+
+class HomePageTests(TestCase):
+    """The root URL is a real page, not a 404 (Section 1)."""
+
+    def test_home_route_reverses_to_the_site_root(self):
+        self.assertEqual(reverse("data_quality:home"), "/")
+
+    def test_root_url_resolves_to_the_home_view(self):
+        self.assertEqual(resolve("/").view_name, "data_quality:home")
+
+    def test_home_page_renders(self):
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "data_quality/home.html")
+        self.assertTemplateUsed(response, "data_quality/base.html")
+
+    def test_home_page_links_to_the_main_sections(self):
+        response = self.client.get("/")
+        for route in (
+            "data_quality:dataset-list",
+            "data_quality:dataset-cbv-base",
+            "data_quality:quality-history",
+        ):
+            with self.subTest(route=route):
+                self.assertContains(response, f'href="{reverse(route)}"')
+
+    def test_home_page_summary_counts_come_from_the_database(self):
+        owner = User.objects.create_user("owner1", password="pw")
+        dataset = Dataset.objects.create(
+            name="Monthly Enrollment Export", owner=owner, source_team="Registrar"
+        )
+        contract = Contract.objects.create(
+            dataset=dataset, version_number=1, status=Contract.Status.ACTIVE
+        )
+        ValidationRun.objects.create(
+            contract=contract,
+            file_name="enrollment_2026_09.csv",
+            row_count=10,
+            status=ValidationRun.Status.PASSED,
+        )
+        response = self.client.get("/")
+        self.assertEqual(response.context["dataset_count"], 1)
+        self.assertEqual(response.context["run_count"], 1)
+
+    def test_home_page_works_on_an_empty_database(self):
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["dataset_count"], 0)
+
+
+class NavigationTests(TestCase):
+    """Site navigation is reversed, not hard-coded (Section 1)."""
+
+    def test_navigation_offers_at_least_three_working_links(self):
+        html = self.client.get("/").content.decode()
+        hrefs = {href for href in nav_links(html) if href.startswith("/")}
+        self.assertGreaterEqual(len(hrefs), 3)
+        for href in hrefs:
+            with self.subTest(href=href):
+                self.assertEqual(self.client.get(href).status_code, 200)
+
+    def test_quality_history_is_reachable_from_the_navigation(self):
+        html = self.client.get("/").content.decode()
+        self.assertIn(reverse("data_quality:quality-history"), nav_links(html))
+
+    def test_templates_do_not_hard_code_application_paths(self):
+        # Every internal link must come from {% url %} or get_absolute_url so
+        # that renaming a route cannot silently break navigation.
+        offenders = []
+        for template in sorted(TEMPLATE_DIR.rglob("*.html")):
+            for number, line in enumerate(
+                template.read_text(encoding="utf-8").splitlines(), start=1
+            ):
+                if re.search(r'href="/(?!\s*")', line):
+                    offenders.append(f"{template.name}:{number}")
+        self.assertEqual(offenders, [])
+
+
+class DatasetUrlTests(TestCase):
+    """Primary-key detail routes and get_absolute_url (Section 1)."""
+
+    def setUp(self):
+        self.owner = User.objects.create_user("owner1", password="pw")
+        self.dataset = Dataset.objects.create(
+            name="Monthly Enrollment Export", owner=self.owner, source_team="Registrar"
+        )
+
+    def test_get_absolute_url_points_at_the_primary_key_detail_route(self):
+        self.assertEqual(
+            self.dataset.get_absolute_url(),
+            reverse("data_quality:dataset-detail", kwargs={"pk": self.dataset.pk}),
+        )
+        self.assertEqual(self.dataset.get_absolute_url(), f"/datasets/{self.dataset.pk}/")
+
+    def test_registry_links_each_dataset_to_its_own_detail_page(self):
+        response = self.client.get(reverse("data_quality:dataset-list"))
+        self.assertContains(response, f'href="{self.dataset.get_absolute_url()}"')
+
+    def test_following_the_registry_link_loads_that_dataset(self):
+        listing = self.client.get(reverse("data_quality:dataset-list")).content.decode()
+        href = re.search(r'href="(/datasets/\d+/)"', listing).group(1)
+        detail = self.client.get(href)
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.context["dataset"], self.dataset)
+
+    def test_detail_links_are_built_by_the_model_not_by_hand(self):
+        # Section 1 asks for get_absolute_url() to be used in the templates
+        # rather than rebuilding the URL from a primary key at each call site.
+        for name in ("dataset_list.html", "dataset_overview.html"):
+            with self.subTest(template=name):
+                source = (TEMPLATE_DIR / name).read_text(encoding="utf-8")
+                self.assertIn("get_absolute_url", source)
+                self.assertNotIn("'data_quality:dataset-detail'", source)
+
+
+class RunOutcomeAggregationTests(TestCase):
+    """ORM aggregation behind the chart (Section 4)."""
+
+    def setUp(self):
+        owner = User.objects.create_user("owner1", password="pw")
+        dataset = Dataset.objects.create(
+            name="Monthly Enrollment Export", owner=owner, source_team="Registrar"
+        )
+        self.contract = Contract.objects.create(
+            dataset=dataset, version_number=1, status=Contract.Status.ACTIVE
+        )
+
+    def _run(self, status):
+        return ValidationRun.objects.create(
+            contract=self.contract,
+            file_name=f"{status.lower()}.csv",
+            row_count=100,
+            status=status,
+        )
+
+    def test_counts_group_runs_by_status(self):
+        self._run(ValidationRun.Status.PASSED)
+        self._run(ValidationRun.Status.FAILED)
+        self._run(ValidationRun.Status.FAILED)
+        totals = {value: total for value, _, total in charts.run_outcome_counts()}
+        self.assertEqual(totals[ValidationRun.Status.PASSED], 1)
+        self.assertEqual(totals[ValidationRun.Status.FAILED], 2)
+
+    def test_a_status_with_no_runs_is_kept_at_zero(self):
+        self._run(ValidationRun.Status.PASSED)
+        totals = {value: total for value, _, total in charts.run_outcome_counts()}
+        self.assertEqual(totals[ValidationRun.Status.ERROR], 0)
+        self.assertIn(ValidationRun.Status.ERROR, totals)
+
+    def test_rows_follow_the_model_declaration_order_not_the_database(self):
+        # Created out of order on purpose: the chart's x-axis must stay stable.
+        self._run(ValidationRun.Status.ERROR)
+        self._run(ValidationRun.Status.PASSED)
+        values = [value for value, _, _ in charts.run_outcome_counts()]
+        self.assertEqual(values, [value for value, _ in ValidationRun.Status.choices])
+
+    def test_every_status_choice_is_represented(self):
+        rows = charts.run_outcome_counts()
+        self.assertEqual(len(rows), len(ValidationRun.Status.choices))
+
+    def test_labels_are_the_human_readable_choice_labels(self):
+        labels = {value: label for value, label, _ in charts.run_outcome_counts()}
+        self.assertEqual(labels[ValidationRun.Status.PASSED], "Passed")
+
+    def test_empty_database_reports_zero_for_every_status(self):
+        self.assertEqual([total for _, _, total in charts.run_outcome_counts()], [0, 0, 0])
+
+    def test_aggregation_is_a_single_query(self):
+        self._run(ValidationRun.Status.PASSED)
+        with self.assertNumQueries(1):
+            charts.run_outcome_counts()
+
+
+class RunOutcomesChartTests(TestCase):
+    """The PNG image endpoint (Section 4)."""
+
+    url_name = "data_quality:run-outcomes-chart"
+
+    def setUp(self):
+        owner = User.objects.create_user("owner1", password="pw")
+        dataset = Dataset.objects.create(
+            name="Monthly Enrollment Export", owner=owner, source_team="Registrar"
+        )
+        self.contract = Contract.objects.create(
+            dataset=dataset, version_number=1, status=Contract.Status.ACTIVE
+        )
+        ValidationRun.objects.create(
+            contract=self.contract,
+            file_name="enrollment.csv",
+            row_count=100,
+            status=ValidationRun.Status.FAILED,
+        )
+
+    def test_chart_route_reverses_and_resolves(self):
+        url = reverse(self.url_name)
+        self.assertEqual(url, "/quality/run-outcomes.png")
+        self.assertEqual(resolve(url).view_name, self.url_name)
+
+    def test_endpoint_returns_a_png_image(self):
+        response = self.client.get(reverse(self.url_name))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/png")
+
+    def test_response_body_is_a_real_png(self):
+        body = self.client.get(reverse(self.url_name)).content
+        self.assertTrue(body.startswith(PNG_MAGIC))
+        self.assertGreater(len(body), 1000)
+
+    def test_endpoint_still_returns_a_png_with_no_runs_recorded(self):
+        ValidationRun.objects.all().delete()
+        response = self.client.get(reverse(self.url_name))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/png")
+        self.assertTrue(response.content.startswith(PNG_MAGIC))
+
+    def test_repeated_requests_do_not_accumulate_figures(self):
+        # Every request builds a figure. If one is held anywhere after the
+        # response, memory grows with traffic, which is the failure this
+        # endpoint is most likely to have and least likely to notice.
+        import gc
+
+        from matplotlib.figure import Figure
+
+        def live_figures():
+            gc.collect()
+            return sum(1 for obj in gc.get_objects() if isinstance(obj, Figure))
+
+        self.client.get(reverse(self.url_name))
+        before = live_figures()
+        for _ in range(4):
+            self.client.get(reverse(self.url_name))
+        self.assertLessEqual(live_figures(), before)
+
+    def test_chart_does_not_touch_pyplots_global_figure_registry(self):
+        # Drawing goes through Figure/FigureCanvasAgg on purpose: pyplot's
+        # registry is process-wide, and Django answers requests on threads.
+        import matplotlib.pyplot as plt
+
+        plt.close("all")
+        self.client.get(reverse(self.url_name))
+        self.assertEqual(plt.get_fignums(), [])
+
+    def test_chart_is_drawn_from_the_database_not_a_fixed_picture(self):
+        first = self.client.get(reverse(self.url_name)).content
+        for _ in range(4):
+            ValidationRun.objects.create(
+                contract=self.contract,
+                file_name="another.csv",
+                row_count=10,
+                status=ValidationRun.Status.PASSED,
+            )
+        self.assertNotEqual(first, self.client.get(reverse(self.url_name)).content)
+
+
+class QualityHistoryPageTests(TestCase):
+    """The page that presents the chart (Section 4)."""
+
+    url_name = "data_quality:quality-history"
+
+    def test_page_renders(self):
+        response = self.client.get(reverse(self.url_name))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "data_quality/quality_history.html")
+        self.assertTemplateUsed(response, "data_quality/base.html")
+
+    def test_page_embeds_the_chart_through_a_reversed_url(self):
+        response = self.client.get(reverse(self.url_name))
+        self.assertContains(
+            response, f'src="{reverse("data_quality:run-outcomes-chart")}"'
+        )
+
+    def test_chart_image_carries_descriptive_alt_text(self):
+        html = self.client.get(reverse(self.url_name)).content.decode()
+        # Pick the chart out by its src. The page has other images - the site
+        # logo in the header, for one - and those are decorative, so matching
+        # "the first <img>" would assert against the wrong element.
+        chart_src = reverse("data_quality:run-outcomes-chart")
+        img = next(
+            tag for tag in re.findall(r"<img[^>]+>", html, re.S) if chart_src in tag
+        )
+        alt = re.search(r'alt="([^"]*)"', img, re.S).group(1)
+        self.assertGreater(len(alt), 20)
+        self.assertNotIn("chart.png", alt.lower())
+
+    def test_page_shows_the_same_totals_as_the_aggregation(self):
+        response = self.client.get(reverse(self.url_name))
+        self.assertEqual(response.context["outcomes"], charts.run_outcome_counts())
+
+    def test_page_renders_with_no_runs_recorded(self):
+        response = self.client.get(reverse(self.url_name))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["run_total"], 0)

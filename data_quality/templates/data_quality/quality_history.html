@@ -1,0 +1,91 @@
+{% extends "data_quality/base.html" %}
+{% comment %}
+=============================================================================
+Quality History - A3 Section 4 (Data visualization), Tejas Jaggi
+
+Context expected (supplied by the quality_history() function-based view):
+    outcomes   [(status value, human label, count), ...] for every run status
+    run_total  how many validation runs that adds up to
+
+The chart is an <img> pointing at a Django view that returns a PNG, so the
+picture is generated from the database on request. The same numbers are also
+printed in the table underneath: an image alone would put the figures out of
+reach of a screen reader, and out of reach of anyone whose connection drops
+the image.
+=============================================================================
+{% endcomment %}
+
+{% block title %}Quality History - DataPact{% endblock %}
+
+{% block extra_head %}
+    <style>
+        .chart { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+        .chart__caption { margin: 0.9rem 0 0; text-align: center; }
+    </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+    <p class="breadcrumbs">
+        <a href="{% url 'data_quality:home' %}">Home</a> / Quality History
+    </p>
+{% endblock %}
+
+{% block page_title %}Quality History{% endblock %}
+
+{% block page_subtitle %}
+    <p class="page__subtitle">
+        How every file DataPact has checked turned out, across all datasets.
+    </p>
+{% endblock %}
+
+{% block content %}
+    <div class="panel">
+        <div class="panel__head">
+            <h2 class="panel__title">Validation run outcomes</h2>
+        </div>
+        <div class="panel__body">
+            <img class="chart"
+                 src="{% url 'data_quality:run-outcomes-chart' %}"
+                 width="792" height="440"
+                 alt="Bar chart of validation run outcomes. {% for value, label, total in outcomes %}{{ label }}: {{ total }} run{{ total|pluralize }}{% if not forloop.last %}. {% endif %}{% endfor %}.">
+            <p class="chart__caption prose" style="max-width: none;">
+                {% if run_total %}
+                    Counted from {{ run_total }} validation run{{ run_total|pluralize }}.
+                    A run is one file checked against one contract version, so a
+                    dataset appears once per file it has submitted.
+                {% else %}
+                    No validation runs have been recorded yet. The chart will fill
+                    in as files are checked against their contracts.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="panel" style="margin-top: 1.25rem;">
+        <div class="panel__head">
+            <h2 class="panel__title">The same numbers, as text</h2>
+        </div>
+        <table class="datatable">
+            <thead>
+                <tr>
+                    <th scope="col">Outcome</th>
+                    <th scope="col">Validation runs</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for value, label, total in outcomes %}
+                    <tr>
+                        <th scope="row">{{ label }}</th>
+                        <td>{{ total }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="2">
+                            {% include "data_quality/includes/_empty_state.html" with headline="No outcomes to report." message="DataPact has not recorded any validation runs yet." only %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

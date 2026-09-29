@@ -44,7 +44,7 @@ here instead of a generic ListView.
                 {% for row in rows %}
                     <tr>
                         <td>
-                            <a href="{% url 'data_quality:dataset-detail' row.dataset.pk %}">{{ row.dataset.name }}</a>
+                            <a href="{{ row.dataset.get_absolute_url }}">{{ row.dataset.name }}</a>
                         </td>
                         <td>{{ row.dataset.source_team }}</td>
                         <td class="num">{{ row.contract_count }}</td>
