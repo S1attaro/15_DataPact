@@ -89,7 +89,15 @@ Then open http://127.0.0.1:8000/datasets/.
 python manage.py runserver --settings=datapact_project.settings.production
 ```
 
-`wsgi.py` and `asgi.py` default to the production settings. `DJANGO_SETTINGS_MODULE` overrides either default. Static files (admin CSS) are not served in production mode by `runserver`; that is normal.
+`wsgi.py` and `asgi.py` default to the production settings. `DJANGO_SETTINGS_MODULE` overrides either default.
+
+Production mode serves static files through WhiteNoise, so collect them first:
+
+```
+python manage.py collectstatic --noinput --settings=datapact_project.settings.production
+```
+
+Skip that step and the pages still render, just without the content hash in the stylesheet URL. Development mode needs no collectstatic.
 
 ## Pages
 
@@ -161,6 +169,37 @@ The CSS is inline in `base.html` rather than in `static/` on purpose:
 `runserver` stops serving static files once `DEBUG = False`, so an external
 stylesheet would load in dev and 404 in prod. Inline CSS looks the same in both
 modes with no `collectstatic` step.
+
+## Static files and UI
+
+The stylesheet and the logo are real static assets, served through Django's
+staticfiles app in development and WhiteNoise in production.
+
+```
+data_quality/static/data_quality/
+  css/datapact.css              the whole site stylesheet
+  img/datapact-logo.svg         wordmark logo, also the favicon
+```
+
+They live at app level, namespaced under `data_quality/`, for the same reason
+the templates are: the app owns them, so it keeps them, and nothing in
+`settings` has to list a directory. `base.html` loads them with `{% load static %}`
+and `{% static %}` rather than a hard-coded `/static/...` path.
+
+The CSS was inline in `base.html` until A3. It moved out for Section 3, which
+meant fixing the reason it was inline: `runserver` serves no static files once
+`DEBUG = False`. WhiteNoise now does, so the site looks the same in both modes.
+
+**Cache busting.** In production, `collectstatic` renames each file to include
+a hash of its contents — `datapact.css` becomes `datapact.e5ab6567e31e.css` —
+and `{% static %}` emits that name. The response carries
+`Cache-Control: max-age=315360000, public, immutable`, so a browser can cache
+it for ten years; editing the CSS changes the hash, so the next visitor
+requests a different URL and sees the change immediately. There is no way to
+serve a stale stylesheet and no need to ever clear a cache by hand.
+
+A full request/response transcript of both modes is in
+[`docs/a3_s3_static_evidence.txt`](docs/a3_s3_static_evidence.txt).
 
 ## Tests
 
@@ -271,8 +310,11 @@ Screenshots: `docs/screenshots/a3/s1_home.png`, `s1_navigation.png`,
   datapact_project/     root URLs, wsgi, asgi
     settings/           base.py (shared), development.py, production.py
   data_quality/         models, views, urls, charts, forms, tests
+    static/
+      data_quality/     datapact.css, datapact-logo.svg
     templates/
       data_quality/     base.html, page templates, includes/ partials
+  staticfiles/          collectstatic output (generated, git-ignored)
   docs/
     notes/              notes.txt, with weekly updates from each teammate
     wireframes/v1/      wireframes PDF

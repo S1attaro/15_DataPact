@@ -79,6 +79,11 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Serves everything under STATIC_ROOT. Django's own static handling only
+    # works while DEBUG is on, so without this production mode returns 404 for
+    # the stylesheet and the site renders unstyled. Must sit directly after
+    # SecurityMiddleware. (Section 3, Ashok)
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -153,6 +158,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Where collectstatic gathers every app's static/ folder. Generated output, so
+# it is git-ignored; run `python manage.py collectstatic` before serving in
+# production mode. Application CSS and images live in data_quality/static/,
+# found automatically by the app-directories finder. (Section 3, Ashok)
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
