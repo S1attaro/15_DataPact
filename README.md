@@ -207,7 +207,7 @@ A full request/response transcript of both modes is in
 python manage.py test data_quality
 ```
 
-57 tests: the three A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, and `DatasetManageView`. Run them before you open a pull request.
+102 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, and the home page, navigation and Quality History chart. Run them before you open a pull request.
 
 ## A3, Section 2 & Section 5 (Hriday)
 

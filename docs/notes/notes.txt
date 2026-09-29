@@ -1042,8 +1042,8 @@ reach of anyone whose connection drops the image.
 
 37. TESTS
 
-31 new tests. python manage.py test data_quality: 88 passing
-(57 before this branch + 31 new).
+32 new tests. python manage.py test: 102 passing (70 on main after
+Ashok's Section 3 merged, plus 32 here).
 
   HomePageTests, NavigationTests, DatasetUrlTests - "/" resolves and
   renders, nav has at least three links and all of them return 200,
@@ -1055,9 +1055,9 @@ reach of anyone whose connection drops the image.
 
   RunOutcomesChartTests, QualityHistoryPageTests - the endpoint returns
   image/png with real PNG bytes, still returns a PNG with no runs
-  recorded, leaves no matplotlib figures open, redraws when the data
-  changes, and the page embeds the chart through a reversed URL with
-  descriptive alt text.
+  recorded, does not accumulate figures across requests, keeps out of
+  pyplot's global registry, redraws when the data changes, and the page
+  embeds the chart through a reversed URL with descriptive alt text.
 
 38. DEPENDENCY
 
@@ -1070,11 +1070,15 @@ again or /quality/ will fail to import.
 
 39. OPEN ITEMS FOR THE TEAM
 
-  - Section 3 (Ashok) is still to come. Below roughly 620px the site
-    overflows sideways - the nav, the footer and wide tables all run off
-    the right edge. That is base.html's layout, not anything added this
-    week: /datasets/ does the same thing on main today. Flagging it for
-    whoever does the styling pass.
+  - Section 3 (Ashok) is merged and integrated here; see section 40 for
+    what the merge involved. Re-checked after merging: below about 420px
+    the site still overflows sideways. The nav now wraps to a second row
+    rather than being cut off, which is better than before, but the page
+    body, wide tables and the footer still run past the right edge.
+    /datasets/ - Ashok's own template, none of my content - does exactly
+    the same thing, so this is the shared shell's responsive behaviour
+    and belongs to whoever next touches the stylesheet, not to Sections
+    1 and 4.
   - The chart is served by a Django view, not from static/, so it is not
     affected by collectstatic or by DEBUG=False. Section 3 does not need
     to do anything to keep it working.
@@ -1090,3 +1094,41 @@ s1_navigation.png (nav working - Overview reached from the nav bar),
 s1_detail_via_link.png (dataset detail opened from a registry link),
 s4_quality_history.png (Quality History page with the chart),
 s4_chart_endpoint.png (/quality/run-outcomes.png on its own).
+
+
+40. INTEGRATING SECTION 3 INTO SECTIONS 1 AND 4 (Tejas)
+
+Merged origin/main (321f5e9, Ashok's Section 3) into this branch. Five
+files conflicted and both sides were kept in every one of them:
+
+  base.html      Ashok rebuilt the shell around static assets. His brand
+                 markup - the logo <img> plus the wordmark - is kept, and
+                 only its link target changes to the new home route. His
+                 Contracts and Manage nav links and my Quality History
+                 link all survive, so the nav is now five working entries
+                 plus the Upload placeholder.
+  requirements   matplotlib and whitenoise are both needed.
+  README.md      the layout listing needs charts.py and static/ both.
+  tests.py       separate classes on each side; both kept.
+  notes.txt      Ashok's 30-33 were already on main, so mine moved to
+                 34-39 and follow his.
+
+One real regression turned up and is fixed. The test that checks the
+chart's alt text was matching "the first <img> on the page". Once
+Ashok's header logo landed, the first image became the logo, which
+correctly carries alt="" because it is decorative - the wordmark next to
+it already says DataPact. The chart's own alt text was never wrong. The
+test now finds the chart by its src. Ashok's markup is unchanged.
+
+Verified after merging: 102 tests pass; dev and production system checks
+are clean; collectstatic produces hashed filenames and the production
+server serves the cache-busted CSS, the logo and the chart PNG; every
+route returns 200 in both modes.
+
+My five screenshots were re-captured after the merge, because the
+originals were taken before Ashok's stylesheet existed and no longer
+matched what the site looks like. Ashok's own Section 3 screenshots
+still show Quality History as a greyed-out placeholder rather than the
+live link it now is; the CSS behaviour they were taken to demonstrate is
+unaffected, so I have left his evidence alone rather than re-shooting
+someone else's work. Worth a look before submission.
