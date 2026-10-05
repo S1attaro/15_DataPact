@@ -113,6 +113,9 @@ Skip that step and the pages still render, just without the content hash in the 
 | `/datasets/manage/` | `DatasetManageView` | Class-based, View (GET filter + POST create) |
 | `/quality/` | `quality_history` | Function-based, render() |
 | `/quality/run-outcomes.png` | `run_outcomes_chart` | Function-based, PNG via HttpResponse |
+| `/reports/` | `reports_view` | Function-based, render() |
+| `/reports/export/validation-runs.csv` | `export_validation_runs_csv` | Function-based, CSV via HttpResponse |
+| `/reports/export/validation-runs.json` | `export_validation_runs_json` | Function-based, JsonResponse |
 | `/admin/` | Django admin | Built in |
 
 
@@ -207,7 +210,7 @@ A full request/response transcript of both modes is in
 python manage.py test data_quality
 ```
 
-102 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, and the home page, navigation and Quality History chart. Run them before you open a pull request.
+111 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, and the Reports page and CSV/JSON exports. Run them before you open a pull request.
 
 ## A3, Section 2 & Section 5 (Hriday)
 
@@ -296,6 +299,33 @@ are available without the image.
 Screenshots: `docs/screenshots/a3/s1_home.png`, `s1_navigation.png`,
 `s1_detail_via_link.png`, `s4_quality_history.png`, `s4_chart_endpoint.png`.
 
+## A4, Part 3: Reports & Exports (Hriday)
+
+Reports page at `/reports/`, built on `ValidationRun`.
+
+| Rubric item | Evidence |
+| --- | --- |
+| CSV export | `export_validation_runs_csv` - `text/csv`, header row, timestamped filename |
+| JSON export + metadata | `export_validation_runs_json` - `generated_at` + `record_count`, `json_dumps_params={"indent": 2}` |
+| Two grouped summaries | runs by outcome (reuses `charts.run_outcome_counts()`), runs by dataset (`contract__dataset__name`, `annotate(total=Count("id"))`) |
+| Totals line | dataset count, run count, failed-run count |
+| Download buttons on the page | `page_actions` block links to both export URLs |
+
+The two export views share one queryset helper
+(`_validation_runs_queryset`), so the CSV and JSON can't drift out of sync
+with each other.
+
+Reports page:
+
+![Reports page - totals, runs by outcome, runs by dataset](docs/screenshots/a4/reports_page.png)
+
+CSV export (real response headers + body):
+
+![CSV export - headers and first rows](docs/screenshots/a4/csv_export_evidence.png)
+
+JSON export (real response headers + body):
+
+![JSON export - headers and pretty-printed body](docs/screenshots/a4/json_export_evidence.png)
 
 ## Project layout
 
@@ -319,7 +349,7 @@ Screenshots: `docs/screenshots/a3/s1_home.png`, `s1_navigation.png`,
     notes/              notes.txt, with weekly updates from each teammate
     wireframes/v1/      wireframes PDF
     branching_strategy/ how we use branches and pull requests
-    screenshots/        A2 browser screenshots
+    screenshots/        A2, A3, and A4 browser screenshots
 ```
 
 ## Git workflow
