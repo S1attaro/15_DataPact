@@ -132,6 +132,19 @@ Example:
 GET /api/datasets/?owner=cslat
 ```
 
+
+## External API Integration (A4 Part 2)
+
+/api/lookup/?q=<term> combines our internal Dataset registry with Open Library's public search API. Nothing from Open Library is stored; the external response is fetched, processed in memory, and returned alongside our own data.
+
+Uses requests.get() with params=..., timeout=5, and .raise_for_status(). Handles timeouts and request failures with JSON error responses. Requires ?q=; returns a 400 error if missing.
+
+Example: GET /api/lookup/?q=enrollment
+
+Returns internal Dataset matches (name, description, or source_team containing the term) and up to 5 Open Library book results (title, author, first_publish_year) for the same term.
+
+
+
 ## Templates
 
 Every page extends one base template, so the navigation, stylesheet, page

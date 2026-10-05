@@ -34,6 +34,9 @@ urlpatterns = [
     # --- API (Section 6, owned by Connor) ---
     path("api/datasets/", views.dataset_api, name="dataset-api"),
 
+    # --- A4 Part 2: external API (Connor) ---
+    path("api/lookup/", views.dataset_lookup_api, name="dataset-lookup"),
+
     # --- A4 Part 3: reports and exports (Hriday) ---
     path("reports/", views.reports_view, name="reports"),
     path(

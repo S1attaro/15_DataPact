@@ -1309,3 +1309,37 @@ CONNOR - requirements.txt is my file this week. Your Part 2 will need
 touch it, or tell me the version and I will add it in mine. Just don't
 let it land unpinned, because PythonAnywhere installs from that file
 and the external API will 500 on the server while working locally.
+
+38. A4 PART 2 - EXTERNAL API INTEGRATION (Connor)
+
+Endpoint: data_quality.views.dataset_lookup_api
+URL: /api/lookup/ (name: data_quality:dataset-lookup)
+Kind: Function-based view, django.http.JsonResponse.
+
+External API: Open Library search (https://openlibrary.org/search.json).
+Keyless, no rate limit issues hit in testing.
+
+Plan: accept ?q=<term> via request.GET. Query our own Dataset table
+(name, description, source_team, all icontains) for internal matches.
+Separately call requests.get() against Open Library with the same
+term as the q param, timeout=5, and raise_for_status() to catch
+non-2xx responses. Catch requests.exceptions.Timeout and
+requests.exceptions.RequestException separately so a slow network and
+a bad request return different, useful error messages instead of one
+generic 500.
+
+Data served: internal_matches (id, name, source_team, description from
+our own Dataset rows) and external_matches (title, author,
+first_publish_year, pulled from Open Library's docs array and capped
+at 5 results). Nothing from Open Library is written to the database -
+the external response lives only in the request/response cycle.
+
+Missing ?q= returns a 400 with an error message rather than crashing
+or returning everything.
+
+requirements.txt: requests==2.32.3 added, per Ashok's note above -
+confirmed pinned in my PR, not left for him to add separately.
+
+Tested locally: ?q=enrollment (1 internal match, 5 external),
+?q=operations (1 internal match, 5 external), and no ?q= (400 error
+JSON, no crash). Screenshot: docs/screenshots/a4/part2_external_api_lookup.png
