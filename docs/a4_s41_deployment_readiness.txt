@@ -1,5 +1,6 @@
 DataPact - A4 Part 4.1 readiness check
-Captured 2026-10-05 by Ashok Chacko, on main @ 4802769.
+Captured 2026-10-05 by Ashok Chacko.
+Re-checked on main @ c3054e9, after Connor's Part 2 external API merged.
 
 ========================================================================
 1. EVERY ROUTE, BOTH SETTINGS MODULES
@@ -18,6 +19,7 @@ Captured 2026-10-05 by Ashok Chacko, on main @ 4802769.
     /quality/                              200     200    
     /quality/run-outcomes.png              200     200    
     /api/datasets/                         200     200    
+    /api/lookup/?q=enrollment              200     200    
     /reports/                              200     200    
     /reports/export/validation-runs.csv    200     200    
     /reports/export/validation-runs.json   200     200    
@@ -116,3 +118,54 @@ Captured 2026-10-05 by Ashok Chacko, on main @ 4802769.
 
     NOT YET REFLECTED HERE: Part 2's external API will need `requests`
     added to requirements.txt. Nothing imports it yet.
+
+========================================================================
+8. RE-CHECK AFTER PART 2 (external API), main @ c3054e9
+========================================================================
+
+    db.sqlite3 - the A4 requirement Connor asked about
+
+      Verified against a fresh `git clone` of main, not the local
+      working copy, because that is what the grader and PythonAnywhere
+      actually get:
+
+        present in the clone : yes, 196608 bytes
+        git check-ignore     : not ignored
+        file type            : SQLite 3.x database
+        pragma integrity_check: ok
+        contents             : 7 datasets, 10 contracts, 12 runs,
+                               9 violations, 6 users
+
+      .gitignore has `*.local.sqlite3`, which matches the disposable
+      db.local.sqlite3 used for screenshots and does NOT match
+      db.sqlite3. There is no `db.sqlite3` or `*.sqlite3` rule. So the
+      A4 sequencing note 1.2 requirement holds.
+
+      Worth stating plainly for whoever tidies .gitignore before
+      submission: committing a database is the opposite of normal
+      practice, and A4 deliberately requires it. Do not "fix" this.
+
+    requests==2.32.3 is pinned in requirements.txt.
+
+    PythonAnywhere outbound network access
+
+      Free PythonAnywhere accounts cannot reach arbitrary hosts - all
+      outbound HTTP goes through a proxy and only allowlisted sites
+      resolve. An external API that works locally can therefore fail on
+      the deployed site, which would have cost Part 2 its marks there.
+
+      Checked against https://www.pythonanywhere.com/whitelist/ :
+      `openlibrary.org` IS on the allowlist (and so is
+      covers.openlibrary.org). requests picks up the proxy from the
+      environment variables PythonAnywhere sets, so no code change is
+      needed.
+
+      If the external API is ever swapped for another host, check that
+      list again before assuming it will work deployed.
+
+    Gap, not mine to close: /api/lookup/ has no tests. The suite is
+    still 113, the same count as before Part 2 merged. The view's error
+    handling (timeout=5, raise_for_status, 504 on Timeout, 502 on
+    RequestException) reads correctly but nothing exercises it. Mocking
+    requests.get with unittest.mock.patch would cover the success path
+    and both failure paths without touching the network.
