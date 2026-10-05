@@ -1,8 +1,11 @@
+import csv
 import importlib
+import json
 import os
 import tempfile
 import re
 import sys
+from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
@@ -1156,3 +1159,133 @@ class QualityHistoryPageTests(TestCase):
         response = self.client.get(reverse(self.url_name))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["run_total"], 0)
+
+
+# ---------------------------------------------------------------
+# A4 Part 3: reports, grouped summaries, CSV/JSON export
+# Author: Hriday Agarwal
+# ---------------------------------------------------------------
+
+class ReportsViewTests(TestCase):
+    def setUp(self):
+        owner = User.objects.create_user("owner1", password="pw")
+        self.ds_a = Dataset.objects.create(name="Dataset A", owner=owner, source_team="Team A")
+        self.ds_b = Dataset.objects.create(name="Dataset B", owner=owner, source_team="Team B")
+        contract_a = Contract.objects.create(
+            dataset=self.ds_a, version_number=1, status=Contract.Status.ACTIVE
+        )
+        contract_b = Contract.objects.create(
+            dataset=self.ds_b, version_number=1, status=Contract.Status.ACTIVE
+        )
+        ValidationRun.objects.create(
+            contract=contract_a, file_name="a1.csv", row_count=10,
+            status=ValidationRun.Status.PASSED,
+        )
+        ValidationRun.objects.create(
+            contract=contract_a, file_name="a2.csv", row_count=5,
+            status=ValidationRun.Status.FAILED,
+        )
+        ValidationRun.objects.create(
+            contract=contract_b, file_name="b1.csv", row_count=7,
+            status=ValidationRun.Status.FAILED,
+        )
+
+    def test_totals(self):
+        response = self.client.get(reverse("data_quality:reports"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "data_quality/reports.html")
+        self.assertEqual(response.context["dataset_total"], 2)
+        self.assertEqual(response.context["run_total"], 3)
+        self.assertEqual(response.context["failed_total"], 2)
+
+    def test_status_breakdown_matches_charts_module(self):
+        response = self.client.get(reverse("data_quality:reports"))
+        self.assertEqual(response.context["status_breakdown"], charts.run_outcome_counts())
+
+    def test_dataset_breakdown_groups_by_dataset(self):
+        response = self.client.get(reverse("data_quality:reports"))
+        breakdown = {
+            row["contract__dataset__name"]: row["total"]
+            for row in response.context["dataset_breakdown"]
+        }
+        self.assertEqual(breakdown, {"Dataset A": 2, "Dataset B": 1})
+
+    def test_empty_state_with_no_runs(self):
+        ValidationRun.objects.all().delete()
+        response = self.client.get(reverse("data_quality:reports"))
+        self.assertEqual(response.context["run_total"], 0)
+        self.assertContains(response, "No validation runs yet.")
+
+
+class ExportValidationRunsCsvTests(TestCase):
+    def setUp(self):
+        owner = User.objects.create_user("owner1", password="pw")
+        dataset = Dataset.objects.create(name="Dataset A", owner=owner, source_team="Team A")
+        contract = Contract.objects.create(
+            dataset=dataset, version_number=1, status=Contract.Status.ACTIVE
+        )
+        ValidationRun.objects.create(
+            contract=contract, file_name="a1.csv", row_count=10,
+            status=ValidationRun.Status.PASSED, submitted_by=owner,
+        )
+        ValidationRun.objects.create(
+            contract=contract, file_name="a2.csv", row_count=5,
+            status=ValidationRun.Status.FAILED,
+        )
+
+    def test_content_type_and_disposition(self):
+        response = self.client.get(reverse("data_quality:export-validation-runs-csv"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+        self.assertRegex(
+            response["Content-Disposition"],
+            r'attachment; filename="validation_runs_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.csv"',
+        )
+
+    def test_header_row_and_data_rows(self):
+        response = self.client.get(reverse("data_quality:export-validation-runs-csv"))
+        rows = list(csv.reader(StringIO(response.content.decode())))
+        self.assertEqual(
+            rows[0],
+            ["id", "file_name", "dataset", "contract_version", "status",
+             "submitted_by", "row_count", "started_at", "finished_at"],
+        )
+        self.assertEqual(len(rows) - 1, 2)
+        by_file = {row[1]: row for row in rows[1:]}
+        self.assertEqual(by_file["a1.csv"][5], "owner1")
+        self.assertEqual(by_file["a2.csv"][5], "")
+
+
+class ExportValidationRunsJsonTests(TestCase):
+    def setUp(self):
+        owner = User.objects.create_user("owner1", password="pw")
+        dataset = Dataset.objects.create(name="Dataset A", owner=owner, source_team="Team A")
+        contract = Contract.objects.create(
+            dataset=dataset, version_number=1, status=Contract.Status.ACTIVE
+        )
+        ValidationRun.objects.create(
+            contract=contract, file_name="a1.csv", row_count=10,
+            status=ValidationRun.Status.PASSED,
+        )
+
+    def test_content_type_and_disposition(self):
+        response = self.client.get(reverse("data_quality:export-validation-runs-json"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json")
+        self.assertRegex(
+            response["Content-Disposition"],
+            r'attachment; filename="validation_runs_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.json"',
+        )
+
+    def test_metadata_and_records(self):
+        response = self.client.get(reverse("data_quality:export-validation-runs-json"))
+        data = json.loads(response.content)
+        self.assertIn("generated_at", data)
+        self.assertEqual(data["record_count"], 1)
+        self.assertEqual(len(data["validation_runs"]), 1)
+        self.assertEqual(data["validation_runs"][0]["file_name"], "a1.csv")
+        self.assertEqual(data["validation_runs"][0]["dataset"], "Dataset A")
+
+    def test_response_is_pretty_printed(self):
+        response = self.client.get(reverse("data_quality:export-validation-runs-json"))
+        self.assertGreater(response.content.decode().count("\n"), 3)

@@ -1138,3 +1138,39 @@ out byte-identical again, which is exactly the point that pair was there
 to make: both modes render the same and only the URL differs
 (datapact.css against the hashed datapact.a6a827b9dff1.css). The CSS,
 logo, form styling and cache busting they demonstrate are unchanged.
+
+
+=============================================
+A4 - WEEKLY PROGRESS UPDATE (Week of 2026-10-04) - Hriday, Part 3
+=============================================
+
+41. PART 3 (REPORTS + CSV/JSON EXPORT)
+
+Views: reports_view, export_validation_runs_csv, export_validation_runs_json
+URL:   /reports/, /reports/export/validation-runs.csv, .json
+Template: data_quality/templates/data_quality/reports.html
+
+Centered on ValidationRun.
+
+  - Totals line: dataset count, run count, failed run count.
+  - Grouped summary 1: runs by outcome - reuses charts.run_outcome_counts()
+    so this page and the Quality History chart can't disagree.
+  - Grouped summary 2: runs by dataset (contract__dataset__name, annotate
+    + Count) - new grouping, not shown elsewhere.
+  - CSV: csv.writer into a StringIO buffer, Content-Type text/csv,
+    timestamped filename via Content-Disposition.
+  - JSON: JsonResponse with json_dumps_params={"indent": 2}, metadata
+    (generated_at, record_count) alongside the records, same timestamped
+    filename pattern.
+  - Both exports share one queryset helper (_validation_runs_queryset)
+    so CSV and JSON can't drift out of sync with each other.
+
+42. TESTS
+
+9 new tests: ReportsViewTests, ExportValidationRunsCsvTests,
+ExportValidationRunsJsonTests. 111 passing total.
+
+43. OPEN ITEMS
+
+  - Added a "Reports" link to base.html's nav, same pattern as the
+    Contracts/Manage links already there.

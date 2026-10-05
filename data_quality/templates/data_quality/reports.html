@@ -1,0 +1,103 @@
+{% extends "data_quality/base.html" %}
+{% comment %} A4 Part 3 - Reports (Hriday) {% endcomment %}
+
+{% block title %}Reports - DataPact{% endblock %}
+
+{% block breadcrumbs %}
+    <p class="breadcrumbs">
+        <a href="{% url 'data_quality:home' %}">Home</a> / Reports
+    </p>
+{% endblock %}
+
+{% block page_title %}Reports{% endblock %}
+
+{% block page_subtitle %}
+    <p class="page__subtitle">Validation run summaries, with CSV and JSON exports.</p>
+{% endblock %}
+
+{% block page_actions %}
+    <a class="btn btn--primary" href="{% url 'data_quality:export-validation-runs-csv' %}">Download CSV</a>
+    <a class="btn" href="{% url 'data_quality:export-validation-runs-json' %}">Download JSON</a>
+{% endblock %}
+
+{% block content %}
+    <div class="panel">
+        <div class="panel__head">
+            <h2 class="panel__title">Totals</h2>
+        </div>
+        <div class="panel__body">
+            <dl class="factlist">
+                <div>
+                    <dt>Datasets</dt>
+                    <dd>{{ dataset_total }}</dd>
+                </div>
+                <div>
+                    <dt>Validation runs</dt>
+                    <dd>{{ run_total }}</dd>
+                </div>
+                <div>
+                    <dt>Failed runs</dt>
+                    <dd>{{ failed_total }}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel__head">
+            <h2 class="panel__title">Runs by outcome</h2>
+        </div>
+        <table class="datatable">
+            <thead>
+                <tr>
+                    <th scope="col">Outcome</th>
+                    <th scope="col" class="num">Runs</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for value, label, total in status_breakdown %}
+                    <tr>
+                        <th scope="row">{{ label }}</th>
+                        <td class="num">{{ total }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="2">
+                            {% include "data_quality/includes/_empty_state.html" with headline="No validation runs yet." message="Outcome totals will appear once a file has been checked." only %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="panel">
+        <div class="panel__head">
+            <h2 class="panel__title">Runs by dataset</h2>
+        </div>
+        <table class="datatable">
+            {% if dataset_breakdown %}
+                <thead>
+                    <tr>
+                        <th scope="col">Dataset</th>
+                        <th scope="col" class="num">Runs</th>
+                    </tr>
+                </thead>
+            {% endif %}
+            <tbody>
+                {% for row in dataset_breakdown %}
+                    <tr>
+                        <th scope="row">{{ row.contract__dataset__name }}</th>
+                        <td class="num">{{ row.total }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="2">
+                            {% include "data_quality/includes/_empty_state.html" with headline="No validation runs yet." message="Per-dataset totals will appear once a file has been checked." only %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
