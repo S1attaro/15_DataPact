@@ -1,7 +1,11 @@
+import csv
+from io import StringIO
+
 from django.contrib import messages
 from django.db.models import Count
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.utils.html import escape
 from django.views import View
 from django.views.generic import DetailView, ListView
@@ -327,3 +331,95 @@ def run_outcomes_chart(request):
     picture that takes milliseconds to draw.
     """
     return HttpResponse(charts.render_run_outcomes_png(), content_type="image/png")
+
+
+# ---------------------------------------------------------------
+# A4 Part 3: reports, grouped summaries, CSV/JSON export
+# Author: Hriday Agarwal
+# ---------------------------------------------------------------
+
+def _validation_runs_queryset():
+    return ValidationRun.objects.select_related(
+        "contract", "contract__dataset", "submitted_by"
+    ).order_by("-started_at")
+
+
+def reports_view(request):
+    """
+    Reports page: two grouped summaries over ValidationRun (by outcome, and
+    by dataset) plus a totals line, with links to export the same data.
+
+    The outcome breakdown reuses charts.run_outcome_counts() rather than
+    recomputing it, so this page and the Quality History chart can never
+    disagree about how many runs passed, failed, or errored.
+    """
+    runs = _validation_runs_queryset()
+
+    dataset_breakdown = (
+        runs.values("contract__dataset__name")
+        .annotate(total=Count("id"))
+        .order_by("contract__dataset__name")
+    )
+
+    context = {
+        "status_breakdown": charts.run_outcome_counts(),
+        "dataset_breakdown": dataset_breakdown,
+        "dataset_total": Dataset.objects.count(),
+        "run_total": runs.count(),
+        "failed_total": runs.filter(status=ValidationRun.Status.FAILED).count(),
+    }
+    return render(request, "data_quality/reports.html", context)
+
+
+def export_validation_runs_csv(request):
+    """CSV export of every ValidationRun, newest first."""
+    buffer = StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow([
+        "id", "file_name", "dataset", "contract_version", "status",
+        "submitted_by", "row_count", "started_at", "finished_at",
+    ])
+    for run in _validation_runs_queryset():
+        writer.writerow([
+            run.id,
+            run.file_name,
+            run.contract.dataset.name,
+            run.contract.version_number,
+            run.status,
+            run.submitted_by.username if run.submitted_by else "",
+            run.row_count,
+            run.started_at.isoformat(),
+            run.finished_at.isoformat() if run.finished_at else "",
+        ])
+
+    filename = f"validation_runs_{timezone.now():%Y-%m-%d_%H-%M}.csv"
+    response = HttpResponse(buffer.getvalue(), content_type="text/csv")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+def export_validation_runs_json(request):
+    """JSON export of every ValidationRun, with generated_at/record_count metadata."""
+    runs = _validation_runs_queryset()
+    data = {
+        "generated_at": timezone.now().isoformat(),
+        "record_count": runs.count(),
+        "validation_runs": [
+            {
+                "id": run.id,
+                "file_name": run.file_name,
+                "dataset": run.contract.dataset.name,
+                "contract_version": run.contract.version_number,
+                "status": run.status,
+                "submitted_by": run.submitted_by.username if run.submitted_by else None,
+                "row_count": run.row_count,
+                "started_at": run.started_at.isoformat(),
+                "finished_at": run.finished_at.isoformat() if run.finished_at else None,
+            }
+            for run in runs
+        ],
+    }
+    filename = f"validation_runs_{timezone.now():%Y-%m-%d_%H-%M}.json"
+    response = JsonResponse(data, json_dumps_params={"indent": 2})
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response

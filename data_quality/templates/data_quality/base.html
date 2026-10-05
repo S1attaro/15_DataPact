@@ -63,6 +63,8 @@ it in production. See docs/notes/notes.txt section 30.
                 <span class="mainnav__planned" title="Wireframe screen 4 - not built yet">Upload</span>
                 <a href="{% url 'data_quality:quality-history' %}"
                    class="{% if request.resolver_match.url_name == 'quality-history' %}is-active{% endif %}">Quality History</a>
+                <a href="{% url 'data_quality:reports' %}"
+                   class="{% if request.resolver_match.url_name == 'reports' %}is-active{% endif %}">Reports</a>
             </nav>
         </div>
     </header>

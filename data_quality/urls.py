@@ -33,4 +33,17 @@ urlpatterns = [
 
     # --- API (Section 6, owned by Connor) ---
     path("api/datasets/", views.dataset_api, name="dataset-api"),
+
+    # --- A4 Part 3: reports and exports (Hriday) ---
+    path("reports/", views.reports_view, name="reports"),
+    path(
+        "reports/export/validation-runs.csv",
+        views.export_validation_runs_csv,
+        name="export-validation-runs-csv",
+    ),
+    path(
+        "reports/export/validation-runs.json",
+        views.export_validation_runs_json,
+        name="export-validation-runs-json",
+    ),
 ]
