@@ -1,0 +1,82 @@
+DataPact - A4 Part 4.1 readiness check
+Captured 2026-10-05 by Ashok Chacko, on main @ 4802769.
+
+========================================================================
+1. EVERY ROUTE, BOTH SETTINGS MODULES
+========================================================================
+
+    ROUTE                                  DEV     PROD   
+    -------------------------------------- -----   -----  
+    /                                      200     200    
+    /datasets/                             200     200    
+    /datasets/overview/                    200     200    
+    /datasets/1/                           200     200    
+    /datasets/manual/                      200     200    
+    /datasets/render/                      200     200    
+    /contracts/search/                     200     200    
+    /datasets/manage/                      200     200    
+    /quality/                              200     200    
+    /quality/run-outcomes.png              200     200    
+    /api/datasets/                         200     200    
+    /reports/                              200     200    
+    /reports/export/validation-runs.csv    200     200    
+    /reports/export/validation-runs.json   200     200    
+    /admin/                                302     302    
+
+    /admin/ 302 is the login redirect, not a broken route.
+    No 404s and no 500s: 'ensure no broken routes' (Part 4.2) holds.
+
+========================================================================
+2. STATIC FILES IN BOTH MODES
+========================================================================
+
+    development
+      stylesheet URL : /static/data_quality/css/datapact.css
+      status         : 200
+      cache-control  : (none - dev server)
+
+    production
+      stylesheet URL : /static/data_quality/css/datapact.e5ab6567e31e.css
+      status         : 200
+      Cache-Control: max-age=315360000, public, immutable
+
+========================================================================
+3. GITIGNORE RULES A4 CARES ABOUT
+========================================================================
+
+    db.sqlite3 tracked       yes  (A4 requires it committed)
+    db.sqlite3 ignored       no   (correct)
+    staticfiles/ ignored     yes  (correct)
+    .env ignored             yes  (correct)
+
+========================================================================
+4. SIZE (PythonAnywhere allows 512 MB)
+========================================================================
+
+    tracked files : 82
+    .git          : 5.4M
+    db.sqlite3    : 192K
+    A fresh clone is a few MB. venv/ and staticfiles/ are generated on
+    the server and are not in the repository.
+
+========================================================================
+5. TEMPLATES
+========================================================================
+
+    base.html                (the base template)
+    contract_search.html     extends base.html
+    dataset_detail.html      extends base.html
+    dataset_list.html        extends base.html
+    dataset_manage.html      extends base.html
+    dataset_overview.html    extends base.html
+    home.html                extends base.html
+    quality_history.html     extends base.html
+    reports.html             extends base.html
+
+    Part 4.2 'ensure templates extend base.html' holds for all 8.
+
+========================================================================
+6. TESTS
+========================================================================
+
+    python manage.py test data_quality -> 111 passing
