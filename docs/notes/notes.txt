@@ -1174,3 +1174,138 @@ ExportValidationRunsJsonTests. 111 passing total.
 
   - Added a "Reports" link to base.html's nav, same pattern as the
     Contracts/Manage links already there.
+
+
+=============================================
+A4 - WEEKLY PROGRESS UPDATE (Week of 2026-10-05) - Ashok, Part 4.1
+=============================================
+
+34. THE CHARTS NAV LINK - WHY IT IS NOT WRITTEN THE WAY IT WAS ASKED FOR
+
+Tejas asked for this in base.html's nav:
+
+    <a href="{% url 'data_quality:charts' %}"
+       class="{% if request.resolver_match.url_name == 'charts' %}is-active{% endif %}">Charts</a>
+
+There is no route named "charts" on main. urls.py has home, dataset-*,
+contract-search, dataset-manage, quality-history, run-outcomes-chart,
+dataset-api, reports and the two export routes. "charts" is a Python
+module (data_quality/charts.py, Tejas's matplotlib helper), not a URL
+name, which is probably where the name came from.
+
+{% url %} raises NoReverseMatch when the name does not resolve, and
+base.html is inherited by all eight page templates. So that one line
+does not produce a dead link - it takes the whole site down. Measured,
+not guessed:
+
+    python manage.py test data_quality   ->  FAILED (errors=68) of 111
+    /            500        /contracts/search/   500
+    /datasets/   500        /reports/            500
+    /datasets/1/ 500        /quality/            500
+
+Every page, both settings modules. In deployment week.
+
+What is committed instead:
+
+    {% url 'data_quality:charts' as charts_url %}
+    {% if charts_url %}
+        <a href="{{ charts_url }}" class="...">Charts</a>
+    {% endif %}
+
+The "as" form of {% url %} stores an empty string rather than raising.
+So today the link is simply not rendered, and the second the route is
+added it appears on its own - nobody has to come back and edit
+base.html again. Verified both ways:
+
+    route absent  ->  page 200, no Charts link, 113 tests pass
+    route present ->  page 200, Charts link with href="/charts/"
+
+(The "present" case was checked by adding a temporary charts route
+pointing at an existing view, confirming, then reverting. urls.py is
+untouched in this commit, as asked.)
+
+TEJAS - this is the handoff. Add the route and the link lights up by
+itself:
+
+    path("charts/", views.charts, name="charts"),
+
+Nothing in base.html needs to change again. If you would rather the
+link were plain, add the route first and I will simplify it after.
+
+35. REST OF PART 4.1 - ALREADY DONE, RE-VERIFIED TODAY
+
+All of this landed with A3 Section 3; today was a check, not new work.
+
+  static structure    data_quality/static/data_quality/{css,img}
+  STATIC_URL          set; STATICFILES_DIRS not needed (app-level, the
+                      app-directories finder handles it)
+  STATIC_ROOT         BASE_DIR / 'staticfiles'
+  {% load static %}   base.html line 1
+  stylesheet          linked with {% static %}, visible on every page,
+                      not just the two the rubric asks for
+  requirements.txt    7 pins incl. whitenoise, matplotlib, python-dotenv
+  .gitignore          staticfiles/ ignored; db.sqlite3 NOT ignored and
+                      IS tracked, per A4's sequencing note 1.2
+  both settings       dev and production both serve every route
+
+Full matrix in docs/a4_s41_deployment_readiness.txt: 15 routes x 2
+settings modules, all 200 (admin 302 = login redirect), stylesheet 200
+in both, and the production copy still carries the content hash and the
+immutable cache header.
+
+Screenshots for "styling visible on at least two pages":
+  docs/screenshots/a4/s41_styling_home.png     the A3 home page
+  docs/screenshots/a4/s41_styling_reports.png  Hriday's A4 reports page
+Both are pages other people wrote, picking up the stylesheet without
+either of them styling anything themselves.
+
+Size for PythonAnywhere's 512 MB: 82 tracked files, .git is 5.4 MB,
+db.sqlite3 is 192 KB. venv/ and staticfiles/ are built on the server.
+
+36. NOT MINE, BUT BLOCKING A4
+
+  - Part 1 (Vega-Lite charts, 10 pts) has not been started by anyone.
+    No vega anywhere in the repo, and no /charts/ route - which is the
+    same gap section 34 is about.
+  - Part 2 (external API, 10 pts) not started - no requests.get
+    anywhere, and requests is not in requirements.txt.
+  - Part 3 (exports + reports) is done - Hriday, merged.
+  - Part 4.3/4.4 (PythonAnywhere) is in-class work and needs someone to
+    own the account and give mohitg27 access.
+
+37. PART 4.2 CODE CLEANUP - AUDIT RESULT (Ashok)
+
+Ran the cleanup checklist across the whole project rather than only my
+own files, since "deployment readiness" is my slice of A4.
+
+  unused imports   none. pyflakes is clean on data_quality/ and
+                   datapact_project/.
+  debug prints     none. No print(), pprint(), pdb or breakpoint() in
+                   application code.
+  TODO / FIXME     none.
+  templates        all 8 extend base.html.
+  broken routes    none. 15 routes x 2 settings modules, all serving.
+
+Nothing needed changing, so nothing was changed - no teammate's code
+was touched.
+
+Two things I checked specifically because they are the usual way a
+Django project that works locally dies on PythonAnywhere:
+
+  Virtualenv size. Measured, not guessed: built a clean venv from
+  requirements.txt alone and it comes to 165 MB. matplotlib is about
+  100 MB of that once numpy, pillow and fontTools come with it. With
+  the repo and collected static on top it is roughly 175 MB against the
+  512 MB limit, so about 330 MB spare. Fine, but matplotlib is the
+  thing to watch if anyone adds another heavy dependency.
+
+  Matplotlib backend. charts.py already calls matplotlib.use("Agg")
+  before importing anything from pyplot, so it draws into memory with
+  no display. That is exactly right for a headless server - TEJAS got
+  this right first time, no change needed.
+
+CONNOR - requirements.txt is my file this week. Your Part 2 will need
+`requests` pinned in it. Either add the line in your PR and I will not
+touch it, or tell me the version and I will add it in mine. Just don't
+let it land unpinned, because PythonAnywhere installs from that file
+and the external API will 500 on the server while working locally.

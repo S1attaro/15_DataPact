@@ -60,6 +60,19 @@ it in production. See docs/notes/notes.txt section 30.
                    class="{% if request.resolver_match.url_name == 'contract-search' %}is-active{% endif %}">Contracts</a>
                 <a href="{% url 'data_quality:dataset-manage' %}"
                    class="{% if request.resolver_match.url_name == 'dataset-manage' %}is-active{% endif %}">Manage</a>
+                {% comment %}
+                    Charts (A4 Part 1). {% url %} raises NoReverseMatch when the
+                    route is missing, and base.html is on every page, so writing
+                    it the plain way takes the whole site down until /charts/
+                    exists. The "as" form stores an empty string instead of
+                    raising, so this link simply is not rendered yet and appears
+                    on its own the moment the route is added - no second edit.
+                {% endcomment %}
+                {% url 'data_quality:charts' as charts_url %}
+                {% if charts_url %}
+                    <a href="{{ charts_url }}"
+                       class="{% if request.resolver_match.url_name == 'charts' %}is-active{% endif %}">Charts</a>
+                {% endif %}
                 <span class="mainnav__planned" title="Wireframe screen 4 - not built yet">Upload</span>
                 <a href="{% url 'data_quality:quality-history' %}"
                    class="{% if request.resolver_match.url_name == 'quality-history' %}is-active{% endif %}">Quality History</a>

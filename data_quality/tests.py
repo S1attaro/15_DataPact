@@ -1289,3 +1289,48 @@ class ExportValidationRunsJsonTests(TestCase):
     def test_response_is_pretty_printed(self):
         response = self.client.get(reverse("data_quality:export-validation-runs-json"))
         self.assertGreater(response.content.decode().count("\n"), 3)
+
+
+# ---------------------------------------------------------------
+# A4 Part 4.1 - navigation safety
+# Author: Ashok Chacko (aschacko)
+# ---------------------------------------------------------------
+
+
+class OptionalNavLinkTests(TestCase):
+    """
+    base.html is inherited by every page, so a {% url %} for a route that does
+    not exist yet is not a broken link - it is a NoReverseMatch that turns the
+    entire site into 500s. The Charts link is written with the {% url ... as %}
+    form, which stores an empty string instead of raising.
+    """
+
+    def test_every_page_still_renders_while_the_charts_route_is_missing(self):
+        self.assertFalse(
+            any(p.name == "charts" for p in __import__(
+                "data_quality.urls", fromlist=["urlpatterns"]).urlpatterns
+                if hasattr(p, "name")),
+            "A 'charts' route now exists - this test's premise is stale, and "
+            "the nav link should be appearing on its own.",
+        )
+        for route in (
+            "data_quality:home",
+            "data_quality:dataset-list",
+            "data_quality:contract-search",
+            "data_quality:reports",
+        ):
+            with self.subTest(route=route):
+                self.assertEqual(self.client.get(reverse(route)).status_code, 200)
+
+    def test_charts_link_uses_the_non_raising_url_form(self):
+        """
+        Regression guard. Written the plain way,
+        {% url 'data_quality:charts' %} took 68 of 111 tests down and returned
+        500 on every page, because base.html is on all of them.
+        """
+        base = Path(
+            finders.find("data_quality/css/datapact.css")
+        ).parents[3] / "templates/data_quality/base.html"
+        source = base.read_text()
+        self.assertIn("{% url 'data_quality:charts' as charts_url %}", source)
+        self.assertNotIn("{% url 'data_quality:charts' %}", source)
