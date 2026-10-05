@@ -1272,3 +1272,40 @@ db.sqlite3 is 192 KB. venv/ and staticfiles/ are built on the server.
   - Part 3 (exports + reports) is done - Hriday, merged.
   - Part 4.3/4.4 (PythonAnywhere) is in-class work and needs someone to
     own the account and give mohitg27 access.
+
+37. PART 4.2 CODE CLEANUP - AUDIT RESULT (Ashok)
+
+Ran the cleanup checklist across the whole project rather than only my
+own files, since "deployment readiness" is my slice of A4.
+
+  unused imports   none. pyflakes is clean on data_quality/ and
+                   datapact_project/.
+  debug prints     none. No print(), pprint(), pdb or breakpoint() in
+                   application code.
+  TODO / FIXME     none.
+  templates        all 8 extend base.html.
+  broken routes    none. 15 routes x 2 settings modules, all serving.
+
+Nothing needed changing, so nothing was changed - no teammate's code
+was touched.
+
+Two things I checked specifically because they are the usual way a
+Django project that works locally dies on PythonAnywhere:
+
+  Virtualenv size. Measured, not guessed: built a clean venv from
+  requirements.txt alone and it comes to 165 MB. matplotlib is about
+  100 MB of that once numpy, pillow and fontTools come with it. With
+  the repo and collected static on top it is roughly 175 MB against the
+  512 MB limit, so about 330 MB spare. Fine, but matplotlib is the
+  thing to watch if anyone adds another heavy dependency.
+
+  Matplotlib backend. charts.py already calls matplotlib.use("Agg")
+  before importing anything from pyplot, so it draws into memory with
+  no display. That is exactly right for a headless server - TEJAS got
+  this right first time, no change needed.
+
+CONNOR - requirements.txt is my file this week. Your Part 2 will need
+`requests` pinned in it. Either add the line in your PR and I will not
+touch it, or tell me the version and I will add it in mine. Just don't
+let it land unpinned, because PythonAnywhere installs from that file
+and the external API will 500 on the server while working locally.

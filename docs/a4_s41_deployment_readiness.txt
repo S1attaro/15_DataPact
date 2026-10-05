@@ -53,11 +53,18 @@ Captured 2026-10-05 by Ashok Chacko, on main @ 4802769.
 4. SIZE (PythonAnywhere allows 512 MB)
 ========================================================================
 
-    tracked files : 82
-    .git          : 5.4M
-    db.sqlite3    : 192K
-    A fresh clone is a few MB. venv/ and staticfiles/ are generated on
-    the server and are not in the repository.
+    tracked files    : 82
+    .git             : 5.4 MB
+    db.sqlite3       : 192 KB
+    virtualenv       : 165 MB
+
+    The virtualenv figure is measured, not estimated: a clean venv built
+    from requirements.txt and nothing else. matplotlib is most of it -
+    it pulls numpy, pillow and fontTools behind it, about 100 MB of the
+    165. Still comfortable: roughly 175 MB all in against a 512 MB
+    limit, leaving around 330 MB of headroom.
+
+    venv/ and staticfiles/ are built on the server, not cloned.
 
 ========================================================================
 5. TEMPLATES
@@ -79,4 +86,33 @@ Captured 2026-10-05 by Ashok Chacko, on main @ 4802769.
 6. TESTS
 ========================================================================
 
-    python manage.py test data_quality -> 111 passing
+    python manage.py test data_quality -> 113 passing
+
+    (111 on main, plus the 2 navigation-safety tests added with the
+    Charts link - see docs/notes/notes.txt section 34.)
+
+========================================================================
+7. CODE CLEANUP (Part 4.2)
+========================================================================
+
+    unused imports   none (pyflakes, clean across data_quality/ and
+                     datapact_project/)
+    debug prints     none (no print(), pprint(), pdb or breakpoint() in
+                     application code)
+    TODO / FIXME     none
+    templates        all 8 extend base.html (section 5 above)
+    broken routes    none (section 1 above)
+
+    requirements.txt pins every third-party package the code imports -
+    dotenv, matplotlib, whitenoise - plus Django and its own
+    dependencies. Transitive packages (numpy, pillow, fontTools,
+    kiwisolver and so on) install behind matplotlib and are deliberately
+    not pinned separately.
+
+    matplotlib is already pinned to the Agg backend in charts.py
+    (matplotlib.use("Agg") before any pyplot import), which is what
+    makes it safe on a headless server. Nothing to change for
+    deployment.
+
+    NOT YET REFLECTED HERE: Part 2's external API will need `requests`
+    added to requirements.txt. Nothing imports it yet.
