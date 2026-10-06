@@ -113,6 +113,10 @@ Skip that step and the pages still render, just without the content hash in the 
 | `/datasets/manage/` | `DatasetManageView` | Class-based, View (GET filter + POST create) |
 | `/quality/` | `quality_history` | Function-based, render() |
 | `/quality/run-outcomes.png` | `run_outcomes_chart` | Function-based, PNG via HttpResponse |
+| `/charts/` | `charts_page` | Function-based, render() (Vega-Lite charts) |
+| `/api/run-outcomes/` | `api_run_outcomes` | Function-based, JsonResponse (chart API) |
+| `/api/run-volume/` | `api_run_volume` | Function-based, JsonResponse (chart API) |
+| `/vega-lite/chart<n>.json` | `vega_chart_spec` | Function-based, JsonResponse (chart spec) |
 | `/reports/` | `reports_view` | Function-based, render() |
 | `/reports/export/validation-runs.csv` | `export_validation_runs_csv` | Function-based, CSV via HttpResponse |
 | `/reports/export/validation-runs.json` | `export_validation_runs_json` | Function-based, JsonResponse |
@@ -327,6 +331,59 @@ JSON export (real response headers + body):
 
 ![JSON export - headers and pretty-printed body](docs/screenshots/a4/json_export_evidence.png)
 
+## A4, Part 1: Internal Chart API & Vega-Lite Charts (Tejas)
+
+`/charts/` carries two Vega-Lite charts. Neither one has data in it: each
+specification points at an internal JSON API with `data: {"url": ...}`, so the
+charts show whatever is in the database at the moment the page is opened.
+
+### The two internal chart APIs
+
+Both are plain GET endpoints that return clean JSON straight from the models,
+with no envelope, which is the shape Vega-Lite reads without any extra parsing.
+
+| Endpoint | Shape | Feeds |
+| --- | --- | --- |
+| `/api/run-outcomes/` | `[{"outcome": "Passed", "runs": 4}, ...]` | the bar chart |
+| `/api/run-volume/` | one object per validation run, with `rows_checked`, `rows_failed`, `outcome` | the scatter chart |
+
+These are separate from `/api/datasets/`, which lists dataset records. A bar
+chart needs an aggregate and a scatter needs one row per run, so neither chart
+could read that endpoint as it stands, and rewriting it would have changed an
+endpoint another part of the project depends on.
+
+### The two charts
+
+- **Bar - Validation Run Outcomes.** The aggregated summary: how many runs
+  ended passed, failed, or in error. A status with no runs stays on the chart
+  at zero rather than disappearing.
+- **Scatter - Rows Checked vs Rows Failed.** One point per validation run,
+  coloured by outcome. It answers whether big files are the ones that break:
+  on the current data they are not, which is the argument for checking every
+  file rather than only the large ones.
+
+### Chart specifications
+
+Each specification is published at its own endpoint and can be opened directly
+or pasted into the Vega-Lite editor:
+
+```
+/vega-lite/chart1.json     bar chart
+/vega-lite/chart2.json     scatter chart
+```
+
+The page renders from those same URLs, so the published specification and the
+chart on screen cannot drift apart. The source for both lives in
+`data_quality/vega.py`.
+
+The Vega, Vega-Lite and vega-embed libraries load from a CDN, so this page adds
+nothing to the static pipeline and needs no `collectstatic` step of its own.
+
+Screenshots: `docs/screenshots/a4/a4_p1_charts_page.png`,
+`a4_p1_chart1_spec.png`, `a4_p1_chart2_spec.png`,
+`a4_p1_api_run_outcomes.png`, `a4_p1_api_run_volume.png`.
+
+
 ## Project layout
 
 ```
@@ -339,7 +396,7 @@ JSON export (real response headers + body):
   db.sqlite3            demo database
   datapact_project/     root URLs, wsgi, asgi
     settings/           base.py (shared), development.py, production.py
-  data_quality/         models, views, urls, charts, forms, tests
+  data_quality/         models, views, urls, charts, vega, forms, tests
     static/
       data_quality/     datapact.css, datapact-logo.svg
     templates/

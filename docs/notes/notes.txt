@@ -1174,3 +1174,132 @@ ExportValidationRunsJsonTests. 111 passing total.
 
   - Added a "Reports" link to base.html's nav, same pattern as the
     Contracts/Manage links already there.
+
+
+=============================================
+A4 - WEEKLY PROGRESS UPDATE (Week of 2026-10-05) - Tejas, Part 1
+=============================================
+
+44. PART 1 (INTERNAL CHART API + VEGA-LITE CHARTS)
+
+Page:   data_quality.views.charts_page  ->  /charts/  (name: charts)
+Specs:  data_quality/vega.py, served by vega_chart_spec
+APIs:   api_run_outcomes, api_run_volume
+Template: data_quality/templates/data_quality/charts.html
+
+Two charts, as the rubric asks for: one bar (aggregated summary) and one
+scatter.
+
+  Bar      Validation Run Outcomes - runs grouped by passed/failed/error.
+           Reuses the aggregation written for A3 Section 4, reshaped into
+           the flat [{"outcome", "runs"}] form Vega-Lite reads directly.
+           A status with no runs stays at zero so the bars do not move
+           around as data changes.
+
+  Scatter  Rows Checked vs Rows Failed - one point per validation run,
+           coloured by outcome. Chosen over a line chart on the evidence:
+           runs per month by outcome fills only 8 of 18 month/status
+           cells, so a multi-series line would have been mostly gaps,
+           while every one of the 12 runs is a point on the scatter. It
+           also answers a real question - the largest files pass, and the
+           worst failure is a mid-sized one.
+
+WHY NEW API ENDPOINTS RATHER THAN /api/datasets/
+
+  A4 Part 1.1 allows either reusing the A3 endpoint or adding one. I
+  added two. /api/datasets/ lists dataset records; the bar chart needs an
+  aggregate and the scatter needs one row per validation run, so neither
+  chart can read it as it stands. Changing its shape would have meant
+  editing an endpoint that belongs to Section 6 and that Part 2 builds
+  on, so the charts got their own endpoints instead and /api/datasets/ is
+  untouched.
+
+NO INLINE DATA
+
+  Both specifications carry data: {"url": "..."} and nothing else. There
+  is a test that fails if "values" ever appears in a spec's data block,
+  and another that fails if the page markup starts carrying chart rows.
+
+THE DEDICATED CHART-OUTPUT ENDPOINTS
+
+  Part 1.2 says chart outputs should be exposed through dedicated
+  endpoints, and gives /vega-lite/chart1.png and chart2.jpg as examples.
+  What is published is each chart's Vega-Lite specification:
+
+      /vega-lite/chart1.json
+      /vega-lite/chart2.json
+
+  That covers "expose chart outputs through dedicated endpoints" and the
+  grading line "submit the Vega-Lite JSON specifications" with one URL
+  each, and the page renders from those same URLs so the published spec
+  and the rendered chart cannot disagree.
+
+  It is not a .png. Serving a rendered image would mean rendering
+  Vega-Lite server-side, and the only practical way to do that in Python
+  is vl-convert-python - a 30.6 MB wheel (measured, not estimated).
+  That would add a line to requirements.txt, which is Part 4.1's
+  deliverable and not mine to change, and it eats into the 512 MB
+  PythonAnywhere budget the assignment warns about. Flagged for the team
+  rather than decided alone - see section 46.
+
+45. TESTS
+
+19 new tests. python manage.py test: 130 passing (111 before this
+branch + 19).
+
+  ChartApiTests          both endpoints are GET, return application/json
+                         and a flat array; the outcome API keeps an
+                         unused status at zero; the volume API reports a
+                         clean run as 0 failures rather than null and
+                         sums a run's violations; both behave on an empty
+                         database.
+  VegaSpecEndpointTests   both specs resolve at /vega-lite/chartN.json,
+                         carry data.url and no inline values, that URL
+                         actually answers 200, chart 1 is a bar and chart
+                         2 is a point mark, each declares a schema and
+                         axis titles, and the served spec equals what the
+                         module builds.
+  ChartsPageTests        the page extends the shell, embeds both spec
+                         endpoints, loads the three Vega libraries, has
+                         no chart rows pasted into the markup, builds its
+                         URLs with {% url %}, and is reachable from the
+                         nav.
+
+  Browser-checked as well, because Vega-Lite draws client-side and no
+  server test can prove a chart appeared: both charts render in Chrome
+  against the local server, screenshot in docs/screenshots/a4/. The
+  server log confirms the whole chain each time - browser fetches
+  /vega-lite/chartN.json, which sends it on to /api/run-outcomes/ and
+  /api/run-volume/.
+
+  All three endpoints are GET-only (@require_GET), so a POST gets 405
+  rather than being quietly served. Part 1.1 says the API "Uses GET".
+
+46. OPEN ITEMS FOR THE TEAM
+
+  - CONNOR, Part 2: not started as of this branch. No requests.get()
+    anywhere in the repo, no "requests" line in requirements.txt, and no
+    A4 branch on origin (the newest connor/* branch is from Sept 21).
+    Part 2 is worth 10 of the 40 points. Deliberately not implemented
+    here - it is Connor's section.
+  - TEAM: whether to also serve the charts as .png at /vega-lite/, per
+    the literal wording in Part 1.2. Cost measured above. Needs Ashok's
+    agreement because it changes requirements.txt, and it affects the
+    deployment size budget.
+  - ASHOK: /charts/ needs a nav link in base.html. I added one, then
+    reverted it - base.html is the shared template layer and belongs to
+    Section 3 / Part 4.1, so the two lines are Ashok's to add, not mine.
+    base.html is now byte-identical to main. The two lines, matching the
+    pattern already used by every other entry:
+
+        <a href="{% url 'data_quality:charts' %}"
+           class="{% if request.resolver_match.url_name == 'charts' %}is-active{% endif %}">Charts</a>
+
+    Until that lands, /charts/ is reachable directly but not from the
+    nav. The test that checks this skips with that reason rather than
+    failing someone else's deliverable, and starts asserting once the
+    link exists. The Part 1 screenshot was taken while the link was in
+    place, so it shows "Charts" in the nav; the charts themselves are
+    unaffected.
+  - Parts 4.2/4.3/4.4 (deployment, PythonAnywhere) are still outstanding
+    and are scheduled as in-class work.

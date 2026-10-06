@@ -24,7 +24,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 
-from django.db.models import Count  # noqa: E402  (after matplotlib.use)
+from django.db.models import Count, Sum  # noqa: E402  (after matplotlib.use)
 from matplotlib.backends.backend_agg import FigureCanvasAgg  # noqa: E402
 from matplotlib.figure import Figure  # noqa: E402
 from matplotlib.ticker import MaxNLocator  # noqa: E402
@@ -69,6 +69,49 @@ def run_outcome_counts():
     return [
         (value, label, totals.get(value, 0))
         for value, label in ValidationRun.Status.choices
+    ]
+
+
+def run_outcome_rows():
+    """
+    Chart-ready rows for the outcome bar chart (A4 Part 1).
+
+    Same aggregation as run_outcome_counts(), reshaped into the flat
+    ``[{"outcome": ..., "runs": ...}]`` form Vega-Lite reads directly. Statuses
+    with no runs are kept at zero so the chart has a stable set of bars.
+    """
+    return [
+        {"outcome": label, "runs": total}
+        for _, label, total in run_outcome_counts()
+    ]
+
+
+def run_volume_points():
+    """
+    Chart-ready rows for the rows-checked vs rows-failed scatter (A4 Part 1).
+
+    One point per ValidationRun: the grain is one file checked against one
+    contract version. ``rows_failed`` sums the failed_row_count of that run's
+    violations, and a run with no violations is 0 rather than null, so a clean
+    run still plots on the floor of the chart instead of disappearing.
+    """
+    runs = (
+        ValidationRun.objects
+        .select_related("contract__dataset")
+        .annotate(failed=Sum("violations__failed_row_count"))
+        .order_by("started_at")
+    )
+    labels = dict(ValidationRun.Status.choices)
+    return [
+        {
+            "file_name": run.file_name,
+            "dataset": run.contract.dataset.name,
+            "rows_checked": run.row_count,
+            "rows_failed": run.failed or 0,
+            "outcome": labels[run.status],
+            "started_at": run.started_at.date().isoformat(),
+        }
+        for run in runs
     ]
 
 

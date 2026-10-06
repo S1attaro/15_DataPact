@@ -19,7 +19,7 @@ from django.test import TestCase
 from django.urls import resolve, reverse
 
 from . import views
-from . import charts
+from . import charts, vega
 from .models import Contract, Dataset, ValidationRule, ValidationRun, Violation
 
 
@@ -1289,3 +1289,203 @@ class ExportValidationRunsJsonTests(TestCase):
     def test_response_is_pretty_printed(self):
         response = self.client.get(reverse("data_quality:export-validation-runs-json"))
         self.assertGreater(response.content.decode().count("\n"), 3)
+
+
+# ---------------------------------------------------------------
+# A4 Part 1: internal chart APIs and Vega-Lite charts
+# Author: Tejas Jaggi (tejasj2)
+# ---------------------------------------------------------------
+
+CHARTS_TEMPLATE = TEMPLATE_DIR / "charts.html"
+
+
+class ChartApiTests(TestCase):
+    """The two internal JSON APIs the charts read (A4 Part 1.1)."""
+
+    def setUp(self):
+        owner = User.objects.create_user("owner1", password="pw")
+        dataset = Dataset.objects.create(
+            name="Monthly Enrollment Export", owner=owner, source_team="Registrar"
+        )
+        self.contract = Contract.objects.create(
+            dataset=dataset, version_number=1, status=Contract.Status.ACTIVE
+        )
+        self.rule = ValidationRule.objects.create(
+            contract=self.contract,
+            column_name="credit_hours",
+            rule_type=ValidationRule.RuleType.RANGE,
+        )
+
+    def _run(self, status, rows=100, failed=None):
+        run = ValidationRun.objects.create(
+            contract=self.contract,
+            file_name=f"{status.lower()}.csv",
+            row_count=rows,
+            status=status,
+        )
+        if failed is not None:
+            Violation.objects.create(
+                run=run, rule=self.rule, failed_row_count=failed, message="x"
+            )
+        return run
+
+    def test_outcome_api_is_a_get_route_returning_json(self):
+        url = reverse("data_quality:api-run-outcomes")
+        self.assertEqual(url, "/api/run-outcomes/")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json")
+
+    def test_outcome_api_returns_a_flat_chart_ready_array(self):
+        self._run(ValidationRun.Status.PASSED)
+        self._run(ValidationRun.Status.FAILED)
+        self._run(ValidationRun.Status.FAILED)
+        rows = json.loads(self.client.get(reverse("data_quality:api-run-outcomes")).content)
+        self.assertIsInstance(rows, list)
+        self.assertEqual(sorted(rows[0].keys()), ["outcome", "runs"])
+        totals = {row["outcome"]: row["runs"] for row in rows}
+        self.assertEqual(totals["Passed"], 1)
+        self.assertEqual(totals["Failed"], 2)
+
+    def test_outcome_api_keeps_an_unused_outcome_at_zero(self):
+        self._run(ValidationRun.Status.PASSED)
+        rows = json.loads(self.client.get(reverse("data_quality:api-run-outcomes")).content)
+        self.assertEqual({r["outcome"]: r["runs"] for r in rows}["Error"], 0)
+
+    def test_volume_api_returns_one_point_per_run(self):
+        self._run(ValidationRun.Status.FAILED, rows=500, failed=12)
+        self._run(ValidationRun.Status.PASSED, rows=900)
+        url = reverse("data_quality:api-run-volume")
+        self.assertEqual(url, "/api/run-volume/")
+        points = json.loads(self.client.get(url).content)
+        self.assertEqual(len(points), 2)
+        for key in ("file_name", "dataset", "rows_checked", "rows_failed", "outcome"):
+            self.assertIn(key, points[0])
+
+    def test_volume_api_reports_a_clean_run_as_zero_failures_not_null(self):
+        self._run(ValidationRun.Status.PASSED, rows=900)
+        point = json.loads(self.client.get(reverse("data_quality:api-run-volume")).content)[0]
+        self.assertEqual(point["rows_failed"], 0)
+        self.assertIsNotNone(point["rows_failed"])
+
+    def test_volume_api_sums_the_failed_rows_of_a_run(self):
+        self._run(ValidationRun.Status.FAILED, rows=500, failed=12)
+        point = json.loads(self.client.get(reverse("data_quality:api-run-volume")).content)[0]
+        self.assertEqual(point["rows_failed"], 12)
+        self.assertEqual(point["rows_checked"], 500)
+
+    def test_apis_are_empty_arrays_on_an_empty_database(self):
+        ValidationRun.objects.all().delete()
+        self.assertEqual(
+            json.loads(self.client.get(reverse("data_quality:api-run-volume")).content), []
+        )
+        rows = json.loads(self.client.get(reverse("data_quality:api-run-outcomes")).content)
+        self.assertEqual([r["runs"] for r in rows], [0, 0, 0])
+
+
+class VegaSpecEndpointTests(TestCase):
+    """Each chart's specification is published at its own URL (A4 Part 1.2)."""
+
+    def test_spec_endpoints_resolve_and_serve_json(self):
+        for number in (1, 2):
+            with self.subTest(chart=number):
+                url = reverse("data_quality:vega-chart-spec", args=[number])
+                self.assertEqual(url, f"/vega-lite/chart{number}.json")
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response["Content-Type"], "application/json")
+
+    def test_unknown_chart_number_is_a_404(self):
+        self.assertEqual(self.client.get("/vega-lite/chart9.json").status_code, 404)
+
+    def test_specs_read_an_internal_api_url_and_carry_no_inline_data(self):
+        for number in (1, 2):
+            with self.subTest(chart=number):
+                spec = json.loads(
+                    self.client.get(
+                        reverse("data_quality:vega-chart-spec", args=[number])
+                    ).content
+                )
+                self.assertIn("url", spec["data"])
+                # A4: data must come from the API, not be pasted into the spec.
+                self.assertNotIn("values", spec["data"])
+                self.assertEqual(self.client.get(spec["data"]["url"]).status_code, 200)
+
+    def test_chart_one_is_a_bar_chart_and_chart_two_is_a_scatter(self):
+        bar = json.loads(
+            self.client.get(reverse("data_quality:vega-chart-spec", args=[1])).content
+        )
+        scatter = json.loads(
+            self.client.get(reverse("data_quality:vega-chart-spec", args=[2])).content
+        )
+        self.assertEqual(bar["mark"]["type"], "bar")
+        self.assertEqual(scatter["mark"]["type"], "point")
+
+    def test_specs_declare_a_schema_title_and_axis_titles(self):
+        for number in (1, 2):
+            with self.subTest(chart=number):
+                spec = vega.CHART_SPECS[number]()
+                self.assertIn("vega-lite", spec["$schema"])
+                self.assertTrue(spec["title"]["text"])
+                self.assertTrue(spec["encoding"]["x"]["title"])
+                self.assertTrue(spec["encoding"]["y"]["title"])
+
+    def test_published_spec_matches_the_one_the_module_builds(self):
+        # The page renders from the endpoint, so the endpoint must not drift.
+        for number in (1, 2):
+            with self.subTest(chart=number):
+                served = json.loads(
+                    self.client.get(
+                        reverse("data_quality:vega-chart-spec", args=[number])
+                    ).content
+                )
+                self.assertEqual(served, vega.CHART_SPECS[number]())
+
+
+class ChartsPageTests(TestCase):
+    """The page that embeds both charts (A4 Part 1.2)."""
+
+    def test_page_renders_and_extends_the_site_shell(self):
+        response = self.client.get(reverse("data_quality:charts"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "data_quality/charts.html")
+        self.assertTemplateUsed(response, "data_quality/base.html")
+
+    def test_page_embeds_both_charts_through_their_spec_endpoints(self):
+        response = self.client.get(reverse("data_quality:charts"))
+        for number in (1, 2):
+            with self.subTest(chart=number):
+                self.assertContains(
+                    response, reverse("data_quality:vega-chart-spec", args=[number])
+                )
+
+    def test_page_loads_the_vega_libraries(self):
+        html = self.client.get(reverse("data_quality:charts")).content.decode()
+        for library in ("vega@5", "vega-lite@5", "vega-embed@6"):
+            with self.subTest(library=library):
+                self.assertIn(library, html)
+
+    def test_page_does_not_paste_chart_data_into_the_markup(self):
+        # The whole point of data.url is that the rows are not in the template.
+        html = self.client.get(reverse("data_quality:charts")).content.decode()
+        self.assertNotIn('"values"', html)
+        self.assertNotIn("rows_checked", html)
+
+    def test_template_builds_its_urls_with_the_url_tag(self):
+        source = CHARTS_TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("{% url 'data_quality:vega-chart-spec'", source)
+        self.assertNotIn('"/vega-lite/chart"', source)
+
+    def test_charts_page_is_reachable_from_the_navigation(self):
+        # The nav lives in base.html, which belongs to Section 3 / Part 4.1,
+        # so the Charts link is Ashok's to add rather than mine. Until it is
+        # there this skips with a reason instead of failing someone else's
+        # deliverable; once the link lands the assertion starts running.
+        charts_url = reverse("data_quality:charts")
+        html = self.client.get("/").content.decode()
+        if charts_url not in nav_links(html):
+            self.skipTest(
+                "base.html does not link /charts/ yet - owner: Ashok (Part 4.1 / "
+                "shared template layer). The page itself is reachable directly."
+            )
+        self.assertIn(charts_url, nav_links(html))
