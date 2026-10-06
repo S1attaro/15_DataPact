@@ -34,6 +34,16 @@ urlpatterns = [
     # --- API (Section 6, owned by Connor) ---
     path("api/datasets/", views.dataset_api, name="dataset-api"),
 
+    # --- A4 Part 1: chart APIs and Vega-Lite charts (Tejas) ---
+    path("charts/", views.charts_page, name="charts"),
+    path("api/run-outcomes/", views.api_run_outcomes, name="api-run-outcomes"),
+    path("api/run-volume/", views.api_run_volume, name="api-run-volume"),
+    path(
+        "vega-lite/chart<int:number>.json",
+        views.vega_chart_spec,
+        name="vega-chart-spec",
+    ),
+
     # --- A4 Part 2: external API (Connor) ---
     path("api/lookup/", views.dataset_lookup_api, name="dataset-lookup"),
 

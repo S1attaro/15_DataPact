@@ -1,0 +1,90 @@
+{% extends "data_quality/base.html" %}
+{% comment %}
+=============================================================================
+A4 Part 1 - Vega-Lite charts, Tejas Jaggi
+
+Context expected (supplied by charts_page):
+    chart_specs   [{number, title, caption}, ...] - one entry per chart
+
+Each chart is rendered by vegaEmbed from its own /vega-lite/chartN.json
+endpoint, and that specification points at an internal JSON API through
+data.url. So the data travels page -> spec endpoint -> internal API -> models,
+and no dataset is pasted into either the template or the specification.
+
+Vega libraries come from a CDN rather than data_quality/static/, so this page
+adds nothing to the static pipeline that Section 4.1 owns.
+=============================================================================
+{% endcomment %}
+
+{% block title %}Charts - DataPact{% endblock %}
+
+{% block extra_head %}
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+    <style>
+        .chart { width: 100%; min-height: 320px; }
+        .chart__fallback { color: var(--fail-ink); margin: 0; }
+        .chart__links { margin: 0.9rem 0 0; font-size: 0.9rem; }
+        .chart__links a { margin-right: 1rem; }
+    </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+    <p class="breadcrumbs">
+        <a href="{% url 'data_quality:home' %}">Home</a> / Charts
+    </p>
+{% endblock %}
+
+{% block page_title %}Charts{% endblock %}
+
+{% block page_subtitle %}
+    <p class="page__subtitle">
+        Two Vega-Lite charts, each drawn from a live internal JSON API.
+    </p>
+{% endblock %}
+
+{% block content %}
+    {% for chart in chart_specs %}
+        <div class="panel" {% if not forloop.first %}style="margin-top: 1.25rem;"{% endif %}>
+            <div class="panel__head">
+                <h2 class="panel__title">{{ chart.title }}</h2>
+            </div>
+            <div class="panel__body">
+                <div class="chart"
+                     id="chart{{ chart.number }}"
+                     data-spec-url="{% url 'data_quality:vega-chart-spec' chart.number %}">
+                    <p class="chart__fallback">
+                        This chart needs JavaScript and the Vega-Lite library.
+                        The underlying numbers are on the
+                        <a href="{% url 'data_quality:reports' %}">Reports</a> page.
+                    </p>
+                </div>
+                <p class="prose" style="max-width: none;">{{ chart.caption }}</p>
+                <p class="chart__links">
+                    <a href="{% url 'data_quality:vega-chart-spec' chart.number %}">
+                        Vega-Lite specification (JSON)
+                    </a>
+                </p>
+            </div>
+        </div>
+    {% empty %}
+        {% include "data_quality/includes/_empty_state.html" with headline="No charts configured." message="The charts page has no specifications to render." only %}
+    {% endfor %}
+
+    <script>
+        // Each chart is fetched from its own published specification endpoint,
+        // so what renders here is exactly what that URL serves. The URL comes
+        // from {% templatetag openblock %} url {% templatetag closeblock %} on
+        // the element, not from a path written out here.
+        document.querySelectorAll(".chart").forEach(function (el) {
+            vegaEmbed(el, el.dataset.specUrl, {
+                actions: {editor: true, source: true, export: true, compiled: false}
+            }).catch(function (error) {
+                el.innerHTML =
+                    '<p class="chart__fallback">Chart failed to load: ' +
+                    error + "</p>";
+            });
+        });
+    </script>
+{% endblock %}

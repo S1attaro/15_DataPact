@@ -4,14 +4,15 @@ import requests
 
 from django.contrib import messages
 from django.db.models import Count
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.html import escape
 from django.views import View
+from django.views.decorators.http import require_GET
 from django.views.generic import DetailView, ListView
 
-from . import charts
+from . import charts, vega
 from .forms import DatasetForm
 from .models import Contract, Dataset, ValidationRun, Violation
 
@@ -424,6 +425,77 @@ def export_validation_runs_json(request):
     response = JsonResponse(data, json_dumps_params={"indent": 2})
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
+
+
+# ---------------------------------------------------------------
+# A4 Part 1: internal chart APIs and Vega-Lite charts
+# Author: Tejas Jaggi (tejasj2)
+#
+# Two GET endpoints returning clean JSON straight from the models, and the
+# page that charts them. The APIs are separate from Connor's /api/datasets/:
+# that one lists dataset records, while a bar chart needs an aggregate and a
+# scatter needs one row per run, so neither chart could read it as-is.
+# ---------------------------------------------------------------
+
+
+@require_GET
+def api_run_outcomes(request):
+    """
+    GET /api/run-outcomes/ - validation runs grouped by outcome.
+
+    Chart-ready and nothing else: a flat array of {"outcome", "runs"} with no
+    envelope, which is the shape Vega-Lite can point at without a parser.
+    """
+    return JsonResponse(charts.run_outcome_rows(), safe=False)
+
+
+@require_GET
+def api_run_volume(request):
+    """
+    GET /api/run-volume/ - one row per validation run, with the rows checked
+    and the rows that failed, for the scatter chart.
+    """
+    return JsonResponse(charts.run_volume_points(), safe=False)
+
+
+@require_GET
+def vega_chart_spec(request, number):
+    """
+    GET /vega-lite/chart<n>.json - the Vega-Lite specification itself.
+
+    Each chart's output is published at its own endpoint, so the spec can be
+    opened in the Vega-Lite editor or fetched by anything else, and the page
+    below renders from this same URL rather than from a second copy.
+    """
+    build = vega.CHART_SPECS.get(number)
+    if build is None:
+        raise Http404(f"No Vega-Lite chart numbered {number}.")
+    return JsonResponse(build(), json_dumps_params={"indent": 2})
+
+
+def charts_page(request):
+    """The two Vega-Lite charts, embedded on one page."""
+    context = {
+        "chart_specs": [
+            {
+                "number": 1,
+                "title": "Validation run outcomes",
+                "caption": (
+                    "How every checked file turned out. Reads the aggregate at "
+                    "/api/run-outcomes/."
+                ),
+            },
+            {
+                "number": 2,
+                "title": "Rows checked vs rows failed",
+                "caption": (
+                    "One point per validation run. Reads /api/run-volume/, and "
+                    "shows that the biggest files are not the ones that break."
+                ),
+            },
+        ],
+    }
+    return render(request, "data_quality/charts.html", context)
 
 
 # ---------------------------------------------------------------

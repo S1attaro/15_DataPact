@@ -10,10 +10,22 @@ Hriday Agarwal, Ashok Chacko, Tejas Jaggi, Connor Slattery
 
 ## Where the project is
 
-This repo holds the A1 data model and the A2 work so far.
+The repo holds the project through A4: the A1 data model, the A2 settings
+split and views, the A3 ORM/forms/navigation/visualisation work, and the A4
+APIs, charts, exports and deployment preparation. 132 tests pass.
 
-- Done: the class-based views (Hriday), the HttpResponse view, `.gitignore`, `.env.example`, and the docs (Connor), the templates (Ashok), the split settings, the render() view, and the tests (Tejas).
-- Still to come: later assignments build on this base.
+| A4 part | What | Status |
+| --- | --- | --- |
+| 1 | Internal chart APIs and two Vega-Lite charts (Tejas) | Done |
+| 2 | External keyless API, Open Library (Connor) | Done |
+| 3 | Reports page, CSV and JSON exports (Hriday) | Done |
+| 4.1 | Static files, requirements, `.gitignore` (Ashok) | Done |
+| 4.2 | Code cleanup and deployment readiness (Ashok) | Done |
+| 4.3 | Pull the repository on PythonAnywhere | **Not yet done** |
+| 4.4 | Configure the PythonAnywhere web tab | **Not yet done** |
+
+Parts 4.3 and 4.4 are the remaining A4 step. The project has not been
+deployed yet, so there is no live URL to link here.
 
 ## Setup
 
@@ -66,7 +78,7 @@ python manage.py seed_demo
 | --- | --- |
 | `SECRET_KEY` | Django secret key. Required. Make your own for `.env`. Production mode refuses keys that start with `django-insecure-`. |
 | `ALLOWED_HOSTS` | Comma-separated hosts. Use `localhost,127.0.0.1` locally. |
-| `API_KEY` | A dummy value for now. There is no external API yet. |
+| `API_KEY` | Unused placeholder. The A4 external API (Open Library) is keyless, so nothing reads this. Kept so `.env.example` still matches `base.py`. |
 | `DATABASE_NAME` | Optional, development only. Set it to `db.local.sqlite3` to work against a throwaway database (ignored by Git) instead of the demo `db.sqlite3`. Run `python manage.py migrate` once after setting it. |
 
 To make a new secret key:
@@ -113,6 +125,12 @@ Skip that step and the pages still render, just without the content hash in the 
 | `/datasets/manage/` | `DatasetManageView` | Class-based, View (GET filter + POST create) |
 | `/quality/` | `quality_history` | Function-based, render() |
 | `/quality/run-outcomes.png` | `run_outcomes_chart` | Function-based, PNG via HttpResponse |
+| `/charts/` | `charts_page` | Function-based, render() (Vega-Lite charts) |
+| `/api/run-outcomes/` | `api_run_outcomes` | Function-based, JsonResponse (chart API) |
+| `/api/run-volume/` | `api_run_volume` | Function-based, JsonResponse (chart API) |
+| `/vega-lite/chart<n>.json` | `vega_chart_spec` | Function-based, JsonResponse (chart spec) |
+| `/api/datasets/` | `dataset_api` | Function-based, JsonResponse (dataset registry) |
+| `/api/lookup/` | `dataset_lookup_api` | Function-based, JsonResponse (external API) |
 | `/reports/` | `reports_view` | Function-based, render() |
 | `/reports/export/validation-runs.csv` | `export_validation_runs_csv` | Function-based, CSV via HttpResponse |
 | `/reports/export/validation-runs.json` | `export_validation_runs_json` | Function-based, JsonResponse |
@@ -223,7 +241,7 @@ A full request/response transcript of both modes is in
 python manage.py test data_quality
 ```
 
-111 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, and the Reports page and CSV/JSON exports. Run them before you open a pull request.
+132 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, the Reports page and CSV/JSON exports, and the A4 chart APIs, Vega-Lite specification endpoints and charts page. Run them before you open a pull request.
 
 ## A3, Section 2 & Section 5 (Hriday)
 
@@ -340,6 +358,59 @@ JSON export (real response headers + body):
 
 ![JSON export - headers and pretty-printed body](docs/screenshots/a4/json_export_evidence.png)
 
+## A4, Part 1: Internal Chart API & Vega-Lite Charts (Tejas)
+
+`/charts/` carries two Vega-Lite charts. Neither one has data in it: each
+specification points at an internal JSON API with `data: {"url": ...}`, so the
+charts show whatever is in the database at the moment the page is opened.
+
+### The two internal chart APIs
+
+Both are plain GET endpoints that return clean JSON straight from the models,
+with no envelope, which is the shape Vega-Lite reads without any extra parsing.
+
+| Endpoint | Shape | Feeds |
+| --- | --- | --- |
+| `/api/run-outcomes/` | `[{"outcome": "Passed", "runs": 4}, ...]` | the bar chart |
+| `/api/run-volume/` | one object per validation run, with `rows_checked`, `rows_failed`, `outcome` | the scatter chart |
+
+These are separate from `/api/datasets/`, which lists dataset records. A bar
+chart needs an aggregate and a scatter needs one row per run, so neither chart
+could read that endpoint as it stands, and rewriting it would have changed an
+endpoint another part of the project depends on.
+
+### The two charts
+
+- **Bar - Validation Run Outcomes.** The aggregated summary: how many runs
+  ended passed, failed, or in error. A status with no runs stays on the chart
+  at zero rather than disappearing.
+- **Scatter - Rows Checked vs Rows Failed.** One point per validation run,
+  coloured by outcome. It answers whether big files are the ones that break:
+  on the current data they are not, which is the argument for checking every
+  file rather than only the large ones.
+
+### Chart specifications
+
+Each specification is published at its own endpoint and can be opened directly
+or pasted into the Vega-Lite editor:
+
+```
+/vega-lite/chart1.json     bar chart
+/vega-lite/chart2.json     scatter chart
+```
+
+The page renders from those same URLs, so the published specification and the
+chart on screen cannot drift apart. The source for both lives in
+`data_quality/vega.py`.
+
+The Vega, Vega-Lite and vega-embed libraries load from a CDN, so this page adds
+nothing to the static pipeline and needs no `collectstatic` step of its own.
+
+Screenshots: `docs/screenshots/a4/a4_p1_charts_page.png`,
+`a4_p1_chart1_spec.png`, `a4_p1_chart2_spec.png`,
+`a4_p1_api_run_outcomes.png`, `a4_p1_api_run_volume.png`.
+
+
 ## Project layout
 
 ```
@@ -352,7 +423,7 @@ JSON export (real response headers + body):
   db.sqlite3            demo database
   datapact_project/     root URLs, wsgi, asgi
     settings/           base.py (shared), development.py, production.py
-  data_quality/         models, views, urls, charts, forms, tests
+  data_quality/         models, views, urls, charts, vega, forms, tests
     static/
       data_quality/     datapact.css, datapact-logo.svg
     templates/
