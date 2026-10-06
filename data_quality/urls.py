@@ -44,6 +44,9 @@ urlpatterns = [
         name="vega-chart-spec",
     ),
 
+    # --- A4 Part 2: external API (Connor) ---
+    path("api/lookup/", views.dataset_lookup_api, name="dataset-lookup"),
+
     # --- A4 Part 3: reports and exports (Hriday) ---
     path("reports/", views.reports_view, name="reports"),
     path(

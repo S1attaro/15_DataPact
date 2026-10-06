@@ -1,5 +1,6 @@
 import csv
 from io import StringIO
+import requests
 
 from django.contrib import messages
 from django.db.models import Count
@@ -495,3 +496,85 @@ def charts_page(request):
         ],
     }
     return render(request, "data_quality/charts.html", context)
+
+
+# ---------------------------------------------------------------
+# A4 Part 2: external API integration
+# Author: Connor Slattery (cslat)
+# ---------------------------------------------------------------
+
+def dataset_lookup_api(request):
+    """
+    Combines our internal Dataset registry with Open Library's public
+    search API (https://openlibrary.org/search.json), keyed off the same
+    query term. Nothing from Open Library is stored; the external response
+    is processed in memory and returned alongside our own data.
+
+    Usage: /api/lookup/?q=<term>
+    Matches internal datasets whose name, description, or source_team
+    contains the term, and external book results whose title contains it.
+    """
+    query = request.GET.get("q", "").strip()
+
+    if not query:
+        return JsonResponse(
+            {"error": "Query parameter 'q' is required, e.g. ?q=enrollment"},
+            status=400,
+        )
+
+    internal_matches = Dataset.objects.select_related("owner").filter(
+        name__icontains=query
+    ) | Dataset.objects.select_related("owner").filter(
+        description__icontains=query
+    ) | Dataset.objects.select_related("owner").filter(
+        source_team__icontains=query
+    )
+    internal_matches = internal_matches.distinct()
+
+    internal_data = [
+        {
+            "id": dataset.id,
+            "name": dataset.name,
+            "source_team": dataset.source_team,
+            "description": dataset.description,
+        }
+        for dataset in internal_matches
+    ]
+
+    try:
+        response = requests.get(
+            "https://openlibrary.org/search.json",
+            params={"q": query, "limit": 5},
+            timeout=5,
+        )
+        response.raise_for_status()
+    except requests.exceptions.Timeout:
+        return JsonResponse(
+            {"error": "The external API timed out. Try again."},
+            status=504,
+        )
+    except requests.exceptions.RequestException as exc:
+        return JsonResponse(
+            {"error": f"The external API request failed: {exc}"},
+            status=502,
+        )
+
+    external_raw = response.json().get("docs", [])
+    external_data = [
+        {
+            "title": doc.get("title"),
+            "author": (doc.get("author_name") or [None])[0],
+            "first_publish_year": doc.get("first_publish_year"),
+        }
+        for doc in external_raw[:5]
+    ]
+
+    return JsonResponse(
+        {
+            "query": query,
+            "internal_match_count": len(internal_data),
+            "internal_matches": internal_data,
+            "external_match_count": len(external_data),
+            "external_matches": external_data,
+        }
+    )

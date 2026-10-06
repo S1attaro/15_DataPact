@@ -1489,3 +1489,45 @@ class ChartsPageTests(TestCase):
                 "shared template layer). The page itself is reachable directly."
             )
         self.assertIn(charts_url, nav_links(html))
+
+
+# ---------------------------------------------------------------
+# A4 Part 4.1 - navigation safety
+# Author: Ashok Chacko (aschacko)
+# ---------------------------------------------------------------
+
+
+class OptionalNavLinkTests(TestCase):
+    """
+    base.html is inherited by every page, so a {% url %} for a route that does
+    not exist yet is not a broken link - it is a NoReverseMatch that turns the
+    entire site into 500s. The Charts link is written with the {% url ... as %}
+    form, which stores an empty string instead of raising.
+    """
+
+    def test_every_page_still_renders_with_the_optional_charts_link(self):
+        # Written when /charts/ did not exist yet, to prove the nav link could
+        # not 500 the site. The route landed with A4 Part 1, so the original
+        # "the route is absent" premise was dropped; the pages themselves are
+        # still the thing worth checking, either way.
+        for route in (
+            "data_quality:home",
+            "data_quality:dataset-list",
+            "data_quality:contract-search",
+            "data_quality:reports",
+        ):
+            with self.subTest(route=route):
+                self.assertEqual(self.client.get(reverse(route)).status_code, 200)
+
+    def test_charts_link_uses_the_non_raising_url_form(self):
+        """
+        Regression guard. Written the plain way,
+        {% url 'data_quality:charts' %} took 68 of 111 tests down and returned
+        500 on every page, because base.html is on all of them.
+        """
+        base = Path(
+            finders.find("data_quality/css/datapact.css")
+        ).parents[3] / "templates/data_quality/base.html"
+        source = base.read_text()
+        self.assertIn("{% url 'data_quality:charts' as charts_url %}", source)
+        self.assertNotIn("{% url 'data_quality:charts' %}", source)

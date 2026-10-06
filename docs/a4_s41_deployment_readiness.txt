@@ -1,0 +1,171 @@
+DataPact - A4 Part 4.1 readiness check
+Captured 2026-10-05 by Ashok Chacko.
+Re-checked on main @ c3054e9, after Connor's Part 2 external API merged.
+
+========================================================================
+1. EVERY ROUTE, BOTH SETTINGS MODULES
+========================================================================
+
+    ROUTE                                  DEV     PROD   
+    -------------------------------------- -----   -----  
+    /                                      200     200    
+    /datasets/                             200     200    
+    /datasets/overview/                    200     200    
+    /datasets/1/                           200     200    
+    /datasets/manual/                      200     200    
+    /datasets/render/                      200     200    
+    /contracts/search/                     200     200    
+    /datasets/manage/                      200     200    
+    /quality/                              200     200    
+    /quality/run-outcomes.png              200     200    
+    /api/datasets/                         200     200    
+    /api/lookup/?q=enrollment              200     200    
+    /reports/                              200     200    
+    /reports/export/validation-runs.csv    200     200    
+    /reports/export/validation-runs.json   200     200    
+    /admin/                                302     302    
+
+    /admin/ 302 is the login redirect, not a broken route.
+    No 404s and no 500s: 'ensure no broken routes' (Part 4.2) holds.
+
+========================================================================
+2. STATIC FILES IN BOTH MODES
+========================================================================
+
+    development
+      stylesheet URL : /static/data_quality/css/datapact.css
+      status         : 200
+      cache-control  : (none - dev server)
+
+    production
+      stylesheet URL : /static/data_quality/css/datapact.e5ab6567e31e.css
+      status         : 200
+      Cache-Control: max-age=315360000, public, immutable
+
+========================================================================
+3. GITIGNORE RULES A4 CARES ABOUT
+========================================================================
+
+    db.sqlite3 tracked       yes  (A4 requires it committed)
+    db.sqlite3 ignored       no   (correct)
+    staticfiles/ ignored     yes  (correct)
+    .env ignored             yes  (correct)
+
+========================================================================
+4. SIZE (PythonAnywhere allows 512 MB)
+========================================================================
+
+    tracked files    : 82
+    .git             : 5.4 MB
+    db.sqlite3       : 192 KB
+    virtualenv       : 165 MB
+
+    The virtualenv figure is measured, not estimated: a clean venv built
+    from requirements.txt and nothing else. matplotlib is most of it -
+    it pulls numpy, pillow and fontTools behind it, about 100 MB of the
+    165. Still comfortable: roughly 175 MB all in against a 512 MB
+    limit, leaving around 330 MB of headroom.
+
+    venv/ and staticfiles/ are built on the server, not cloned.
+
+========================================================================
+5. TEMPLATES
+========================================================================
+
+    base.html                (the base template)
+    contract_search.html     extends base.html
+    dataset_detail.html      extends base.html
+    dataset_list.html        extends base.html
+    dataset_manage.html      extends base.html
+    dataset_overview.html    extends base.html
+    home.html                extends base.html
+    quality_history.html     extends base.html
+    reports.html             extends base.html
+
+    Part 4.2 'ensure templates extend base.html' holds for all 8.
+
+========================================================================
+6. TESTS
+========================================================================
+
+    python manage.py test data_quality -> 113 passing
+
+    (111 on main, plus the 2 navigation-safety tests added with the
+    Charts link - see docs/notes/notes.txt section 34.)
+
+========================================================================
+7. CODE CLEANUP (Part 4.2)
+========================================================================
+
+    unused imports   none (pyflakes, clean across data_quality/ and
+                     datapact_project/)
+    debug prints     none (no print(), pprint(), pdb or breakpoint() in
+                     application code)
+    TODO / FIXME     none
+    templates        all 8 extend base.html (section 5 above)
+    broken routes    none (section 1 above)
+
+    requirements.txt pins every third-party package the code imports -
+    dotenv, matplotlib, whitenoise - plus Django and its own
+    dependencies. Transitive packages (numpy, pillow, fontTools,
+    kiwisolver and so on) install behind matplotlib and are deliberately
+    not pinned separately.
+
+    matplotlib is already pinned to the Agg backend in charts.py
+    (matplotlib.use("Agg") before any pyplot import), which is what
+    makes it safe on a headless server. Nothing to change for
+    deployment.
+
+    NOT YET REFLECTED HERE: Part 2's external API will need `requests`
+    added to requirements.txt. Nothing imports it yet.
+
+========================================================================
+8. RE-CHECK AFTER PART 2 (external API), main @ c3054e9
+========================================================================
+
+    db.sqlite3 - the A4 requirement Connor asked about
+
+      Verified against a fresh `git clone` of main, not the local
+      working copy, because that is what the grader and PythonAnywhere
+      actually get:
+
+        present in the clone : yes, 196608 bytes
+        git check-ignore     : not ignored
+        file type            : SQLite 3.x database
+        pragma integrity_check: ok
+        contents             : 7 datasets, 10 contracts, 12 runs,
+                               9 violations, 6 users
+
+      .gitignore has `*.local.sqlite3`, which matches the disposable
+      db.local.sqlite3 used for screenshots and does NOT match
+      db.sqlite3. There is no `db.sqlite3` or `*.sqlite3` rule. So the
+      A4 sequencing note 1.2 requirement holds.
+
+      Worth stating plainly for whoever tidies .gitignore before
+      submission: committing a database is the opposite of normal
+      practice, and A4 deliberately requires it. Do not "fix" this.
+
+    requests==2.32.3 is pinned in requirements.txt.
+
+    PythonAnywhere outbound network access
+
+      Free PythonAnywhere accounts cannot reach arbitrary hosts - all
+      outbound HTTP goes through a proxy and only allowlisted sites
+      resolve. An external API that works locally can therefore fail on
+      the deployed site, which would have cost Part 2 its marks there.
+
+      Checked against https://www.pythonanywhere.com/whitelist/ :
+      `openlibrary.org` IS on the allowlist (and so is
+      covers.openlibrary.org). requests picks up the proxy from the
+      environment variables PythonAnywhere sets, so no code change is
+      needed.
+
+      If the external API is ever swapped for another host, check that
+      list again before assuming it will work deployed.
+
+    Gap, not mine to close: /api/lookup/ has no tests. The suite is
+    still 113, the same count as before Part 2 merged. The view's error
+    handling (timeout=5, raise_for_status, 504 on Timeout, 502 on
+    RequestException) reads correctly but nothing exercises it. Mocking
+    requests.get with unittest.mock.patch would cover the success path
+    and both failure paths without touching the network.
