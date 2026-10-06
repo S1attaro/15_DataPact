@@ -10,10 +10,22 @@ Hriday Agarwal, Ashok Chacko, Tejas Jaggi, Connor Slattery
 
 ## Where the project is
 
-This repo holds the A1 data model and the A2 work so far.
+The repo holds the project through A4: the A1 data model, the A2 settings
+split and views, the A3 ORM/forms/navigation/visualisation work, and the A4
+APIs, charts, exports and deployment preparation. 132 tests pass.
 
-- Done: the class-based views (Hriday), the HttpResponse view, `.gitignore`, `.env.example`, and the docs (Connor), the templates (Ashok), the split settings, the render() view, and the tests (Tejas).
-- Still to come: later assignments build on this base.
+| A4 part | What | Status |
+| --- | --- | --- |
+| 1 | Internal chart APIs and two Vega-Lite charts (Tejas) | Done |
+| 2 | External keyless API, Open Library (Connor) | Done |
+| 3 | Reports page, CSV and JSON exports (Hriday) | Done |
+| 4.1 | Static files, requirements, `.gitignore` (Ashok) | Done |
+| 4.2 | Code cleanup and deployment readiness (Ashok) | Done |
+| 4.3 | Pull the repository on PythonAnywhere | **Not yet done** |
+| 4.4 | Configure the PythonAnywhere web tab | **Not yet done** |
+
+Parts 4.3 and 4.4 are the remaining A4 step. The project has not been
+deployed yet, so there is no live URL to link here.
 
 ## Setup
 
@@ -66,7 +78,7 @@ python manage.py seed_demo
 | --- | --- |
 | `SECRET_KEY` | Django secret key. Required. Make your own for `.env`. Production mode refuses keys that start with `django-insecure-`. |
 | `ALLOWED_HOSTS` | Comma-separated hosts. Use `localhost,127.0.0.1` locally. |
-| `API_KEY` | A dummy value for now. There is no external API yet. |
+| `API_KEY` | Unused placeholder. The A4 external API (Open Library) is keyless, so nothing reads this. Kept so `.env.example` still matches `base.py`. |
 | `DATABASE_NAME` | Optional, development only. Set it to `db.local.sqlite3` to work against a throwaway database (ignored by Git) instead of the demo `db.sqlite3`. Run `python manage.py migrate` once after setting it. |
 
 To make a new secret key:
@@ -117,6 +129,8 @@ Skip that step and the pages still render, just without the content hash in the 
 | `/api/run-outcomes/` | `api_run_outcomes` | Function-based, JsonResponse (chart API) |
 | `/api/run-volume/` | `api_run_volume` | Function-based, JsonResponse (chart API) |
 | `/vega-lite/chart<n>.json` | `vega_chart_spec` | Function-based, JsonResponse (chart spec) |
+| `/api/datasets/` | `dataset_api` | Function-based, JsonResponse (dataset registry) |
+| `/api/lookup/` | `dataset_lookup_api` | Function-based, JsonResponse (external API) |
 | `/reports/` | `reports_view` | Function-based, render() |
 | `/reports/export/validation-runs.csv` | `export_validation_runs_csv` | Function-based, CSV via HttpResponse |
 | `/reports/export/validation-runs.json` | `export_validation_runs_json` | Function-based, JsonResponse |
@@ -227,7 +241,7 @@ A full request/response transcript of both modes is in
 python manage.py test data_quality
 ```
 
-111 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, and the Reports page and CSV/JSON exports. Run them before you open a pull request.
+132 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, the Reports page and CSV/JSON exports, and the A4 chart APIs, Vega-Lite specification endpoints and charts page. Run them before you open a pull request.
 
 ## A3, Section 2 & Section 5 (Hriday)
 
