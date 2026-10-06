@@ -1343,3 +1343,57 @@ confirmed pinned in my PR, not left for him to add separately.
 Tested locally: ?q=enrollment (1 internal match, 5 external),
 ?q=operations (1 internal match, 5 external), and no ?q= (400 error
 JSON, no crash). Screenshot: docs/screenshots/a4/part2_external_api_lookup.png
+
+39. A4 DEPLOYMENT RE-CHECK AFTER PART 2 (Ashok)
+
+CONNOR - answering your question directly: yes, db.sqlite3 is tracked
+and not gitignored. Checked against a fresh clone of main rather than
+my working copy, since that is what the grader and PythonAnywhere get:
+
+  present in the clone  : yes, 196608 bytes
+  git check-ignore      : not ignored
+  file type             : SQLite 3.x database
+  integrity_check       : ok
+  contents              : 7 datasets, 10 contracts, 12 runs,
+                          9 violations, 6 users
+
+.gitignore has *.local.sqlite3, which matches the throwaway
+db.local.sqlite3 I use for empty-state screenshots and does not match
+db.sqlite3. No db.sqlite3 or *.sqlite3 rule exists. A4 sequencing note
+1.2 holds.
+
+TEAM - do not "fix" this before submitting. Committing a database is
+the opposite of normal practice and A4 asks for it on purpose. If
+anyone adds *.sqlite3 to .gitignore while tidying up, Part 4 breaks.
+
+One deployment risk I checked because it would have been invisible
+until the site was live:
+
+  Free PythonAnywhere accounts cannot reach arbitrary hosts. Outbound
+  HTTP goes through their proxy and only allowlisted domains resolve,
+  so an external API that works locally can fail on the deployed site.
+  openlibrary.org IS on their allowlist
+  (https://www.pythonanywhere.com/whitelist/), and requests picks the
+  proxy up from the environment PythonAnywhere sets, so Part 2 needs no
+  change. If the API is ever swapped for a different host, check that
+  list first.
+
+Re-ran everything on main @ c3054e9 with Part 2 merged: 16 routes now
+(including /api/lookup/?q=), all 200 in both development and production
+(admin 302 = login redirect), stylesheet 200 in both with the content
+hash and immutable header in production. requests==2.32.3 is pinned.
+Updated docs/a4_s41_deployment_readiness.txt section 8.
+
+One gap I am flagging rather than fixing, because views.py Part 2 is
+Connor's section: /api/lookup/ has no tests. The suite is still 113,
+the same count as before the merge. The error handling reads correctly
+(timeout=5, raise_for_status, 504 on Timeout, 502 on RequestException)
+but nothing exercises it, and a test that hit the real API would be
+flaky anyway. patching requests.get with unittest.mock would cover the
+success path and both failure paths offline. CONNOR - happy to write
+those if you would rather I did; it is your section so I have not
+touched it.
+
+STILL UNOWNED: Parts 4.3 and 4.4. Someone needs to own the
+PythonAnywhere account, deploy, and give mohitg27 access. It is not in
+the split anyone posted.
