@@ -203,6 +203,13 @@ LOGOUT_REDIRECT_URL = 'data_quality:home'
 # to send a confirmation email, which this project has no mail server for.
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 
+# A Google email that matches an existing user signs into that user instead of
+# stopping at an extra signup form that can never succeed (the seeded demo
+# users already own their @illinois.edu addresses). allauth only does this when
+# Google reports the email as verified.
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '').strip()
 GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '').strip()
 GOOGLE_OAUTH_CONFIGURED = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)

@@ -246,13 +246,13 @@ A full request/response transcript of both modes is in
 python manage.py test data_quality
 ```
 
-145 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, the Reports page and CSV/JSON exports, the A4 chart APIs, Vega-Lite specification endpoints and charts page, and Google sign-in. Run them before you open a pull request.
+148 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, the Reports page and CSV/JSON exports, the A4 chart APIs, Vega-Lite specification endpoints and charts page, and Google sign-in. Run them before you open a pull request.
 
 ## Google sign-in (Hriday)
 
 "Continue with Google" is handled by [django-allauth](https://docs.allauth.org/). It sits next to the username/password login, not instead of it, and `/admin/` still takes a username and password.
 
-How it works: the button is a `POST` form (allauth will not start the flow from a plain link, and the form carries a CSRF token). It sends the browser to Google, Google sends it back to `/accounts/google/login/callback/`, and allauth creates the `User` from the Google profile on first sign-in and logs them in. Only the `profile` and `email` scopes are requested and no Google token is stored. After signing in or out the user lands on the home page.
+How it works: the button is a `POST` form (allauth will not start the flow from a plain link, and the form carries a CSRF token). It sends the browser to Google, Google sends it back to `/accounts/google/login/callback/`, and allauth creates the `User` from the Google profile on first sign-in and logs them in. Only the `profile` and `email` scopes are requested and no Google token is stored. After signing in or out the user lands on the home page. If the Google account's email matches an existing user (the seeded demo users have `@illinois.edu` addresses), Google signs into that user instead of creating a second one; allauth only does this when Google reports the email as verified.
 
 The button lives in one reusable partial, `data_quality/templates/data_quality/includes/_google_button.html`. Put it on a page with:
 

@@ -11,7 +11,14 @@ from urllib.parse import parse_qs, urlparse
 from unittest.mock import patch
 
 from django.conf import settings
+from allauth.account.models import EmailAddress
+from allauth.core import context as allauth_context
+from allauth.socialaccount.adapter import get_adapter as get_social_adapter
+from allauth.socialaccount.helpers import complete_social_login
+from allauth.socialaccount.models import SocialAccount, SocialLogin
 from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.messages.middleware import MessageMiddleware
+from django.contrib.sessions.middleware import SessionMiddleware
 from django.contrib.staticfiles import finders
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import QuerySet
@@ -1654,3 +1661,52 @@ class GoogleSettingsTests(TestCase):
             ):
                 with self.subTest(file=str(path.relative_to(root))):
                     self.assertNotIn(marker, path.read_text(errors="ignore"))
+
+
+def finish_google_login(email, verified=True, uid="1234567890"):
+    """Run allauth's post-callback step for a Google profile with this email.
+
+    The callback view needs a live Google token exchange, so this hands allauth
+    the already-fetched profile instead and returns (request, response).
+    """
+    request = RequestFactory().get("/accounts/google/login/callback/")
+    SessionMiddleware(lambda r: None).process_request(request)
+    MessageMiddleware(lambda r: None).process_request(request)
+    request.session.save()
+    request.user = AnonymousUser()
+    with allauth_context.request_context(request):
+        sociallogin = SocialLogin(
+            user=User(email=email),
+            account=SocialAccount(provider="google", uid=uid, extra_data={"email": email}),
+            email_addresses=[EmailAddress(email=email, verified=verified, primary=True)],
+            provider=get_social_adapter().get_provider(request, "google"),
+        )
+        sociallogin.state = {"process": "login"}
+        response = complete_social_login(request, sociallogin)
+    return request, response
+
+
+@override_settings(SOCIALACCOUNT_PROVIDERS=GOOGLE_TEST_PROVIDERS)
+class GoogleAccountLinkingTests(TestCase):
+    def test_google_email_matching_an_existing_user_signs_into_that_user(self):
+        existing = User.objects.create_user("hda3", email="hda3@illinois.edu", password="pw")
+        request, response = finish_google_login("hda3@illinois.edu")
+        self.assertEqual(response.status_code, 302)
+        self.assertNotIn("3rdparty/signup", response.url)
+        self.assertEqual(request.user.pk, existing.pk)
+        self.assertEqual(User.objects.count(), 1)
+        self.assertTrue(SocialAccount.objects.filter(user=existing, provider="google").exists())
+
+    def test_new_google_email_creates_a_user_without_an_extra_form(self):
+        request, response = finish_google_login("new.person@gmail.com")
+        self.assertEqual(response.status_code, 302)
+        self.assertNotIn("3rdparty/signup", response.url)
+        self.assertEqual(User.objects.count(), 1)
+        self.assertEqual(request.user.email, "new.person@gmail.com")
+        self.assertTrue(request.user.username)
+
+    def test_unverified_google_email_is_never_linked_to_an_existing_user(self):
+        existing = User.objects.create_user("hda3", email="hda3@illinois.edu", password="pw")
+        request, response = finish_google_login("hda3@illinois.edu", verified=False)
+        self.assertNotEqual(getattr(request.user, "pk", None), existing.pk)
+        self.assertFalse(SocialAccount.objects.filter(user=existing).exists())

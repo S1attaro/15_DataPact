@@ -1557,6 +1557,19 @@ Button:  data_quality/templates/data_quality/includes/_google_button.html
     this allauth builds an http:// callback and Google answers
     redirect_uri_mismatch. Blank or unset means https; set it to http in .env
     only to try production mode over plain http locally.
+  - Existing email: signing in with a Google account whose email already
+    belongs to a user (the seeded demo users own their @illinois.edu
+    addresses) used to land on /accounts/3rdparty/signup/, an extra form that
+    always failed with "email already exists". SOCIALACCOUNT_EMAIL_AUTHENTICATION
+    and ..._AUTO_CONNECT now sign the Google login into that user. It only
+    happens when Google reports the email verified; an unverified email is
+    never linked (tested). Found by trying a real sign-in with an
+    @illinois.edu account and reproduced in a test before fixing.
+  - Caveat for Tejas: because local signup does not verify email
+    (ACCOUNT_EMAIL_VERIFICATION = "none"), someone could register a local
+    account with another person's address first, and that person's later
+    Google sign-in would connect to it. Turning on email verification for local
+    signup (or not trusting unverified local addresses) closes that.
   - ACCOUNT_EMAIL_VERIFICATION = "none": Google already verified the address,
     and there is no mail server to send a confirmation. This also applies to
     username/password signup, which is Tejas's area - change it there if you
@@ -1570,11 +1583,11 @@ are right. Not yet checked: the production domain (needs the deploy).
 
 48. TESTS
 
-13 Google tests: the button partial (CSRF POST form, "not configured" note),
+16 Google tests: the button partial (CSRF POST form, "not configured" note),
 the redirect to Google with our client and callback, https callback when the
 setting is on, GET does not start the flow, CSRF enforced, the callback path,
 production defaults to https and can be overridden, local signup still works,
-no secret in source. 145 passing, and the suite also passes on a clean venv
+no secret in source. 148 passing, and the suite also passes on a clean venv
 with the pinned requirements (Django 5.2.17).
 
 49. STILL OPEN (not code I can do)
