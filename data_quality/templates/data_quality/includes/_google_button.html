@@ -1,0 +1,22 @@
+{% load socialaccount %}
+{% comment %}
+"Continue with Google" button, for the login and signup pages.
+
+    {% include "data_quality/includes/_google_button.html" %}
+
+Include it without "only": it needs the request from the page context for the
+CSRF token and the ?next= redirect. It is a POST form because allauth will not
+start the Google flow from a plain link. When no Google credentials are set in
+.env there is no provider to show, so it prints a short note instead.
+{% endcomment %}
+{% get_providers as socialaccount_providers %}
+{% for provider in socialaccount_providers %}
+    {% if provider.id == "google" %}
+        <form method="post" action="{% provider_login_url 'google' process='login' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn">Continue with Google</button>
+        </form>
+    {% endif %}
+{% empty %}
+    <p class="helptext">Google sign-in is not configured.</p>
+{% endfor %}

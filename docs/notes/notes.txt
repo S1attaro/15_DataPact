@@ -1526,3 +1526,67 @@ touched it.
 STILL UNOWNED: Parts 4.3 and 4.4. Someone needs to own the
 PythonAnywhere account, deploy, and give mohitg27 access. It is not in
 the split anyone posted.
+
+
+=============================================
+A5 - GOOGLE OAUTH (Hriday)
+=============================================
+
+47. GOOGLE OAUTH (django-allauth)
+
+Package: django-allauth[socialaccount]==65.14.3 (pinned in requirements.txt)
+Routes:  /accounts/google/login/ and /accounts/google/login/callback/ (allauth)
+Button:  data_quality/templates/data_quality/includes/_google_button.html
+
+  - Settings (base.py): allauth apps + django.contrib.sites (SITE_ID = 1),
+    AccountMiddleware, ModelBackend kept next to allauth's backend so
+    username/password logins and /admin/ still work, and
+    LOGIN_REDIRECT_URL / LOGOUT_REDIRECT_URL = home (without them allauth
+    sends a Google sign-in to /accounts/profile/, which 404s).
+  - Credentials come from .env (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET) and go
+    to allauth through SOCIALACCOUNT_PROVIDERS["google"]["APP"], so there is no
+    SocialApp row to create in the admin. Both are optional: blank, the site
+    starts and the button shows a "not configured" note. A test scans the
+    source for Google's secret prefix.
+  - Scopes: profile + email. No token is stored.
+  - The button is a POST form with a CSRF token (allauth will not start the
+    flow from a link). It is one partial so the login and signup pages share
+    it: {% include "data_quality/includes/_google_button.html" %}.
+  - Production (production.py): ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https". On
+    PythonAnywhere the site is HTTPS but Django sees plain http, so without
+    this allauth builds an http:// callback and Google answers
+    redirect_uri_mismatch. Blank or unset means https; set it to http in .env
+    only to try production mode over plain http locally.
+  - ACCOUNT_EMAIL_VERIFICATION = "none": Google already verified the address,
+    and there is no mail server to send a confirmation. This also applies to
+    username/password signup, which is Tejas's area - change it there if you
+    want email confirmation.
+
+Checked against Google itself (local): the app redirects to accounts.google.com
+with our client_id and the callback http://127.0.0.1:8000/accounts/google/login/
+callback/, and Google answers with its sign-in page, not redirect_uri_mismatch
+or invalid_client, so the Cloud Console client and the localhost redirect URI
+are right. Not yet checked: the production domain (needs the deploy).
+
+48. TESTS
+
+13 Google tests: the button partial (CSRF POST form, "not configured" note),
+the redirect to Google with our client and callback, https callback when the
+setting is on, GET does not start the flow, CSRF enforced, the callback path,
+production defaults to https and can be overridden, local signup still works,
+no secret in source. 145 passing, and the suite also passes on a clean venv
+with the pinned requirements (Django 5.2.17).
+
+49. STILL OPEN (not code I can do)
+
+  - Add https://<username>.pythonanywhere.com/accounts/google/login/callback/
+    to the Google client's Authorized redirect URIs, then test a real Google
+    sign-in on the live domain.
+  - Decide Testing vs published: in Testing mode only listed Test users can
+    sign in, which would block the instructor's Google account.
+  - On the server: set GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET in its .env,
+    pip install -r requirements.txt, migrate, collectstatic, reload. Migrating
+    changes the committed db.sqlite3 - decide whether to commit it or run
+    migrate on the server only.
+  - Ashok: put the partial on the login and signup pages. Tejas: LOGIN_URL and
+    the protected views; if you also set LOGIN_REDIRECT_URL, keep one copy.

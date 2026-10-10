@@ -7,15 +7,16 @@ import re
 import sys
 from io import StringIO
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 from unittest.mock import patch
 
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.staticfiles import finders
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import QuerySet
 from django.template.loader import render_to_string
-from django.test import TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import resolve, reverse
 
 from . import views
@@ -1531,3 +1532,125 @@ class OptionalNavLinkTests(TestCase):
         source = base.read_text()
         self.assertIn("{% url 'data_quality:charts' as charts_url %}", source)
         self.assertNotIn("{% url 'data_quality:charts' %}", source)
+
+
+
+# ---------------------------------------------------------------
+# Google sign-in (django-allauth)
+# Author: Hriday Agarwal
+# ---------------------------------------------------------------
+
+GOOGLE_TEST_CLIENT_ID = "test-client-id.apps.googleusercontent.com"
+GOOGLE_TEST_PROVIDERS = {
+    "google": {
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+        "APP": {"client_id": GOOGLE_TEST_CLIENT_ID, "secret": "test-secret", "key": ""},
+    }
+}
+GOOGLE_PROVIDERS_WITHOUT_CREDENTIALS = {"google": {"SCOPE": ["profile", "email"]}}
+
+
+def render_google_button():
+    request = RequestFactory().get("/somewhere/")
+    request.user = AnonymousUser()
+    return render_to_string("data_quality/includes/_google_button.html", request=request)
+
+
+class GoogleButtonPartialTests(TestCase):
+    @override_settings(SOCIALACCOUNT_PROVIDERS=GOOGLE_TEST_PROVIDERS)
+    def test_shows_continue_with_google_as_a_csrf_protected_post_form(self):
+        html = render_google_button()
+        self.assertIn("Continue with Google", html)
+        form = re.search(r"<form[^>]*>.*?</form>", html, re.S).group(0)
+        self.assertIn('method="post"', form)
+        self.assertIn("/accounts/google/login/", form)
+        self.assertIn("csrfmiddlewaretoken", form)
+
+    @override_settings(SOCIALACCOUNT_PROVIDERS=GOOGLE_PROVIDERS_WITHOUT_CREDENTIALS)
+    def test_prints_a_note_instead_of_a_broken_button_without_credentials(self):
+        html = render_google_button()
+        self.assertIn("Google sign-in is not configured.", html)
+        self.assertNotIn("Continue with Google", html)
+        self.assertNotIn("<form", html)
+
+
+@override_settings(SOCIALACCOUNT_PROVIDERS=GOOGLE_TEST_PROVIDERS)
+class GoogleOAuthFlowTests(TestCase):
+    def test_post_redirects_to_google_with_our_client_and_callback(self):
+        response = self.client.post(reverse("google_login"))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith("https://accounts.google.com/"))
+        query = parse_qs(urlparse(response.url).query)
+        self.assertEqual(query["client_id"], [GOOGLE_TEST_CLIENT_ID])
+        self.assertEqual(
+            query["redirect_uri"], ["http://testserver/accounts/google/login/callback/"]
+        )
+        self.assertEqual(set(query["scope"][0].split()), {"email", "profile"})
+
+    @override_settings(ACCOUNT_DEFAULT_HTTP_PROTOCOL="https")
+    def test_https_setting_makes_the_callback_https_behind_a_proxy(self):
+        response = self.client.post(reverse("google_login"))
+        query = parse_qs(urlparse(response.url).query)
+        self.assertEqual(
+            query["redirect_uri"], ["https://testserver/accounts/google/login/callback/"]
+        )
+
+    def test_get_does_not_start_the_flow(self):
+        response = self.client.get(reverse("google_login"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_starting_the_flow_requires_a_csrf_token(self):
+        self.client.handler.enforce_csrf_checks = True
+        response = self.client.post(reverse("google_login"))
+        self.assertEqual(response.status_code, 403)
+
+    def test_callback_path_matches_the_uri_registered_in_google_console(self):
+        self.assertEqual(reverse("google_callback"), "/accounts/google/login/callback/")
+
+
+class GoogleSettingsTests(TestCase):
+    def tearDown(self):
+        restore_settings_modules()
+
+    def test_password_login_backend_is_kept_next_to_allauth(self):
+        self.assertIn("django.contrib.auth.backends.ModelBackend", settings.AUTHENTICATION_BACKENDS)
+        self.assertIn(
+            "allauth.account.auth_backends.AuthenticationBackend", settings.AUTHENTICATION_BACKENDS
+        )
+
+    def test_google_does_not_switch_off_local_signup(self):
+        self.assertEqual(self.client.get("/accounts/signup/").status_code, 200)
+
+    def test_signing_in_returns_to_the_home_page(self):
+        self.assertEqual(reverse(settings.LOGIN_REDIRECT_URL), "/")
+        self.assertEqual(reverse(settings.LOGOUT_REDIRECT_URL), "/")
+
+    def test_production_forces_https_callbacks_by_default(self):
+        prod = load_settings(
+            "production", SECRET_KEY=VALID_TEST_KEY, ALLOWED_HOSTS="localhost",
+            ACCOUNT_DEFAULT_HTTP_PROTOCOL="",
+        )
+        self.assertEqual(prod.ACCOUNT_DEFAULT_HTTP_PROTOCOL, "https")
+
+    def test_production_https_can_be_overridden_for_a_local_http_run(self):
+        prod = load_settings(
+            "production", SECRET_KEY=VALID_TEST_KEY, ALLOWED_HOSTS="localhost",
+            ACCOUNT_DEFAULT_HTTP_PROTOCOL="http",
+        )
+        self.assertEqual(prod.ACCOUNT_DEFAULT_HTTP_PROTOCOL, "http")
+
+    def test_no_google_secret_is_written_in_the_source(self):
+        # Google's secret prefix, built in two pieces so this file does not
+        # match its own scan.
+        marker = "GOCSPX" + "-"
+        root = Path(settings.BASE_DIR)
+        suffixes = {".py", ".html", ".txt", ".md", ".example", ".css", ".json"}
+        for path in root.rglob("*"):
+            if (
+                path.is_file()
+                and path.suffix in suffixes
+                and not any(part in {".git", "venv", ".venv", "staticfiles", "node_modules"} for part in path.parts)
+            ):
+                with self.subTest(file=str(path.relative_to(root))):
+                    self.assertNotIn(marker, path.read_text(errors="ignore"))

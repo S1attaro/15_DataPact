@@ -74,7 +74,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'data_quality',
+    # After data_quality on purpose: Django's app template loader tries apps
+    # in this order, so data_quality's own copies of allauth's templates win.
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
 ]
 
 MIDDLEWARE = [
@@ -90,6 +97,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'datapact_project.urls'
@@ -169,3 +177,45 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Google sign-in (django-allauth)
+# https://docs.allauth.org/en/latest/socialaccount/providers/google.html
+#
+# The client ID and secret come from the Google Cloud Console and live in .env,
+# never in code. Both are optional so the site still starts without them; the
+# Google button then simply does not appear.
+
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    # Username/password logins (and /admin/) keep working next to Google.
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+# Where allauth sends the browser after a Google sign-in or a sign-out. Without
+# these it falls back to /accounts/profile/, which does not exist.
+LOGIN_REDIRECT_URL = 'data_quality:home'
+LOGOUT_REDIRECT_URL = 'data_quality:home'
+
+# Google has already verified the address; this also keeps allauth from trying
+# to send a confirmation email, which this project has no mail server for.
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '').strip()
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '').strip()
+GOOGLE_OAUTH_CONFIGURED = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    }
+}
+if GOOGLE_OAUTH_CONFIGURED:
+    SOCIALACCOUNT_PROVIDERS['google']['APP'] = {
+        'client_id': GOOGLE_CLIENT_ID,
+        'secret': GOOGLE_CLIENT_SECRET,
+        'key': '',
+    }

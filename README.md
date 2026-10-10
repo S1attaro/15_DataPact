@@ -79,6 +79,8 @@ python manage.py seed_demo
 | `SECRET_KEY` | Django secret key. Required. Make your own for `.env`. Production mode refuses keys that start with `django-insecure-`. |
 | `ALLOWED_HOSTS` | Comma-separated hosts. Use `localhost,127.0.0.1` locally. |
 | `API_KEY` | Unused placeholder. The A4 external API (Open Library) is keyless, so nothing reads this. Kept so `.env.example` still matches `base.py`. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional. The OAuth client from the Google Cloud Console, used for Google sign-in (see "Google sign-in" below). Leave them blank and the site still runs; the Google button then shows a "not configured" note. |
+| `ACCOUNT_DEFAULT_HTTP_PROTOCOL` | Optional, production only. Defaults to `https` so Google gets an `https://` callback behind PythonAnywhere's proxy. Set it to `http` only to try production mode over plain http on your own machine. |
 | `DATABASE_NAME` | Optional, development only. Set it to `db.local.sqlite3` to work against a throwaway database (ignored by Git) instead of the demo `db.sqlite3`. Run `python manage.py migrate` once after setting it. |
 
 To make a new secret key:
@@ -116,6 +118,9 @@ Skip that step and the pages still render, just without the content hash in the 
 | URL | View | Kind |
 | --- | --- | --- |
 | `/` | `home` | Function-based, render() |
+| `/accounts/google/login/` | django-allauth | Built in (starts the Google flow on POST) |
+| `/accounts/google/login/callback/` | django-allauth | Built in (where Google sends the user back) |
+| `/accounts/logout/` | django-allauth | Built in (POST signs the user out) |
 | `/datasets/manual/` | `dataset_manual` | Function-based, HttpResponse |
 | `/datasets/render/` | `dataset_render` | Function-based, render() |
 | `/datasets/overview/` | `DatasetOverviewView` | Class-based, View |
@@ -241,7 +246,44 @@ A full request/response transcript of both modes is in
 python manage.py test data_quality
 ```
 
-132 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, the Reports page and CSV/JSON exports, and the A4 chart APIs, Vega-Lite specification endpoints and charts page. Run them before you open a pull request.
+145 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, the Reports page and CSV/JSON exports, the A4 chart APIs, Vega-Lite specification endpoints and charts page, and Google sign-in. Run them before you open a pull request.
+
+## Google sign-in (Hriday)
+
+"Continue with Google" is handled by [django-allauth](https://docs.allauth.org/). It sits next to the username/password login, not instead of it, and `/admin/` still takes a username and password.
+
+How it works: the button is a `POST` form (allauth will not start the flow from a plain link, and the form carries a CSRF token). It sends the browser to Google, Google sends it back to `/accounts/google/login/callback/`, and allauth creates the `User` from the Google profile on first sign-in and logs them in. Only the `profile` and `email` scopes are requested and no Google token is stored. After signing in or out the user lands on the home page.
+
+The button lives in one reusable partial, `data_quality/templates/data_quality/includes/_google_button.html`. Put it on a page with:
+
+```
+{% include "data_quality/includes/_google_button.html" %}
+```
+
+Include it without `only`, because it needs the request for the CSRF token. With no credentials in `.env` it prints "Google sign-in is not configured." instead of a button.
+
+**Get the credentials (once per team, in Google Cloud Console):**
+
+1. Create a project, then set up the consent screen (**Google Auth Platform**): audience **External**.
+2. While the app is in **Testing** mode only the addresses under **Audience, Test users** can sign in. Add everyone who needs to, or publish the app (the `profile` and `email` scopes need no Google review) so anyone can.
+3. **Clients, Create client**, type **Web application**. Add these **Authorized redirect URIs**:
+   - `http://127.0.0.1:8000/accounts/google/login/callback/`
+   - `http://localhost:8000/accounts/google/login/callback/`
+   - `https://<pythonanywhere-username>.pythonanywhere.com/accounts/google/login/callback/` for the deployed site
+4. Put the Client ID and secret in `.env` as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Never commit them. On PythonAnywhere, set them in the server's own `.env`.
+
+Google matches redirect URIs exactly, including the trailing slash, and `localhost` is not `127.0.0.1`.
+
+**On PythonAnywhere:** pull the code, `pip install -r requirements.txt`, `python manage.py migrate`, `python manage.py collectstatic`, make sure the server's `.env` has both Google values, then reload the web app. Production settings send an `https://` callback (`ACCOUNT_DEFAULT_HTTP_PROTOCOL`), because PythonAnywhere hands Django a plain-http request and Google would otherwise reject the callback with `redirect_uri_mismatch`.
+
+**After pulling this change locally**, install the new package and create the allauth tables:
+
+```
+pip install -r requirements.txt
+python manage.py migrate
+```
+
+`migrate` also changes the committed `db.sqlite3`. Restore it with `git checkout -- db.sqlite3` unless the team decides to commit the migrated file for deployment.
 
 ## A3, Section 2 & Section 5 (Hriday)
 

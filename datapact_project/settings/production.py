@@ -5,6 +5,8 @@ Used automatically by wsgi.py / asgi.py. To exercise it locally:
     python manage.py runserver --settings=datapact_project.settings.production
 """
 
+import os
+
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F401,F403
@@ -65,3 +67,13 @@ WHITENOISE_USE_FINDERS = True
 # HTTPS-only hardening (SECURE_SSL_REDIRECT, secure cookies, HSTS) is left off
 # on purpose: it would break the plain-http local production-mode run that A2
 # asks us to demonstrate. Enable it together with a real HTTPS deployment.
+
+# Google sign-in callback URL.
+#
+# PythonAnywhere serves the site over HTTPS but hands Django a plain-http
+# request, so allauth would build the callback as http://<domain>/... and
+# Google would reject it as a redirect_uri_mismatch. Forcing https here makes
+# it send https://<domain>/accounts/google/login/callback/. To try production
+# mode over plain http on your own machine, set ACCOUNT_DEFAULT_HTTP_PROTOCOL=http
+# in .env.
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.getenv('ACCOUNT_DEFAULT_HTTP_PROTOCOL', '').strip().lower() or 'https'
