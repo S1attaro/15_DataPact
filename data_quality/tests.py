@@ -1531,3 +1531,76 @@ class OptionalNavLinkTests(TestCase):
         source = base.read_text()
         self.assertIn("{% url 'data_quality:charts' as charts_url %}", source)
         self.assertNotIn("{% url 'data_quality:charts' %}", source)
+
+
+class DatasetLookupApiTests(TestCase):
+    """/api/lookup/ (data_quality:dataset-lookup) - external API integration."""
+
+    def setUp(self):
+        self.owner = User.objects.create_user("lookupowner", password="pw")
+        Dataset.objects.create(
+            name="Monthly Enrollment Export",
+            owner=self.owner,
+            source_team="Registrar",
+            description="One row per student per term.",
+        )
+
+    def test_missing_query_param_returns_400(self):
+        response = self.client.get(reverse("data_quality:dataset-lookup"))
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.json())
+
+    @patch("data_quality.views.requests.get")
+    def test_successful_lookup_combines_internal_and_external_matches(self, mock_get):
+        mock_get.return_value.json.return_value = {
+            "docs": [
+                {
+                    "title": "Enrolled Agent",
+                    "author_name": ["Carlos Ramirez"],
+                    "first_publish_year": 2022,
+                }
+            ]
+        }
+        mock_get.return_value.raise_for_status.return_value = None
+
+        response = self.client.get(
+            reverse("data_quality:dataset-lookup"), {"q": "enrollment"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["internal_match_count"], 1)
+        self.assertEqual(data["internal_matches"][0]["name"], "Monthly Enrollment Export")
+        self.assertEqual(data["external_match_count"], 1)
+        self.assertEqual(data["external_matches"][0]["title"], "Enrolled Agent")
+
+        mock_get.assert_called_once()
+        _, kwargs = mock_get.call_args
+        self.assertEqual(kwargs["params"], {"q": "enrollment", "limit": 5})
+        self.assertEqual(kwargs["timeout"], 5)
+
+    @patch("data_quality.views.requests.get")
+    def test_timeout_returns_504(self, mock_get):
+        import requests
+
+        mock_get.side_effect = requests.exceptions.Timeout
+
+        response = self.client.get(
+            reverse("data_quality:dataset-lookup"), {"q": "enrollment"}
+        )
+
+        self.assertEqual(response.status_code, 504)
+        self.assertIn("timed out", response.json()["error"])
+
+    @patch("data_quality.views.requests.get")
+    def test_request_exception_returns_502(self, mock_get):
+        import requests
+
+        mock_get.side_effect = requests.exceptions.ConnectionError("no route to host")
+
+        response = self.client.get(
+            reverse("data_quality:dataset-lookup"), {"q": "enrollment"}
+        )
+
+        self.assertEqual(response.status_code, 502)
+        self.assertIn("failed", response.json()["error"])
