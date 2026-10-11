@@ -150,7 +150,6 @@ Example:
 GET /api/datasets/?owner=cslat
 ```
 
-
 ## External API Integration (A4 Part 2)
 
 /api/lookup/?q=<term> combines our internal Dataset registry with Open Library's public search API. Nothing from Open Library is stored; the external response is fetched, processed in memory, and returned alongside our own data.
@@ -161,6 +160,18 @@ Example: GET /api/lookup/?q=enrollment
 
 Returns internal Dataset matches (name, description, or source_team containing the term) and up to 5 Open Library book results (title, author, first_publish_year) for the same term.
 
+
+## Alternative API-Use Demos (A5)
+
+Three ways to consume /api/datasets/ beyond a browser:
+
+1. curl from the terminal: curl.exe http://127.0.0.1:8000/api/datasets/
+2. Python script using requests: docs/demos/demo2_requests.py
+3. Pandas DataFrame load: docs/demos/demo3_pandas.py (pd.read_json + groupby)
+
+Run demo 2 or 3 with python docs/demos/demo2_requests.py (or demo3_pandas.py) while the dev server is running. pandas is only needed for demo 3, not added to requirements.txt since it is not a project dependency.
+
+Screenshots: docs/screenshots/a5/demo1_curl.png, demo2_requests.png, demo3_pandas.png
 
 
 ## Templates
