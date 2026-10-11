@@ -1533,6 +1533,22 @@ class OptionalNavLinkTests(TestCase):
         self.assertNotIn("{% url 'data_quality:charts' %}", source)
 
 
+
+class Demo4FetchPageTests(TestCase):
+    """/demos/fetch/ (data_quality:demo4-fetch-page) - A5 demo 4 static page."""
+
+    def test_page_loads_with_html_content_type(self):
+        response = self.client.get(reverse("data_quality:demo4-fetch-page"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/html; charset=utf-8")
+
+    def test_page_contains_the_fetch_call_and_api_url(self):
+        response = self.client.get(reverse("data_quality:demo4-fetch-page"))
+        content = response.content.decode()
+        self.assertIn("fetch(API_URL)", content)
+        self.assertIn("/api/run-outcomes/", content)
+
+
 class DatasetLookupApiTests(TestCase):
     """/api/lookup/ (data_quality:dataset-lookup) - external API integration."""
 
