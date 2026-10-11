@@ -163,19 +163,36 @@ Returns internal Dataset matches (name, description, or source_team containing t
 
 ## Alternative API-Use Demos (A5)
 
-Three ways to consume /api/run-outcomes/ beyond a browser. This is the
-public, unauthenticated endpoint for A5 (/api/datasets/ is now access-
-controlled, so the demos point here instead).
+Four ways to consume /api/run-outcomes/ beyond a browser page rendered by
+Django. This is the public, unauthenticated endpoint for A5
+(/api/datasets/ is now access-controlled, so the demos point here instead).
 
 1. curl from the terminal: curl.exe http://127.0.0.1:8000/api/run-outcomes/
 2. Python script using requests: docs/demos/demo2_requests.py
 3. Pandas DataFrame load: docs/demos/demo3_pandas.py (pd.read_json + pass-rate calculation)
+4. Browser fetch(): docs/demos/demo4_fetch.html (see below)
 
 Response shape is a flat array: [{"outcome": "Passed", "runs": 4}, ...]
 
 Run demo 2 or 3 with python docs/demos/demo2_requests.py (or demo3_pandas.py) while the dev server is running. pandas is only needed for demo 3, not added to requirements.txt since it is not a project dependency.
 
 Screenshots: docs/screenshots/a5/demo1_curl.png, demo2_requests.png, demo3_pandas.png
+
+**Demo 4: browser `fetch()`** (`docs/demos/demo4_fetch.html`)
+
+A standalone HTML page that calls `/api/run-outcomes/` with the browser's
+native `fetch()` API and renders the result as a table. Served through
+Django itself at `/demos/fetch/` (added `demo4_fetch_page` in
+`views.py` and a route in `urls.py`) rather than opened as a local
+`file://` page, since the browser blocks a `fetch()` from `file://` to
+`http://` as a cross-origin request and Django's dev server sends no
+CORS headers to allow it.
+
+To run it: start `python manage.py runserver`, then visit
+`http://127.0.0.1:8000/demos/fetch/`. Open the browser dev console (F12)
+to see the logged fetch call and response.
+
+Screenshot: `docs/screenshots/a5/demo4_fetch.png`
 
 ## Templates
 

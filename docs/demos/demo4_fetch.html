@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>A5 Demo 4: fetch() against /api/run-outcomes/</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
+  h1 { font-size: 1.25rem; }
+  table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #ccc; }
+  #status { margin-top: 12px; font-family: monospace; white-space: pre-wrap; }
+  .error { color: #b00020; }
+</style>
+</head>
+<body>
+
+<h1>A5 Demo 4: browser fetch() against /api/run-outcomes/</h1>
+<p>
+  With the dev server running (<code>python manage.py runserver</code>),
+  visit <code>http://127.0.0.1:8000/demos/fetch/</code>. Open the dev
+  console (F12) to see the raw fetch call and response.
+</p>
+
+<div id="status">Loading...</div>
+<table id="results" style="display:none">
+  <thead><tr><th>Outcome</th><th>Runs</th></tr></thead>
+  <tbody id="results-body"></tbody>
+</table>
+
+<script>
+  const API_URL = "http://127.0.0.1:8000/api/run-outcomes/";
+
+  async function loadOutcomes() {
+    const statusEl = document.getElementById("status");
+    const tableEl = document.getElementById("results");
+    const bodyEl = document.getElementById("results-body");
+
+    try {
+      console.log("Fetching", API_URL);
+      const response = await fetch(API_URL);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const rows = await response.json();
+      console.log("Response:", rows);
+
+      let total = 0;
+      for (const row of rows) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${row.outcome}</td><td>${row.runs}</td>`;
+        bodyEl.appendChild(tr);
+        total += row.runs;
+      }
+
+      statusEl.textContent = `Fetched ${rows.length} outcome rows, ${total} total runs.`;
+      tableEl.style.display = "table";
+    } catch (err) {
+      console.error("Fetch failed:", err);
+      statusEl.textContent = "Fetch failed: " + err.message;
+      statusEl.classList.add("error");
+    }
+  }
+
+  loadOutcomes();
+</script>
+
+</body>
+</html>
