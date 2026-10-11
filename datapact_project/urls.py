@@ -19,5 +19,11 @@ from django.urls import include, path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # The project's own routes come first on purpose: Django uses the first
+    # pattern that matches, so a project view on the same path as an allauth
+    # one (for example a custom accounts/login/) is not shadowed. allauth keeps
+    # everything the project does not define, including the Google sign-in
+    # (accounts/google/login/) and its callback.
     path('', include('data_quality.urls')),
+    path('accounts/', include('allauth.urls')),
 ]

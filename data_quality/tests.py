@@ -7,15 +7,23 @@ import re
 import sys
 from io import StringIO
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 from unittest.mock import patch
 
 from django.conf import settings
-from django.contrib.auth.models import User
+from allauth.account.models import EmailAddress
+from allauth.core import context as allauth_context
+from allauth.socialaccount.adapter import get_adapter as get_social_adapter
+from allauth.socialaccount.helpers import complete_social_login
+from allauth.socialaccount.models import SocialAccount, SocialLogin
+from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.messages.middleware import MessageMiddleware
+from django.contrib.sessions.middleware import SessionMiddleware
 from django.contrib.staticfiles import finders
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import QuerySet
 from django.template.loader import render_to_string
-from django.test import TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import resolve, reverse
 
 from . import views
@@ -1534,6 +1542,176 @@ class OptionalNavLinkTests(TestCase):
 
 
 
+# ---------------------------------------------------------------
+# Google sign-in (django-allauth)
+# Author: Hriday Agarwal
+# ---------------------------------------------------------------
+
+GOOGLE_TEST_CLIENT_ID = "test-client-id.apps.googleusercontent.com"
+GOOGLE_TEST_PROVIDERS = {
+    "google": {
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+        "APP": {"client_id": GOOGLE_TEST_CLIENT_ID, "secret": "test-secret", "key": ""},
+    }
+}
+GOOGLE_PROVIDERS_WITHOUT_CREDENTIALS = {"google": {"SCOPE": ["profile", "email"]}}
+
+
+def render_google_button():
+    request = RequestFactory().get("/somewhere/")
+    request.user = AnonymousUser()
+    return render_to_string("data_quality/includes/_google_button.html", request=request)
+
+
+class GoogleButtonPartialTests(TestCase):
+    @override_settings(SOCIALACCOUNT_PROVIDERS=GOOGLE_TEST_PROVIDERS)
+    def test_shows_continue_with_google_as_a_csrf_protected_post_form(self):
+        html = render_google_button()
+        self.assertIn("Continue with Google", html)
+        form = re.search(r"<form[^>]*>.*?</form>", html, re.S).group(0)
+        self.assertIn('method="post"', form)
+        self.assertIn("/accounts/google/login/", form)
+        self.assertIn("csrfmiddlewaretoken", form)
+
+    @override_settings(SOCIALACCOUNT_PROVIDERS=GOOGLE_PROVIDERS_WITHOUT_CREDENTIALS)
+    def test_prints_a_note_instead_of_a_broken_button_without_credentials(self):
+        html = render_google_button()
+        self.assertIn("Google sign-in is not configured.", html)
+        self.assertNotIn("Continue with Google", html)
+        self.assertNotIn("<form", html)
+
+
+@override_settings(SOCIALACCOUNT_PROVIDERS=GOOGLE_TEST_PROVIDERS)
+class GoogleOAuthFlowTests(TestCase):
+    def test_post_redirects_to_google_with_our_client_and_callback(self):
+        response = self.client.post(reverse("google_login"))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith("https://accounts.google.com/"))
+        query = parse_qs(urlparse(response.url).query)
+        self.assertEqual(query["client_id"], [GOOGLE_TEST_CLIENT_ID])
+        self.assertEqual(
+            query["redirect_uri"], ["http://testserver/accounts/google/login/callback/"]
+        )
+        self.assertEqual(set(query["scope"][0].split()), {"email", "profile"})
+
+    @override_settings(ACCOUNT_DEFAULT_HTTP_PROTOCOL="https")
+    def test_https_setting_makes_the_callback_https_behind_a_proxy(self):
+        response = self.client.post(reverse("google_login"))
+        query = parse_qs(urlparse(response.url).query)
+        self.assertEqual(
+            query["redirect_uri"], ["https://testserver/accounts/google/login/callback/"]
+        )
+
+    def test_get_does_not_start_the_flow(self):
+        response = self.client.get(reverse("google_login"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_starting_the_flow_requires_a_csrf_token(self):
+        self.client.handler.enforce_csrf_checks = True
+        response = self.client.post(reverse("google_login"))
+        self.assertEqual(response.status_code, 403)
+
+    def test_callback_path_matches_the_uri_registered_in_google_console(self):
+        self.assertEqual(reverse("google_callback"), "/accounts/google/login/callback/")
+
+
+class GoogleSettingsTests(TestCase):
+    def tearDown(self):
+        restore_settings_modules()
+
+    def test_password_login_backend_is_kept_next_to_allauth(self):
+        self.assertIn("django.contrib.auth.backends.ModelBackend", settings.AUTHENTICATION_BACKENDS)
+        self.assertIn(
+            "allauth.account.auth_backends.AuthenticationBackend", settings.AUTHENTICATION_BACKENDS
+        )
+
+    def test_google_does_not_switch_off_local_signup(self):
+        self.assertEqual(self.client.get("/accounts/signup/").status_code, 200)
+
+    def test_signing_in_returns_to_the_home_page(self):
+        self.assertEqual(reverse(settings.LOGIN_REDIRECT_URL), "/")
+        self.assertEqual(reverse(settings.LOGOUT_REDIRECT_URL), "/")
+
+    def test_production_forces_https_callbacks_by_default(self):
+        prod = load_settings(
+            "production", SECRET_KEY=VALID_TEST_KEY, ALLOWED_HOSTS="localhost",
+            ACCOUNT_DEFAULT_HTTP_PROTOCOL="",
+        )
+        self.assertEqual(prod.ACCOUNT_DEFAULT_HTTP_PROTOCOL, "https")
+
+    def test_production_https_can_be_overridden_for_a_local_http_run(self):
+        prod = load_settings(
+            "production", SECRET_KEY=VALID_TEST_KEY, ALLOWED_HOSTS="localhost",
+            ACCOUNT_DEFAULT_HTTP_PROTOCOL="http",
+        )
+        self.assertEqual(prod.ACCOUNT_DEFAULT_HTTP_PROTOCOL, "http")
+
+    def test_no_google_secret_is_written_in_the_source(self):
+        # Google's secret prefix, built in two pieces so this file does not
+        # match its own scan.
+        marker = "GOCSPX" + "-"
+        root = Path(settings.BASE_DIR)
+        suffixes = {".py", ".html", ".txt", ".md", ".example", ".css", ".json"}
+        for path in root.rglob("*"):
+            if (
+                path.is_file()
+                and path.suffix in suffixes
+                and not any(part in {".git", "venv", ".venv", "staticfiles", "node_modules"} for part in path.parts)
+            ):
+                with self.subTest(file=str(path.relative_to(root))):
+                    self.assertNotIn(marker, path.read_text(errors="ignore"))
+
+
+def finish_google_login(email, verified=True, uid="1234567890"):
+    """Run allauth's post-callback step for a Google profile with this email.
+
+    The callback view needs a live Google token exchange, so this hands allauth
+    the already-fetched profile instead and returns (request, response).
+    """
+    request = RequestFactory().get("/accounts/google/login/callback/")
+    SessionMiddleware(lambda r: None).process_request(request)
+    MessageMiddleware(lambda r: None).process_request(request)
+    request.session.save()
+    request.user = AnonymousUser()
+    with allauth_context.request_context(request):
+        sociallogin = SocialLogin(
+            user=User(email=email),
+            account=SocialAccount(provider="google", uid=uid, extra_data={"email": email}),
+            email_addresses=[EmailAddress(email=email, verified=verified, primary=True)],
+            provider=get_social_adapter().get_provider(request, "google"),
+        )
+        sociallogin.state = {"process": "login"}
+        response = complete_social_login(request, sociallogin)
+    return request, response
+
+
+@override_settings(SOCIALACCOUNT_PROVIDERS=GOOGLE_TEST_PROVIDERS)
+class GoogleAccountLinkingTests(TestCase):
+    def test_google_email_matching_an_existing_user_signs_into_that_user(self):
+        existing = User.objects.create_user("hda3", email="hda3@illinois.edu", password="pw")
+        request, response = finish_google_login("hda3@illinois.edu")
+        self.assertEqual(response.status_code, 302)
+        self.assertNotIn("3rdparty/signup", response.url)
+        self.assertEqual(request.user.pk, existing.pk)
+        self.assertEqual(User.objects.count(), 1)
+        self.assertTrue(SocialAccount.objects.filter(user=existing, provider="google").exists())
+
+    def test_new_google_email_creates_a_user_without_an_extra_form(self):
+        request, response = finish_google_login("new.person@gmail.com")
+        self.assertEqual(response.status_code, 302)
+        self.assertNotIn("3rdparty/signup", response.url)
+        self.assertEqual(User.objects.count(), 1)
+        self.assertEqual(request.user.email, "new.person@gmail.com")
+        self.assertTrue(request.user.username)
+
+    def test_unverified_google_email_is_never_linked_to_an_existing_user(self):
+        existing = User.objects.create_user("hda3", email="hda3@illinois.edu", password="pw")
+        request, response = finish_google_login("hda3@illinois.edu", verified=False)
+        self.assertNotEqual(getattr(request.user, "pk", None), existing.pk)
+        self.assertFalse(SocialAccount.objects.filter(user=existing).exists())
+
+
 class Demo4FetchPageTests(TestCase):
     """/demos/fetch/ (data_quality:demo4-fetch-page) - A5 demo 4 static page."""
 
@@ -1620,3 +1798,42 @@ class DatasetLookupApiTests(TestCase):
 
         self.assertEqual(response.status_code, 502)
         self.assertIn("failed", response.json()["error"])
+
+
+# ---------------------------------------------------------------
+# URL order: project routes vs allauth's (Hriday)
+# ---------------------------------------------------------------
+
+class AccountsUrlOrderTests(TestCase):
+    def test_project_routes_are_matched_before_allauth(self):
+        from datapact_project import urls as project_urls
+
+        names = [
+            getattr(pattern.urlconf_name, "__name__", None)
+            for pattern in project_urls.urlpatterns
+        ]
+        self.assertLess(names.index("data_quality.urls"), names.index("allauth.urls"))
+
+    def test_a_project_route_on_an_allauth_path_is_not_shadowed(self):
+        from django.urls import clear_url_caches, path
+
+        from . import urls as app_urls
+
+        def custom_login(request):
+            return None
+
+        route = path("accounts/login/", custom_login, name="custom-login")
+        app_urls.urlpatterns.insert(0, route)
+        clear_url_caches()
+
+        def restore():
+            app_urls.urlpatterns.remove(route)
+            clear_url_caches()
+
+        self.addCleanup(restore)
+        self.assertIs(resolve("/accounts/login/").func, custom_login)
+
+    def test_google_login_callback_and_social_signup_still_resolve_to_allauth(self):
+        self.assertEqual(resolve("/accounts/google/login/").url_name, "google_login")
+        self.assertEqual(resolve("/accounts/google/login/callback/").url_name, "google_callback")
+        self.assertEqual(resolve("/accounts/3rdparty/signup/").url_name, "socialaccount_signup")
