@@ -1569,3 +1569,25 @@ interesting.
 
 Re-tested all three locally: 12 total runs (4 passed, 7 failed, 1
 error), matches the live quality_history page.
+
+42. A5 DEMO 4 ADDED: BROWSER FETCH() (Connor)
+
+Added a 4th A5 demo, a browser fetch() page (docs/demos/demo4_fetch.html),
+to round out the 3 required demos with a client-side JS example
+alongside curl, requests, and pandas.
+
+Opening the file directly as file:// failed with a CORS error
+("NetworkError when attempting to fetch resource"), since the browser
+blocks fetch() calls from a file:// page to a different origin, and
+Django's dev server sends no CORS headers. Fixed by serving the page
+from Django itself instead: added demo4_fetch_page() in views.py and
+a route at /demos/fetch/ in urls.py, so the page and the API share
+an origin.
+
+Verified locally: visited http://127.0.0.1:8000/demos/fetch/ with
+the dev server running, confirmed the table populated with the 3
+outcome rows (Passed 4, Failed 7, Error 1, 12 total runs) and the
+console logged the fetch call and response. Screenshot saved at
+docs/screenshots/a5/demo4_fetch.png. No Python/Django logic changed
+beyond the new page-serving view, so the test count is unaffected
+(136).

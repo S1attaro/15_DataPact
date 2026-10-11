@@ -1,7 +1,9 @@
 import csv
+import os
 from io import StringIO
 import requests
 
+from django.conf import settings
 from django.contrib import messages
 from django.db.models import Count
 from django.http import Http404, HttpResponse, JsonResponse
@@ -578,3 +580,16 @@ def dataset_lookup_api(request):
             "external_matches": external_data,
         }
     )
+
+
+def demo4_fetch_page(request):
+    """
+    Serves the A5 Demo 4 standalone fetch() page from the Django dev
+    server itself, so the page and /api/run-outcomes/ share an origin.
+    Opening the file directly as file:// triggers the browser's CORS
+    block, since Django doesn't send CORS headers.
+    """
+    demo_path = os.path.join(settings.BASE_DIR, "docs", "demos", "demo4_fetch.html")
+    with open(demo_path, "r", encoding="utf-8") as f:
+        return HttpResponse(f.read())
+
