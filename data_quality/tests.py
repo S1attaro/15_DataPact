@@ -1710,3 +1710,130 @@ class GoogleAccountLinkingTests(TestCase):
         request, response = finish_google_login("hda3@illinois.edu", verified=False)
         self.assertNotEqual(getattr(request.user, "pk", None), existing.pk)
         self.assertFalse(SocialAccount.objects.filter(user=existing).exists())
+
+
+class Demo4FetchPageTests(TestCase):
+    """/demos/fetch/ (data_quality:demo4-fetch-page) - A5 demo 4 static page."""
+
+    def test_page_loads_with_html_content_type(self):
+        response = self.client.get(reverse("data_quality:demo4-fetch-page"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/html; charset=utf-8")
+
+    def test_page_contains_the_fetch_call_and_api_url(self):
+        response = self.client.get(reverse("data_quality:demo4-fetch-page"))
+        content = response.content.decode()
+        self.assertIn("fetch(API_URL)", content)
+        self.assertIn("/api/run-outcomes/", content)
+
+
+class DatasetLookupApiTests(TestCase):
+    """/api/lookup/ (data_quality:dataset-lookup) - external API integration."""
+
+    def setUp(self):
+        self.owner = User.objects.create_user("lookupowner", password="pw")
+        Dataset.objects.create(
+            name="Monthly Enrollment Export",
+            owner=self.owner,
+            source_team="Registrar",
+            description="One row per student per term.",
+        )
+
+    def test_missing_query_param_returns_400(self):
+        response = self.client.get(reverse("data_quality:dataset-lookup"))
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.json())
+
+    @patch("data_quality.views.requests.get")
+    def test_successful_lookup_combines_internal_and_external_matches(self, mock_get):
+        mock_get.return_value.json.return_value = {
+            "docs": [
+                {
+                    "title": "Enrolled Agent",
+                    "author_name": ["Carlos Ramirez"],
+                    "first_publish_year": 2022,
+                }
+            ]
+        }
+        mock_get.return_value.raise_for_status.return_value = None
+
+        response = self.client.get(
+            reverse("data_quality:dataset-lookup"), {"q": "enrollment"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["internal_match_count"], 1)
+        self.assertEqual(data["internal_matches"][0]["name"], "Monthly Enrollment Export")
+        self.assertEqual(data["external_match_count"], 1)
+        self.assertEqual(data["external_matches"][0]["title"], "Enrolled Agent")
+
+        mock_get.assert_called_once()
+        _, kwargs = mock_get.call_args
+        self.assertEqual(kwargs["params"], {"q": "enrollment", "limit": 5})
+        self.assertEqual(kwargs["timeout"], 5)
+
+    @patch("data_quality.views.requests.get")
+    def test_timeout_returns_504(self, mock_get):
+        import requests
+
+        mock_get.side_effect = requests.exceptions.Timeout
+
+        response = self.client.get(
+            reverse("data_quality:dataset-lookup"), {"q": "enrollment"}
+        )
+
+        self.assertEqual(response.status_code, 504)
+        self.assertIn("timed out", response.json()["error"])
+
+    @patch("data_quality.views.requests.get")
+    def test_request_exception_returns_502(self, mock_get):
+        import requests
+
+        mock_get.side_effect = requests.exceptions.ConnectionError("no route to host")
+
+        response = self.client.get(
+            reverse("data_quality:dataset-lookup"), {"q": "enrollment"}
+        )
+
+        self.assertEqual(response.status_code, 502)
+        self.assertIn("failed", response.json()["error"])
+
+
+# ---------------------------------------------------------------
+# URL order: project routes vs allauth's (Hriday)
+# ---------------------------------------------------------------
+
+class AccountsUrlOrderTests(TestCase):
+    def test_project_routes_are_matched_before_allauth(self):
+        from datapact_project import urls as project_urls
+
+        names = [
+            getattr(pattern.urlconf_name, "__name__", None)
+            for pattern in project_urls.urlpatterns
+        ]
+        self.assertLess(names.index("data_quality.urls"), names.index("allauth.urls"))
+
+    def test_a_project_route_on_an_allauth_path_is_not_shadowed(self):
+        from django.urls import clear_url_caches, path
+
+        from . import urls as app_urls
+
+        def custom_login(request):
+            return None
+
+        route = path("accounts/login/", custom_login, name="custom-login")
+        app_urls.urlpatterns.insert(0, route)
+        clear_url_caches()
+
+        def restore():
+            app_urls.urlpatterns.remove(route)
+            clear_url_caches()
+
+        self.addCleanup(restore)
+        self.assertIs(resolve("/accounts/login/").func, custom_login)
+
+    def test_google_login_callback_and_social_signup_still_resolve_to_allauth(self):
+        self.assertEqual(resolve("/accounts/google/login/").url_name, "google_login")
+        self.assertEqual(resolve("/accounts/google/login/callback/").url_name, "google_callback")
+        self.assertEqual(resolve("/accounts/3rdparty/signup/").url_name, "socialaccount_signup")

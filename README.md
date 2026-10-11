@@ -155,7 +155,6 @@ Example:
 GET /api/datasets/?owner=cslat
 ```
 
-
 ## External API Integration (A4 Part 2)
 
 /api/lookup/?q=<term> combines our internal Dataset registry with Open Library's public search API. Nothing from Open Library is stored; the external response is fetched, processed in memory, and returned alongside our own data.
@@ -167,6 +166,38 @@ Example: GET /api/lookup/?q=enrollment
 Returns internal Dataset matches (name, description, or source_team containing the term) and up to 5 Open Library book results (title, author, first_publish_year) for the same term.
 
 
+## Alternative API-Use Demos (A5)
+
+Four ways to consume /api/run-outcomes/ beyond a browser page rendered by
+Django. This is the public, unauthenticated endpoint for A5
+(/api/datasets/ is now access-controlled, so the demos point here instead).
+
+1. curl from the terminal: curl.exe http://127.0.0.1:8000/api/run-outcomes/
+2. Python script using requests: docs/demos/demo2_requests.py
+3. Pandas DataFrame load: docs/demos/demo3_pandas.py (pd.read_json + pass-rate calculation)
+4. Browser fetch(): docs/demos/demo4_fetch.html (see below)
+
+Response shape is a flat array: [{"outcome": "Passed", "runs": 4}, ...]
+
+Run demo 2 or 3 with python docs/demos/demo2_requests.py (or demo3_pandas.py) while the dev server is running. pandas is only needed for demo 3, not added to requirements.txt since it is not a project dependency.
+
+Screenshots: docs/screenshots/a5/demo1_curl.png, demo2_requests.png, demo3_pandas.png
+
+**Demo 4: browser `fetch()`** (`docs/demos/demo4_fetch.html`)
+
+A standalone HTML page that calls `/api/run-outcomes/` with the browser's
+native `fetch()` API and renders the result as a table. Served through
+Django itself at `/demos/fetch/` (added `demo4_fetch_page` in
+`views.py` and a route in `urls.py`) rather than opened as a local
+`file://` page, since the browser blocks a `fetch()` from `file://` to
+`http://` as a cross-origin request and Django's dev server sends no
+CORS headers to allow it.
+
+To run it: start `python manage.py runserver`, then visit
+`http://127.0.0.1:8000/demos/fetch/`. Open the browser dev console (F12)
+to see the logged fetch call and response.
+
+Screenshot: `docs/screenshots/a5/demo4_fetch.png`
 
 ## Templates
 
@@ -246,7 +277,7 @@ A full request/response transcript of both modes is in
 python manage.py test data_quality
 ```
 
-148 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, the Reports page and CSV/JSON exports, the A4 chart APIs, Vega-Lite specification endpoints and charts page, and Google sign-in. Run them before you open a pull request.
+157 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, the Reports page and CSV/JSON exports, the A4 chart APIs, Vega-Lite specification endpoints and charts page, and Google sign-in. Run them before you open a pull request.
 
 ## Google sign-in (Hriday)
 
@@ -269,10 +300,12 @@ Include it without `only`, because it needs the request for the CSRF token. With
 3. **Clients, Create client**, type **Web application**. Add these **Authorized redirect URIs**:
    - `http://127.0.0.1:8000/accounts/google/login/callback/`
    - `http://localhost:8000/accounts/google/login/callback/`
-   - `https://<pythonanywhere-username>.pythonanywhere.com/accounts/google/login/callback/` for the deployed site
+   - `https://tjaggi.pythonanywhere.com/accounts/google/login/callback/` for the deployed site
 4. Put the Client ID and secret in `.env` as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Never commit them. On PythonAnywhere, set them in the server's own `.env`.
 
 Google matches redirect URIs exactly, including the trailing slash, and `localhost` is not `127.0.0.1`.
+
+**URL order.** In `datapact_project/urls.py` the project's own routes (`data_quality.urls`) come before `allauth.urls`. Django uses the first pattern that matches, so a project view on the same path as an allauth one, such as a custom `accounts/login/`, is not shadowed, while allauth still serves the Google login, its callback and the rest. A test guards the order.
 
 **On PythonAnywhere:** pull the code, `pip install -r requirements.txt`, `python manage.py migrate`, `python manage.py collectstatic`, make sure the server's `.env` has both Google values, then reload the web app. Production settings send an `https://` callback (`ACCOUNT_DEFAULT_HTTP_PROTOCOL`), because PythonAnywhere hands Django a plain-http request and Google would otherwise reject the callback with `redirect_uri_mismatch`.
 

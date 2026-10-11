@@ -1570,6 +1570,14 @@ Button:  data_quality/templates/data_quality/includes/_google_button.html
     account with another person's address first, and that person's later
     Google sign-in would connect to it. Turning on email verification for local
     signup (or not trusting unverified local addresses) closes that.
+  - URL order (datapact_project/urls.py): data_quality.urls is included BEFORE
+    allauth.urls. Django takes the first match, so a project view on an
+    allauth path (e.g. a custom accounts/login/, accounts/signup/ or
+    accounts/logout/) wins, and allauth still serves everything the project
+    does not define: accounts/google/login/, the callback, 3rdparty/signup/.
+    Three tests: the include order, a project route on /accounts/login/ is not
+    shadowed, and the Google routes still resolve to allauth. The first two
+    fail if the order is swapped back (checked).
   - ACCOUNT_EMAIL_VERIFICATION = "none": Google already verified the address,
     and there is no mail server to send a confirmation. This also applies to
     username/password signup, which is Tejas's area - change it there if you
@@ -1579,15 +1587,20 @@ Checked against Google itself (local): the app redirects to accounts.google.com
 with our client_id and the callback http://127.0.0.1:8000/accounts/google/login/
 callback/, and Google answers with its sign-in page, not redirect_uri_mismatch
 or invalid_client, so the Cloud Console client and the localhost redirect URI
-are right. Not yet checked: the production domain (needs the deploy).
+are right. Production domain: simulated a request for tjaggi.pythonanywhere.com with the
+https setting; the app sends redirect_uri
+https://tjaggi.pythonanywhere.com/accounts/google/login/callback/ (correct),
+and Google answers redirect_uri_mismatch because that URI is not yet in the
+Google client's Authorized redirect URIs. Add it, re-run this check, then
+deploy.
 
 48. TESTS
 
-16 Google tests: the button partial (CSRF POST form, "not configured" note),
+19 Google tests: the button partial (CSRF POST form, "not configured" note),
 the redirect to Google with our client and callback, https callback when the
 setting is on, GET does not start the flow, CSRF enforced, the callback path,
 production defaults to https and can be overridden, local signup still works,
-no secret in source. 148 passing, and the suite also passes on a clean venv
+no secret in source. 157 passing, and the suite also passes on a clean venv
 with the pinned requirements (Django 5.2.17).
 
 49. STILL OPEN (not code I can do)
@@ -1603,3 +1616,68 @@ with the pinned requirements (Django 5.2.17).
     migrate on the server only.
   - Ashok: put the partial on the login and signup pages. Tejas: LOGIN_URL and
     the protected views; if you also set LOGIN_REDIRECT_URL, keep one copy.
+
+
+40. A5 ALTERNATIVE API-USE DEMOS (Connor)
+
+Three demos consuming /api/datasets/ outside a browser, as required
+for A5:
+
+  1. curl from the terminal.
+  2. docs/demos/demo2_requests.py - plain Python script using the
+     requests library (same library dataset_lookup_api uses
+     internally for the external API call).
+  3. docs/demos/demo3_pandas.py - pandas.read_json() loads the
+     endpoint straight into a DataFrame, then groupby() on
+     source_team and owner to show the data is actually usable, not
+     just dumped.
+
+pandas is a demo-only dependency, not added to requirements.txt since
+the Django app itself does not import it anywhere.
+
+All three run against the dev server (python manage.py runserver)
+with no changes to existing views, urls, or models. Screenshots:
+docs/screenshots/a5/demo1_curl.png, demo2_requests.png,
+demo3_pandas.png.
+
+Replying to Ashok's note above: go ahead and add the mocked tests for
+/api/lookup/ if you want to, happy to have the coverage. If you'd
+rather I write them, say so and I will in a follow-up PR.
+
+41. A5 DEMOS UPDATED TO /api/run-outcomes/ (Connor)
+
+Per Tejas: /api/datasets/ is being access-controlled under A5 auth,
+so it is no longer a valid target for an anonymous-access demo.
+Switched all three demos (curl, demo2_requests.py, demo3_pandas.py)
+and their screenshots to /api/run-outcomes/, the public endpoint,
+response shape [{"outcome": "Passed", "runs": 4}, ...].
+
+Demo 3 also picked up a small real calculation (pass rate =
+Passed runs / total runs) now that the data is a 3-row outcome
+summary instead of a 7-row dataset list, groupby on 3 rows was not
+interesting.
+
+Re-tested all three locally: 12 total runs (4 passed, 7 failed, 1
+error), matches the live quality_history page.
+
+42. A5 DEMO 4 ADDED: BROWSER FETCH() (Connor)
+
+Added a 4th A5 demo, a browser fetch() page (docs/demos/demo4_fetch.html),
+to round out the 3 required demos with a client-side JS example
+alongside curl, requests, and pandas.
+
+Opening the file directly as file:// failed with a CORS error
+("NetworkError when attempting to fetch resource"), since the browser
+blocks fetch() calls from a file:// page to a different origin, and
+Django's dev server sends no CORS headers. Fixed by serving the page
+from Django itself instead: added demo4_fetch_page() in views.py and
+a route at /demos/fetch/ in urls.py, so the page and the API share
+an origin.
+
+Verified locally: visited http://127.0.0.1:8000/demos/fetch/ with
+the dev server running, confirmed the table populated with the 3
+outcome rows (Passed 4, Failed 7, Error 1, 12 total runs) and the
+console logged the fetch call and response. Screenshot saved at
+docs/screenshots/a5/demo4_fetch.png. No Python/Django logic changed
+beyond the new page-serving view, so the test count is unaffected
+(136).
