@@ -1553,3 +1553,19 @@ demo3_pandas.png.
 Replying to Ashok's note above: go ahead and add the mocked tests for
 /api/lookup/ if you want to, happy to have the coverage. If you'd
 rather I write them, say so and I will in a follow-up PR.
+
+41. A5 DEMOS UPDATED TO /api/run-outcomes/ (Connor)
+
+Per Tejas: /api/datasets/ is being access-controlled under A5 auth,
+so it is no longer a valid target for an anonymous-access demo.
+Switched all three demos (curl, demo2_requests.py, demo3_pandas.py)
+and their screenshots to /api/run-outcomes/, the public endpoint,
+response shape [{"outcome": "Passed", "runs": 4}, ...].
+
+Demo 3 also picked up a small real calculation (pass rate =
+Passed runs / total runs) now that the data is a 3-row outcome
+summary instead of a 7-row dataset list, groupby on 3 rows was not
+interesting.
+
+Re-tested all three locally: 12 total runs (4 passed, 7 failed, 1
+error), matches the live quality_history page.
