@@ -1526,3 +1526,30 @@ touched it.
 STILL UNOWNED: Parts 4.3 and 4.4. Someone needs to own the
 PythonAnywhere account, deploy, and give mohitg27 access. It is not in
 the split anyone posted.
+
+
+40. A5 ALTERNATIVE API-USE DEMOS (Connor)
+
+Three demos consuming /api/datasets/ outside a browser, as required
+for A5:
+
+  1. curl from the terminal.
+  2. docs/demos/demo2_requests.py - plain Python script using the
+     requests library (same library dataset_lookup_api uses
+     internally for the external API call).
+  3. docs/demos/demo3_pandas.py - pandas.read_json() loads the
+     endpoint straight into a DataFrame, then groupby() on
+     source_team and owner to show the data is actually usable, not
+     just dumped.
+
+pandas is a demo-only dependency, not added to requirements.txt since
+the Django app itself does not import it anywhere.
+
+All three run against the dev server (python manage.py runserver)
+with no changes to existing views, urls, or models. Screenshots:
+docs/screenshots/a5/demo1_curl.png, demo2_requests.png,
+demo3_pandas.png.
+
+Replying to Ashok's note above: go ahead and add the mocked tests for
+/api/lookup/ if you want to, happy to have the coverage. If you'd
+rather I write them, say so and I will in a follow-up PR.
