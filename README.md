@@ -163,16 +163,19 @@ Returns internal Dataset matches (name, description, or source_team containing t
 
 ## Alternative API-Use Demos (A5)
 
-Three ways to consume /api/datasets/ beyond a browser:
+Three ways to consume /api/run-outcomes/ beyond a browser. This is the
+public, unauthenticated endpoint for A5 (/api/datasets/ is now access-
+controlled, so the demos point here instead).
 
-1. curl from the terminal: curl.exe http://127.0.0.1:8000/api/datasets/
+1. curl from the terminal: curl.exe http://127.0.0.1:8000/api/run-outcomes/
 2. Python script using requests: docs/demos/demo2_requests.py
-3. Pandas DataFrame load: docs/demos/demo3_pandas.py (pd.read_json + groupby)
+3. Pandas DataFrame load: docs/demos/demo3_pandas.py (pd.read_json + pass-rate calculation)
+
+Response shape is a flat array: [{"outcome": "Passed", "runs": 4}, ...]
 
 Run demo 2 or 3 with python docs/demos/demo2_requests.py (or demo3_pandas.py) while the dev server is running. pandas is only needed for demo 3, not added to requirements.txt since it is not a project dependency.
 
 Screenshots: docs/screenshots/a5/demo1_curl.png, demo2_requests.png, demo3_pandas.png
-
 
 ## Templates
 
