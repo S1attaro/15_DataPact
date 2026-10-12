@@ -1681,3 +1681,146 @@ console logged the fetch call and response. Screenshot saved at
 docs/screenshots/a5/demo4_fetch.png. No Python/Django logic changed
 beyond the new page-serving view, so the test count is unaffected
 (136).
+
+
+=============================================
+A5.1 - WEEKLY PROGRESS UPDATE (Week of 2026-10-12) - Ashok
+Login/signup UI, Google button, conditional navigation
+=============================================
+
+40. WHAT THIS BRANCH DOES
+
+Branch ashok/a5-auth-ui, cut from tejas/a5-integration (NOT from main -
+see section 43, this matters for merge order).
+
+  base.html            conditional navigation, account area, logout form
+  registration/login.html    styled, Google button added
+  registration/signup.html   styled, Google button added
+  home.html            "Where to go next" cards hidden when anonymous
+  datapact.css         account area, auth pages, mid-width breakpoint
+
+Part 1.5 - navigation before and after login:
+
+  anonymous      Home, Log in, Sign up
+  signed in      Home, Datasets, Overview, Contracts, Manage, Charts,
+                 Quality History, Reports, then the username and Log out
+
+  Verified end to end with a real browser, not just the test client:
+  anonymous nav -> bounced from /reports/ to the login page with
+  ?next=/reports/ -> logged in -> landed back on /reports/ -> logged out
+  -> nav back to three items. Screenshots in docs/screenshots/a5/.
+
+Logout is a POST form, not a link, per Tejas's section 3. A plain <a>
+returns 405 since Django 4.1, and a link would also let any page log
+you out with an <img> tag.
+
+Both of Tejas's constraints survived the restyle: {% csrf_token %} is
+in both forms, and login.html still has the hidden "next" input. There
+are tests for both, so a future restyle cannot quietly drop them.
+
+Part 2.4 - the Google button is Hriday's partial, included WITHOUT
+"only" as he asked, since it needs the request for the CSRF token. It
+sits in the {% block oauth %} Tejas left empty, so none of us edited
+the same lines.
+
+41. ONE THING I CHANGED OUTSIDE MY OWN FILES
+
+home.html's "Where to go next" cards linked to Datasets, Overview,
+Quality History, Contracts and Register a dataset. Every one of those
+is @login_required, so to a signed-out visitor they were five links
+that all bounce to the login page. The nav hides those destinations;
+this panel is navigation too, so it has to agree with it, or "protected
+links hidden" is true of the header and false of the page beneath it.
+
+Anonymous visitors now get a short prompt to log in or sign up, plus a
+pointer to /api/run-outcomes/, which is public on purpose.
+
+That broke Tejas's A3 test HomePageTests.
+test_home_page_links_to_the_main_sections, which asserted those links
+were present for an anonymous client. The assertion was right for A3
+and is wrong for A5. I signed a user in at the top of it and left the
+assertions alone, then added the anonymous half as its own test.
+
+TEJAS - that is your test and I edited it. Shout if you would rather
+have it another way.
+
+42. TESTS
+
+13 new (ConditionalNavigationTests, AuthPageTests) plus the anonymous
+home-page test in section 41.
+
+  python manage.py test data_quality -> 217 passing
+  (203 on tejas/a5-integration + 14)
+
+The one worth keeping whatever else changes:
+test_navigation_hides_links_but_is_not_what_protects_them. It walks
+every hidden route as an anonymous client and asserts a 302 to login.
+Hiding a link is courtesy; the decorators are the security. If someone
+later "simplifies" the nav back, that test still fails loudly.
+
+43. BLOCKER - THE DEPLOYED SITE AND A FRESH CLONE BOTH 500 ON LOGIN
+
+This is not mine to fix and it is the biggest thing outstanding.
+
+The committed db.sqlite3 has no allauth or sites tables. 17 migrations
+are unapplied:
+
+    account        0001 - 0009
+    sites          0001 - 0002
+    socialaccount  0001 - 0006
+
+So /accounts/login/ and /accounts/signup/ raise
+    OperationalError: no such table: django_site
+and return 500. I hit it immediately on a fresh checkout. Production
+will do exactly the same the moment the A5 code is deployed, and A5
+says Google login only counts if it works on the live site.
+
+HRIDAY - this is the migration commit Tejas asked you to own in his
+section 4. db.sqlite3 is binary and tracked, so Git cannot merge two
+versions of it: one person runs migrate and commits the result, once,
+and everyone else pulls before touching it. I deliberately did NOT run
+it - I migrated a throwaway copy (db.local.sqlite3, gitignored) so my
+tracked db.sqlite3 is byte-identical to the branch I started from.
+
+After it lands, on PythonAnywhere: git pull, pip install -r
+requirements.txt, migrate, collectstatic, add the Google env vars,
+reload.
+
+44. SECURITY - THE GOOGLE CLIENT SECRET IN THE GROUP CHAT
+
+The client ID and secret were posted in the group chat. Checked, and
+the good news is they are NOT in Git: no commit contains that secret,
+and the only GOCSPX string in the repo is the literal
+    marker = "GOCSPX" + "-"
+in a test that looks for committed secrets.
+
+They are still exposed. A group chat is not a secret store - it is
+backed up, synced to several devices and screenshotted. Connor already
+suggested rotating, and I agree, with one addition: rotate it AFTER
+Google login is confirmed working on the live site, not before, or we
+will be debugging a broken deploy and a changed secret at the same
+time. Rotating is one button in the Google Cloud console, then update
+.env locally and on PythonAnywhere.
+
+45. SMALLER THINGS I FIXED ALONG THE WAY
+
+  - Password fields rendered half-width next to username. The site-wide
+    form rule is a grid with justify-items: start, which sizes each row
+    to its content; a password <p> has no wide content, so it collapsed
+    to the input's intrinsic ~20-character width. The auth form now
+    stretches its rows.
+  - input[type="password"] was missing from the field styling list, so
+    password boxes had no border or padding.
+  - Added a breakpoint at 1040px. Nine nav items plus the account area
+    overflowed between phone and desktop width and pushed Log out off
+    the edge; the bar now wraps instead.
+  - Nav labels no longer break mid-label ("Quality History" was
+    splitting across two lines and making the header taller).
+
+46. NOT VERIFIED BY ME
+
+  - The real Google sign-in flow. I have no credentials and did not use
+    the ones from the chat. Locally I set obvious placeholders in .env
+    so the button renders and can be styled; clicking it will not
+    complete a real Google round trip. Hriday has tested the real flow.
+  - Anything on production. Everything above is local.
