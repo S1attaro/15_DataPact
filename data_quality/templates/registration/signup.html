@@ -1,0 +1,51 @@
+{% extends "data_quality/base.html" %}
+{% comment %}
+=============================================================================
+A5.1 Part 1 - signup page. Structure and security by Tejas; PRESENTATION IS
+ASHOK'S (Part 1.5 / Part 2.4).
+
+Ashok: same two rules as login.html - keep {% csrf_token %} inside the form,
+and put the "Continue with Google" button in {% block oauth %}.
+
+UserCreationForm renders its own field errors through {{ form.as_p }}, which
+is where the password-validator messages ("too common", "too short") come
+out. If you replace as_p with hand-written fields, render
+{{ field.errors }} per field or those messages disappear and a rejected
+signup looks like nothing happened.
+=============================================================================
+{% endcomment %}
+
+{% block title %}Sign up - DataPact{% endblock %}
+
+{% block page_title %}Create an account{% endblock %}
+
+{% block page_subtitle %}
+    <p class="page__subtitle">An account gives you access to the full registry.</p>
+{% endblock %}
+
+{% block content %}
+    <div class="panel">
+        <div class="panel__body">
+            {% if form.non_field_errors %}
+                <div class="form__errors" role="alert">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="button">Sign up</button>
+            </form>
+
+            {% block oauth %}{% endblock %}
+
+            <p class="prose">
+                Already have an account?
+                <a href="{% url 'data_quality:login' %}">Log in</a>.
+            </p>
+        </div>
+    </div>
+{% endblock %}

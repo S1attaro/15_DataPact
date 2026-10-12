@@ -1,10 +1,22 @@
 from django.urls import path
 
-from . import views
+from . import auth_views, views
 
 app_name = "data_quality"
 
 urlpatterns = [
+    # --- A5.1 Part 1: authentication (Tejas) ---
+    #
+    # Mounted under accounts/ because that is where Django and allauth both
+    # expect auth URLs to live. HRIDAY: allauth also claims accounts/login/,
+    # accounts/signup/ and accounts/logout/. Mount it so it does not shadow
+    # these three (its social URLs are the part Part 2 needs), or tell me and
+    # I will switch these over to allauth's views instead - either works, but
+    # we have to pick one rather than both defining the same path.
+    path("accounts/login/", auth_views.DataPactLoginView.as_view(), name="login"),
+    path("accounts/logout/", auth_views.DataPactLogoutView.as_view(), name="logout"),
+    path("accounts/signup/", auth_views.signup, name="signup"),
+
     # --- Home and navigation (Section 1, Tejas) ---
     path("", views.home, name="home"),
 

@@ -21,9 +21,11 @@ from django.contrib.messages.middleware import MessageMiddleware
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.contrib.staticfiles import finders
 from django.core.exceptions import ImproperlyConfigured
+from django.db import connection
 from django.db.models import QuerySet
 from django.template.loader import render_to_string
 from django.test import RequestFactory, TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.urls import resolve, reverse
 
 from . import views
@@ -31,7 +33,32 @@ from . import charts, vega
 from .models import Contract, Dataset, ValidationRule, ValidationRun, Violation
 
 
-class DatasetOverviewViewTests(TestCase):
+class SignedInClientMixin:
+    """
+    Give the shared test client a logged-in user (A5.1, Tejas).
+
+    A5.1 Part 1.4 puts the dataset, contract, quality, charts, reports and
+    export pages behind a login, so every test here that asks for one of
+    those pages now needs a session. The assertions themselves are
+    unchanged - these tests are about what the pages render, not about who
+    may see them, and the access rules have their own tests in
+    tests_auth.py and tests_api_access.py.
+
+    Hooking _pre_setup rather than setUp is deliberate: most classes below
+    already define setUp and do not call super(), so a mixin setUp would
+    silently never run. _pre_setup is called by Django for every test after
+    the database is ready and after self.client exists.
+    """
+
+    def _pre_setup(self):
+        super()._pre_setup()
+        self.signed_in_user = User.objects.create_user(
+            "a5-page-viewer", password="Spindrift-Harbour-41"
+        )
+        self.client.force_login(self.signed_in_user)
+
+
+class DatasetOverviewViewTests(SignedInClientMixin, TestCase):
     """Base CBV (django.views.View) at data_quality:dataset-cbv-base."""
 
     def test_empty_state_renders_without_error(self):
@@ -72,7 +99,7 @@ class DatasetOverviewViewTests(TestCase):
         self.assertEqual(row["active_contract"], active)
 
 
-class DatasetListViewTests(TestCase):
+class DatasetListViewTests(SignedInClientMixin, TestCase):
     """Generic CBV: ListView at data_quality:dataset-list."""
 
     def test_empty_state(self):
@@ -92,7 +119,7 @@ class DatasetListViewTests(TestCase):
         self.assertEqual(names, ["Course Catalog Snapshot", "Weekly Sales Extract"])
 
 
-class DatasetDetailViewTests(TestCase):
+class DatasetDetailViewTests(SignedInClientMixin, TestCase):
     """Generic CBV: DetailView at data_quality:dataset-detail."""
 
     def setUp(self):
@@ -142,7 +169,7 @@ class DatasetDetailViewTests(TestCase):
 # depend on the kind of view that rendered it.
 # ---------------------------------------------------------------
 
-class BaseTemplateInheritanceTests(TestCase):
+class BaseTemplateInheritanceTests(SignedInClientMixin, TestCase):
     """Section 3A: base.html is the single source of the site shell."""
 
     def setUp(self):
@@ -181,7 +208,7 @@ class BaseTemplateInheritanceTests(TestCase):
         self.assertContains(response, 'class="is-active"')
 
 
-class EmptyStateTests(TestCase):
+class EmptyStateTests(SignedInClientMixin, TestCase):
     """Section 3B: the {% empty %} branch and the shared empty-state partial."""
 
     def test_registry_empty_state_uses_the_shared_partial(self):
@@ -208,7 +235,7 @@ class EmptyStateTests(TestCase):
         self.assertNotContains(response, "No datasets registered yet")
 
 
-class TemplateReuseTests(TestCase):
+class TemplateReuseTests(SignedInClientMixin, TestCase):
     """
     Section 3C: dataset_list.html is written against one context variable and
     nothing else, so any view can render it.
@@ -285,7 +312,7 @@ def restore_settings_modules():
     importlib.reload(importlib.import_module("datapact_project.settings.development"))
 
 
-class DatasetRenderViewTests(TestCase):
+class DatasetRenderViewTests(SignedInClientMixin, TestCase):
     """FBV using render() at data_quality:dataset-render (Section 2, View 2)."""
 
     url = "/datasets/render/"
@@ -347,8 +374,19 @@ class DatasetRenderViewTests(TestCase):
 
         # One SELECT for datasets joined to owners; no per-row owner lookups
         # when the template prints dataset.owner.username.
-        with self.assertNumQueries(1):
+        #
+        # Counted per-table rather than with assertNumQueries, because A5.1
+        # put this page behind a login and an authenticated request also
+        # reads the session row and the user row. Counting only the dataset
+        # SELECTs keeps the original point - one query, not one per row -
+        # and stops the number drifting with unrelated auth changes.
+        with CaptureQueriesContext(connection) as captured:
             response = self.client.get(self.url)
+        dataset_queries = [
+            q for q in captured.captured_queries
+            if "data_quality_dataset" in q["sql"]
+        ]
+        self.assertEqual(len(dataset_queries), 1, dataset_queries)
         self.assertEqual(response.status_code, 200)
         for owner in owners:
             self.assertContains(response, owner.username)
@@ -462,7 +500,7 @@ class SettingsSplitTests(TestCase):
 # Author: Hriday Agarwal
 # ---------------------------------------------------------------
 
-class ContractSearchViewGetTests(TestCase):
+class ContractSearchViewGetTests(SignedInClientMixin, TestCase):
     def setUp(self):
         self.owner = User.objects.create_user("owner1", password="pw")
         self.enrollment = Dataset.objects.create(
@@ -526,7 +564,7 @@ class ContractSearchViewGetTests(TestCase):
         self.assertContains(response, "No contracts exist yet.")
 
 
-class ContractSearchViewPostTests(TestCase):
+class ContractSearchViewPostTests(SignedInClientMixin, TestCase):
     def setUp(self):
         owner = User.objects.create_user("owner1", password="pw")
         dataset = Dataset.objects.create(
@@ -603,7 +641,7 @@ class ContractSearchViewPostTests(TestCase):
 # Author: Hriday Agarwal
 # ---------------------------------------------------------------
 
-class DatasetManageViewGetTests(TestCase):
+class DatasetManageViewGetTests(SignedInClientMixin, TestCase):
     def setUp(self):
         self.owner = User.objects.create_user("owner1", password="pw")
         self.registrar_ds = Dataset.objects.create(
@@ -635,7 +673,7 @@ class DatasetManageViewGetTests(TestCase):
         self.assertFalse(response.context["form"].is_bound)
 
 
-class DatasetManageViewPostTests(TestCase):
+class DatasetManageViewPostTests(SignedInClientMixin, TestCase):
     def setUp(self):
         self.owner = User.objects.create_user("owner1", password="pw")
 
@@ -705,7 +743,7 @@ class DatasetManageViewPostTests(TestCase):
 # ---------------------------------------------------------------
 
 
-class StaticAssetTests(TestCase):
+class StaticAssetTests(SignedInClientMixin, TestCase):
     """Section 3A/3B: static files configured, loaded and linked."""
 
     def test_stylesheet_is_linked_through_the_static_tag(self):
@@ -806,7 +844,7 @@ class CacheBustingStorageTests(TestCase):
         )
 
 
-class SiteChromeTests(TestCase):
+class SiteChromeTests(SignedInClientMixin, TestCase):
     """
     Section 3C plus the two handoffs left in notes.txt sections 26 and 29:
     base.html owns the nav and the flash messages for every page.
@@ -925,7 +963,7 @@ class HomePageTests(TestCase):
         self.assertEqual(response.context["dataset_count"], 0)
 
 
-class NavigationTests(TestCase):
+class NavigationTests(SignedInClientMixin, TestCase):
     """Site navigation is reversed, not hard-coded (Section 1)."""
 
     def test_navigation_offers_at_least_three_working_links(self):
@@ -953,7 +991,7 @@ class NavigationTests(TestCase):
         self.assertEqual(offenders, [])
 
 
-class DatasetUrlTests(TestCase):
+class DatasetUrlTests(SignedInClientMixin, TestCase):
     """Primary-key detail routes and get_absolute_url (Section 1)."""
 
     def setUp(self):
@@ -1048,7 +1086,7 @@ class RunOutcomeAggregationTests(TestCase):
             charts.run_outcome_counts()
 
 
-class RunOutcomesChartTests(TestCase):
+class RunOutcomesChartTests(SignedInClientMixin, TestCase):
     """The PNG image endpoint (Section 4)."""
 
     url_name = "data_quality:run-outcomes-chart"
@@ -1129,7 +1167,7 @@ class RunOutcomesChartTests(TestCase):
         self.assertNotEqual(first, self.client.get(reverse(self.url_name)).content)
 
 
-class QualityHistoryPageTests(TestCase):
+class QualityHistoryPageTests(SignedInClientMixin, TestCase):
     """The page that presents the chart (Section 4)."""
 
     url_name = "data_quality:quality-history"
@@ -1174,7 +1212,7 @@ class QualityHistoryPageTests(TestCase):
 # Author: Hriday Agarwal
 # ---------------------------------------------------------------
 
-class ReportsViewTests(TestCase):
+class ReportsViewTests(SignedInClientMixin, TestCase):
     def setUp(self):
         owner = User.objects.create_user("owner1", password="pw")
         self.ds_a = Dataset.objects.create(name="Dataset A", owner=owner, source_team="Team A")
@@ -1225,7 +1263,7 @@ class ReportsViewTests(TestCase):
         self.assertContains(response, "No validation runs yet.")
 
 
-class ExportValidationRunsCsvTests(TestCase):
+class ExportValidationRunsCsvTests(SignedInClientMixin, TestCase):
     def setUp(self):
         owner = User.objects.create_user("owner1", password="pw")
         dataset = Dataset.objects.create(name="Dataset A", owner=owner, source_team="Team A")
@@ -1264,7 +1302,7 @@ class ExportValidationRunsCsvTests(TestCase):
         self.assertEqual(by_file["a2.csv"][5], "")
 
 
-class ExportValidationRunsJsonTests(TestCase):
+class ExportValidationRunsJsonTests(SignedInClientMixin, TestCase):
     def setUp(self):
         owner = User.objects.create_user("owner1", password="pw")
         dataset = Dataset.objects.create(name="Dataset A", owner=owner, source_team="Team A")
@@ -1307,7 +1345,7 @@ class ExportValidationRunsJsonTests(TestCase):
 CHARTS_TEMPLATE = TEMPLATE_DIR / "charts.html"
 
 
-class ChartApiTests(TestCase):
+class ChartApiTests(SignedInClientMixin, TestCase):
     """The two internal JSON APIs the charts read (A4 Part 1.1)."""
 
     def setUp(self):
@@ -1391,7 +1429,7 @@ class ChartApiTests(TestCase):
         self.assertEqual([r["runs"] for r in rows], [0, 0, 0])
 
 
-class VegaSpecEndpointTests(TestCase):
+class VegaSpecEndpointTests(SignedInClientMixin, TestCase):
     """Each chart's specification is published at its own URL (A4 Part 1.2)."""
 
     def test_spec_endpoints_resolve_and_serve_json(self):
@@ -1450,7 +1488,7 @@ class VegaSpecEndpointTests(TestCase):
                 self.assertEqual(served, vega.CHART_SPECS[number]())
 
 
-class ChartsPageTests(TestCase):
+class ChartsPageTests(SignedInClientMixin, TestCase):
     """The page that embeds both charts (A4 Part 1.2)."""
 
     def test_page_renders_and_extends_the_site_shell(self):
@@ -1505,7 +1543,7 @@ class ChartsPageTests(TestCase):
 # ---------------------------------------------------------------
 
 
-class OptionalNavLinkTests(TestCase):
+class OptionalNavLinkTests(SignedInClientMixin, TestCase):
     """
     base.html is inherited by every page, so a {% url %} for a route that does
     not exist yet is not a broken link - it is a NoReverseMatch that turns the
@@ -1732,6 +1770,7 @@ class DatasetLookupApiTests(TestCase):
 
     def setUp(self):
         self.owner = User.objects.create_user("lookupowner", password="pw")
+        self.client.force_login(self.owner)
         Dataset.objects.create(
             name="Monthly Enrollment Export",
             owner=self.owner,

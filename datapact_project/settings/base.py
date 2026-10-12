@@ -150,6 +150,21 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+# Authentication (A5.1 Part 1, Tejas)
+#
+# LOGIN_URL is where @login_required sends an anonymous visitor. It is given
+# as a URL *name* rather than a path so the route can move without this
+# becoming a silent 404 - a literal '/accounts/login/' here would keep
+# "working" by redirecting to a page that no longer exists.
+#
+# LOGIN_REDIRECT_URL and LOGOUT_REDIRECT_URL are deliberately NOT set here.
+# allauth reads the same two settings and defines them in the Google sign-in
+# section at the bottom of this file. Setting them in both places means the
+# lower one silently wins, so a later edit up here would appear to do nothing.
+# AuthSettingsTests asserts all three are present and reversible.
+LOGIN_URL = 'data_quality:login'
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 

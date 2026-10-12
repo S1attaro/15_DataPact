@@ -1,0 +1,39 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "title": {
+    "text": "DataPact - Validation Run Outcomes",
+    "subtitle": "Live from the public DataPact API - every file checked, grouped by result",
+    "anchor": "start"
+  },
+  "data": {
+    "url": "https://tjaggi.pythonanywhere.com/api/run-outcomes/",
+    "format": {"type": "json"}
+  },
+  "width": 500,
+  "height": 300,
+  "mark": {"type": "bar", "tooltip": true},
+  "encoding": {
+    "x": {
+      "field": "outcome",
+      "type": "nominal",
+      "title": "Outcome",
+      "sort": ["Passed", "Failed", "Error"],
+      "axis": {"labelAngle": 0}
+    },
+    "y": {
+      "field": "runs",
+      "type": "quantitative",
+      "title": "Validation runs",
+      "axis": {"tickMinStep": 1}
+    },
+    "color": {
+      "field": "outcome",
+      "type": "nominal",
+      "title": "Outcome",
+      "scale": {
+        "domain": ["Passed", "Failed", "Error"],
+        "range": ["#1d6b36", "#a12a2a", "#855c11"]
+      }
+    }
+  }
+}
