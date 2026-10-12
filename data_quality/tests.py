@@ -1732,6 +1732,7 @@ class DatasetLookupApiTests(TestCase):
 
     def setUp(self):
         self.owner = User.objects.create_user("lookupowner", password="pw")
+        self.client.force_login(self.owner)
         Dataset.objects.create(
             name="Monthly Enrollment Export",
             owner=self.owner,
