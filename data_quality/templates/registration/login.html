@@ -22,7 +22,7 @@ left empty on purpose - that is Hriday's provider wiring plus your button.
 {% endblock %}
 
 {% block content %}
-    <div class="panel">
+    <div class="panel panel--auth">
         <div class="panel__body">
             {% if form.non_field_errors %}
                 <div class="form__errors" role="alert">
@@ -36,10 +36,20 @@ left empty on purpose - that is Hriday's provider wiring plus your button.
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ next }}">
                 {{ form.as_p }}
-                <button type="submit" class="button">Log in</button>
+                <button type="submit" class="btn btn--primary">Log in</button>
             </form>
 
-            {% block oauth %}{% endblock %}
+            {% comment %}
+                A5.1 Part 2.4 (Ashok). The partial is Hriday's provider wiring;
+                included WITHOUT "only" on purpose - it needs the page's request
+                for the CSRF token and the ?next= redirect, and "only" would
+                hide it. When no Google credentials are set it prints a short
+                note instead of a button, so this is safe locally.
+            {% endcomment %}
+            {% block oauth %}
+                <div class="authsplit"><span>or</span></div>
+                {% include "data_quality/includes/_google_button.html" %}
+            {% endblock %}
 
             <p class="prose">
                 No account yet?
