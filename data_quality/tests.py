@@ -1726,14 +1726,25 @@ def finish_google_login(email, verified=True, uid="1234567890"):
 
 @override_settings(SOCIALACCOUNT_PROVIDERS=GOOGLE_TEST_PROVIDERS)
 class GoogleAccountLinkingTests(TestCase):
-    def test_google_email_matching_an_existing_user_signs_into_that_user(self):
+    def test_google_email_matching_an_existing_user_does_not_sign_into_that_user(self):
+        # Reversed during A5.1 integration (Tejas). This test previously
+        # asserted the opposite - that a matching email signs straight into
+        # the existing account - which is what SOCIALACCOUNT_EMAIL_AUTHENTICATION
+        # used to do. That behaviour was turned off because db.sqlite3 is
+        # tracked and its seeded accounts are superusers with real, guessable
+        # @illinois.edu addresses, so matching on email alone handed anyone
+        # who owned such an address a superuser account on the deployed site.
+        # The reasoning is in settings/base.py; the full set of cases lives in
+        # tests_oauth_security.py. Hriday's scenario is kept as-is so the
+        # change of requirement stays visible in his own test class.
         existing = User.objects.create_user("hda3", email="hda3@illinois.edu", password="pw")
         request, response = finish_google_login("hda3@illinois.edu")
         self.assertEqual(response.status_code, 302)
-        self.assertNotIn("3rdparty/signup", response.url)
-        self.assertEqual(request.user.pk, existing.pk)
+        self.assertIn("3rdparty/signup", response.url)
+        self.assertFalse(request.user.is_authenticated)
+        self.assertNotEqual(getattr(request.user, "pk", None), existing.pk)
         self.assertEqual(User.objects.count(), 1)
-        self.assertTrue(SocialAccount.objects.filter(user=existing, provider="google").exists())
+        self.assertFalse(SocialAccount.objects.filter(user=existing, provider="google").exists())
 
     def test_new_google_email_creates_a_user_without_an_extra_form(self):
         request, response = finish_google_login("new.person@gmail.com")
