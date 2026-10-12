@@ -1,0 +1,60 @@
+{% extends "data_quality/base.html" %}
+{% comment %}
+=============================================================================
+A5.1 Part 1 - login page. Structure and security by Tejas; PRESENTATION IS
+ASHOK'S (Part 1.5 / Part 2.4).
+
+Ashok: restyle freely. Two things have to survive a restyle:
+  - {% csrf_token %} stays inside the form, or every login POST 403s.
+  - the "next" hidden input stays, or a user bounced here from a protected
+    page lands on the home page instead of the page they asked for.
+The "Continue with Google" button belongs under {% block oauth %}, which is
+left empty on purpose - that is Hriday's provider wiring plus your button.
+=============================================================================
+{% endcomment %}
+
+{% block title %}Log in - DataPact{% endblock %}
+
+{% block page_title %}Log in{% endblock %}
+
+{% block page_subtitle %}
+    <p class="page__subtitle">Sign in to see datasets, contracts and reports.</p>
+{% endblock %}
+
+{% block content %}
+    <div class="panel panel--auth">
+        <div class="panel__body">
+            {% if form.non_field_errors %}
+                <div class="form__errors" role="alert">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+                {{ form.as_p }}
+                <button type="submit" class="btn btn--primary">Log in</button>
+            </form>
+
+            {% comment %}
+                A5.1 Part 2.4 (Ashok). The partial is Hriday's provider wiring;
+                included WITHOUT "only" on purpose - it needs the page's request
+                for the CSRF token and the ?next= redirect, and "only" would
+                hide it. When no Google credentials are set it prints a short
+                note instead of a button, so this is safe locally.
+            {% endcomment %}
+            {% block oauth %}
+                <div class="authsplit"><span>or</span></div>
+                {% include "data_quality/includes/_google_button.html" %}
+            {% endblock %}
+
+            <p class="prose">
+                No account yet?
+                <a href="{% url 'data_quality:signup' %}">Create one</a>.
+            </p>
+        </div>
+    </div>
+{% endblock %}

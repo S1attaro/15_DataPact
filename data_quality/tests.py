@@ -21,9 +21,11 @@ from django.contrib.messages.middleware import MessageMiddleware
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.contrib.staticfiles import finders
 from django.core.exceptions import ImproperlyConfigured
+from django.db import connection
 from django.db.models import QuerySet
 from django.template.loader import render_to_string
 from django.test import RequestFactory, TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.urls import resolve, reverse
 
 from . import views
@@ -31,7 +33,32 @@ from . import charts, vega
 from .models import Contract, Dataset, ValidationRule, ValidationRun, Violation
 
 
-class DatasetOverviewViewTests(TestCase):
+class SignedInClientMixin:
+    """
+    Give the shared test client a logged-in user (A5.1, Tejas).
+
+    A5.1 Part 1.4 puts the dataset, contract, quality, charts, reports and
+    export pages behind a login, so every test here that asks for one of
+    those pages now needs a session. The assertions themselves are
+    unchanged - these tests are about what the pages render, not about who
+    may see them, and the access rules have their own tests in
+    tests_auth.py and tests_api_access.py.
+
+    Hooking _pre_setup rather than setUp is deliberate: most classes below
+    already define setUp and do not call super(), so a mixin setUp would
+    silently never run. _pre_setup is called by Django for every test after
+    the database is ready and after self.client exists.
+    """
+
+    def _pre_setup(self):
+        super()._pre_setup()
+        self.signed_in_user = User.objects.create_user(
+            "a5-page-viewer", password="Spindrift-Harbour-41"
+        )
+        self.client.force_login(self.signed_in_user)
+
+
+class DatasetOverviewViewTests(SignedInClientMixin, TestCase):
     """Base CBV (django.views.View) at data_quality:dataset-cbv-base."""
 
     def test_empty_state_renders_without_error(self):
@@ -72,7 +99,7 @@ class DatasetOverviewViewTests(TestCase):
         self.assertEqual(row["active_contract"], active)
 
 
-class DatasetListViewTests(TestCase):
+class DatasetListViewTests(SignedInClientMixin, TestCase):
     """Generic CBV: ListView at data_quality:dataset-list."""
 
     def test_empty_state(self):
@@ -92,7 +119,7 @@ class DatasetListViewTests(TestCase):
         self.assertEqual(names, ["Course Catalog Snapshot", "Weekly Sales Extract"])
 
 
-class DatasetDetailViewTests(TestCase):
+class DatasetDetailViewTests(SignedInClientMixin, TestCase):
     """Generic CBV: DetailView at data_quality:dataset-detail."""
 
     def setUp(self):
@@ -142,7 +169,7 @@ class DatasetDetailViewTests(TestCase):
 # depend on the kind of view that rendered it.
 # ---------------------------------------------------------------
 
-class BaseTemplateInheritanceTests(TestCase):
+class BaseTemplateInheritanceTests(SignedInClientMixin, TestCase):
     """Section 3A: base.html is the single source of the site shell."""
 
     def setUp(self):
@@ -181,7 +208,7 @@ class BaseTemplateInheritanceTests(TestCase):
         self.assertContains(response, 'class="is-active"')
 
 
-class EmptyStateTests(TestCase):
+class EmptyStateTests(SignedInClientMixin, TestCase):
     """Section 3B: the {% empty %} branch and the shared empty-state partial."""
 
     def test_registry_empty_state_uses_the_shared_partial(self):
@@ -208,7 +235,7 @@ class EmptyStateTests(TestCase):
         self.assertNotContains(response, "No datasets registered yet")
 
 
-class TemplateReuseTests(TestCase):
+class TemplateReuseTests(SignedInClientMixin, TestCase):
     """
     Section 3C: dataset_list.html is written against one context variable and
     nothing else, so any view can render it.
@@ -285,7 +312,7 @@ def restore_settings_modules():
     importlib.reload(importlib.import_module("datapact_project.settings.development"))
 
 
-class DatasetRenderViewTests(TestCase):
+class DatasetRenderViewTests(SignedInClientMixin, TestCase):
     """FBV using render() at data_quality:dataset-render (Section 2, View 2)."""
 
     url = "/datasets/render/"
@@ -347,8 +374,19 @@ class DatasetRenderViewTests(TestCase):
 
         # One SELECT for datasets joined to owners; no per-row owner lookups
         # when the template prints dataset.owner.username.
-        with self.assertNumQueries(1):
+        #
+        # Counted per-table rather than with assertNumQueries, because A5.1
+        # put this page behind a login and an authenticated request also
+        # reads the session row and the user row. Counting only the dataset
+        # SELECTs keeps the original point - one query, not one per row -
+        # and stops the number drifting with unrelated auth changes.
+        with CaptureQueriesContext(connection) as captured:
             response = self.client.get(self.url)
+        dataset_queries = [
+            q for q in captured.captured_queries
+            if "data_quality_dataset" in q["sql"]
+        ]
+        self.assertEqual(len(dataset_queries), 1, dataset_queries)
         self.assertEqual(response.status_code, 200)
         for owner in owners:
             self.assertContains(response, owner.username)
@@ -462,7 +500,7 @@ class SettingsSplitTests(TestCase):
 # Author: Hriday Agarwal
 # ---------------------------------------------------------------
 
-class ContractSearchViewGetTests(TestCase):
+class ContractSearchViewGetTests(SignedInClientMixin, TestCase):
     def setUp(self):
         self.owner = User.objects.create_user("owner1", password="pw")
         self.enrollment = Dataset.objects.create(
@@ -526,7 +564,7 @@ class ContractSearchViewGetTests(TestCase):
         self.assertContains(response, "No contracts exist yet.")
 
 
-class ContractSearchViewPostTests(TestCase):
+class ContractSearchViewPostTests(SignedInClientMixin, TestCase):
     def setUp(self):
         owner = User.objects.create_user("owner1", password="pw")
         dataset = Dataset.objects.create(
@@ -603,7 +641,7 @@ class ContractSearchViewPostTests(TestCase):
 # Author: Hriday Agarwal
 # ---------------------------------------------------------------
 
-class DatasetManageViewGetTests(TestCase):
+class DatasetManageViewGetTests(SignedInClientMixin, TestCase):
     def setUp(self):
         self.owner = User.objects.create_user("owner1", password="pw")
         self.registrar_ds = Dataset.objects.create(
@@ -635,7 +673,7 @@ class DatasetManageViewGetTests(TestCase):
         self.assertFalse(response.context["form"].is_bound)
 
 
-class DatasetManageViewPostTests(TestCase):
+class DatasetManageViewPostTests(SignedInClientMixin, TestCase):
     def setUp(self):
         self.owner = User.objects.create_user("owner1", password="pw")
 
@@ -705,7 +743,7 @@ class DatasetManageViewPostTests(TestCase):
 # ---------------------------------------------------------------
 
 
-class StaticAssetTests(TestCase):
+class StaticAssetTests(SignedInClientMixin, TestCase):
     """Section 3A/3B: static files configured, loaded and linked."""
 
     def test_stylesheet_is_linked_through_the_static_tag(self):
@@ -806,7 +844,7 @@ class CacheBustingStorageTests(TestCase):
         )
 
 
-class SiteChromeTests(TestCase):
+class SiteChromeTests(SignedInClientMixin, TestCase):
     """
     Section 3C plus the two handoffs left in notes.txt sections 26 and 29:
     base.html owns the nav and the flash messages for every page.
@@ -892,6 +930,14 @@ class HomePageTests(TestCase):
         self.assertTemplateUsed(response, "data_quality/base.html")
 
     def test_home_page_links_to_the_main_sections(self):
+        """
+        A5.1 note (Ashok): this test was written in A3, when the home page
+        showed its section cards to everyone. A5.1 Part 1.5 requires protected
+        links to be hidden until login, and every section below is behind
+        @login_required - so the cards now render only for a signed-in user.
+        The assertion is unchanged; it just signs in first.
+        """
+        self.client.force_login(User.objects.create_user("navuser", password="pw"))
         response = self.client.get("/")
         for route in (
             "data_quality:dataset-list",
@@ -900,6 +946,26 @@ class HomePageTests(TestCase):
         ):
             with self.subTest(route=route):
                 self.assertContains(response, f'href="{reverse(route)}"')
+
+    def test_home_page_offers_login_instead_of_protected_links_when_anonymous(self):
+        """The other half of the same rule: nothing protected is advertised."""
+        response = self.client.get("/")
+        for route in (
+            "data_quality:dataset-list",
+            "data_quality:dataset-cbv-base",
+            "data_quality:quality-history",
+            "data_quality:contract-search",
+            "data_quality:dataset-manage",
+        ):
+            with self.subTest(route=route):
+                self.assertNotContains(response, f'href="{reverse(route)}"')
+
+        self.assertContains(response, f'href="{reverse("data_quality:login")}"')
+        self.assertContains(response, f'href="{reverse("data_quality:signup")}"')
+        # The one endpoint that is public on purpose stays advertised.
+        self.assertContains(
+            response, f'href="{reverse("data_quality:api-run-outcomes")}"'
+        )
 
     def test_home_page_summary_counts_come_from_the_database(self):
         owner = User.objects.create_user("owner1", password="pw")
@@ -925,7 +991,7 @@ class HomePageTests(TestCase):
         self.assertEqual(response.context["dataset_count"], 0)
 
 
-class NavigationTests(TestCase):
+class NavigationTests(SignedInClientMixin, TestCase):
     """Site navigation is reversed, not hard-coded (Section 1)."""
 
     def test_navigation_offers_at_least_three_working_links(self):
@@ -953,7 +1019,7 @@ class NavigationTests(TestCase):
         self.assertEqual(offenders, [])
 
 
-class DatasetUrlTests(TestCase):
+class DatasetUrlTests(SignedInClientMixin, TestCase):
     """Primary-key detail routes and get_absolute_url (Section 1)."""
 
     def setUp(self):
@@ -1048,7 +1114,7 @@ class RunOutcomeAggregationTests(TestCase):
             charts.run_outcome_counts()
 
 
-class RunOutcomesChartTests(TestCase):
+class RunOutcomesChartTests(SignedInClientMixin, TestCase):
     """The PNG image endpoint (Section 4)."""
 
     url_name = "data_quality:run-outcomes-chart"
@@ -1129,7 +1195,7 @@ class RunOutcomesChartTests(TestCase):
         self.assertNotEqual(first, self.client.get(reverse(self.url_name)).content)
 
 
-class QualityHistoryPageTests(TestCase):
+class QualityHistoryPageTests(SignedInClientMixin, TestCase):
     """The page that presents the chart (Section 4)."""
 
     url_name = "data_quality:quality-history"
@@ -1174,7 +1240,7 @@ class QualityHistoryPageTests(TestCase):
 # Author: Hriday Agarwal
 # ---------------------------------------------------------------
 
-class ReportsViewTests(TestCase):
+class ReportsViewTests(SignedInClientMixin, TestCase):
     def setUp(self):
         owner = User.objects.create_user("owner1", password="pw")
         self.ds_a = Dataset.objects.create(name="Dataset A", owner=owner, source_team="Team A")
@@ -1225,7 +1291,7 @@ class ReportsViewTests(TestCase):
         self.assertContains(response, "No validation runs yet.")
 
 
-class ExportValidationRunsCsvTests(TestCase):
+class ExportValidationRunsCsvTests(SignedInClientMixin, TestCase):
     def setUp(self):
         owner = User.objects.create_user("owner1", password="pw")
         dataset = Dataset.objects.create(name="Dataset A", owner=owner, source_team="Team A")
@@ -1264,7 +1330,7 @@ class ExportValidationRunsCsvTests(TestCase):
         self.assertEqual(by_file["a2.csv"][5], "")
 
 
-class ExportValidationRunsJsonTests(TestCase):
+class ExportValidationRunsJsonTests(SignedInClientMixin, TestCase):
     def setUp(self):
         owner = User.objects.create_user("owner1", password="pw")
         dataset = Dataset.objects.create(name="Dataset A", owner=owner, source_team="Team A")
@@ -1307,7 +1373,7 @@ class ExportValidationRunsJsonTests(TestCase):
 CHARTS_TEMPLATE = TEMPLATE_DIR / "charts.html"
 
 
-class ChartApiTests(TestCase):
+class ChartApiTests(SignedInClientMixin, TestCase):
     """The two internal JSON APIs the charts read (A4 Part 1.1)."""
 
     def setUp(self):
@@ -1391,7 +1457,7 @@ class ChartApiTests(TestCase):
         self.assertEqual([r["runs"] for r in rows], [0, 0, 0])
 
 
-class VegaSpecEndpointTests(TestCase):
+class VegaSpecEndpointTests(SignedInClientMixin, TestCase):
     """Each chart's specification is published at its own URL (A4 Part 1.2)."""
 
     def test_spec_endpoints_resolve_and_serve_json(self):
@@ -1450,7 +1516,7 @@ class VegaSpecEndpointTests(TestCase):
                 self.assertEqual(served, vega.CHART_SPECS[number]())
 
 
-class ChartsPageTests(TestCase):
+class ChartsPageTests(SignedInClientMixin, TestCase):
     """The page that embeds both charts (A4 Part 1.2)."""
 
     def test_page_renders_and_extends_the_site_shell(self):
@@ -1505,7 +1571,7 @@ class ChartsPageTests(TestCase):
 # ---------------------------------------------------------------
 
 
-class OptionalNavLinkTests(TestCase):
+class OptionalNavLinkTests(SignedInClientMixin, TestCase):
     """
     base.html is inherited by every page, so a {% url %} for a route that does
     not exist yet is not a broken link - it is a NoReverseMatch that turns the
@@ -1688,14 +1754,25 @@ def finish_google_login(email, verified=True, uid="1234567890"):
 
 @override_settings(SOCIALACCOUNT_PROVIDERS=GOOGLE_TEST_PROVIDERS)
 class GoogleAccountLinkingTests(TestCase):
-    def test_google_email_matching_an_existing_user_signs_into_that_user(self):
+    def test_google_email_matching_an_existing_user_does_not_sign_into_that_user(self):
+        # Reversed during A5.1 integration (Tejas). This test previously
+        # asserted the opposite - that a matching email signs straight into
+        # the existing account - which is what SOCIALACCOUNT_EMAIL_AUTHENTICATION
+        # used to do. That behaviour was turned off because db.sqlite3 is
+        # tracked and its seeded accounts are superusers with real, guessable
+        # @illinois.edu addresses, so matching on email alone handed anyone
+        # who owned such an address a superuser account on the deployed site.
+        # The reasoning is in settings/base.py; the full set of cases lives in
+        # tests_oauth_security.py. Hriday's scenario is kept as-is so the
+        # change of requirement stays visible in his own test class.
         existing = User.objects.create_user("hda3", email="hda3@illinois.edu", password="pw")
         request, response = finish_google_login("hda3@illinois.edu")
         self.assertEqual(response.status_code, 302)
-        self.assertNotIn("3rdparty/signup", response.url)
-        self.assertEqual(request.user.pk, existing.pk)
+        self.assertIn("3rdparty/signup", response.url)
+        self.assertFalse(request.user.is_authenticated)
+        self.assertNotEqual(getattr(request.user, "pk", None), existing.pk)
         self.assertEqual(User.objects.count(), 1)
-        self.assertTrue(SocialAccount.objects.filter(user=existing, provider="google").exists())
+        self.assertFalse(SocialAccount.objects.filter(user=existing, provider="google").exists())
 
     def test_new_google_email_creates_a_user_without_an_extra_form(self):
         request, response = finish_google_login("new.person@gmail.com")
@@ -1838,3 +1915,139 @@ class AccountsUrlOrderTests(TestCase):
         self.assertEqual(resolve("/accounts/google/login/").url_name, "google_login")
         self.assertEqual(resolve("/accounts/google/login/callback/").url_name, "google_callback")
         self.assertEqual(resolve("/accounts/3rdparty/signup/").url_name, "socialaccount_signup")
+
+
+# ---------------------------------------------------------------
+# A5.1 Part 1.5 / 2.4 - authentication UI
+# Author: Ashok Chacko (aschacko)
+#
+# The nav, the login and signup pages, and the Google button. These
+# cover presentation only: the access control itself is Tejas's
+# decorators, and hiding a link is not what makes a page safe.
+# ---------------------------------------------------------------
+
+
+class ConditionalNavigationTests(TestCase):
+    """Part 1.5: protected links hidden before login, visible after."""
+
+    PROTECTED = (
+        "data_quality:dataset-list",
+        "data_quality:dataset-cbv-base",
+        "data_quality:contract-search",
+        "data_quality:dataset-manage",
+        "data_quality:quality-history",
+        "data_quality:reports",
+    )
+
+    def test_anonymous_visitor_is_offered_no_protected_link(self):
+        response = self.client.get(reverse("data_quality:home"))
+        for route in self.PROTECTED:
+            with self.subTest(route=route):
+                self.assertNotContains(response, f'href="{reverse(route)}"')
+
+    def test_anonymous_visitor_is_offered_home_login_and_signup(self):
+        response = self.client.get(reverse("data_quality:home"))
+        for route in ("data_quality:home", "data_quality:login", "data_quality:signup"):
+            with self.subTest(route=route):
+                self.assertContains(response, f'href="{reverse(route)}"')
+
+    def test_signed_in_user_sees_every_protected_link(self):
+        self.client.force_login(User.objects.create_user("navuser", password="pw"))
+        response = self.client.get(reverse("data_quality:home"))
+        for route in self.PROTECTED:
+            with self.subTest(route=route):
+                self.assertContains(response, f'href="{reverse(route)}"')
+
+    def test_signed_in_user_sees_their_username_and_no_login_link(self):
+        self.client.force_login(User.objects.create_user("navuser", password="pw"))
+        response = self.client.get(reverse("data_quality:home"))
+        self.assertContains(response, "navuser")
+        self.assertNotContains(response, f'href="{reverse("data_quality:login")}"')
+
+    def test_logout_is_a_post_form_not_a_link(self):
+        """
+        Django's LogoutView has refused GET since 4.1, so an <a href> logout
+        returns 405 - and a link would also let any page log the user out with
+        an <img> tag. The nav therefore submits a form.
+        """
+        self.client.force_login(User.objects.create_user("navuser", password="pw"))
+        html = self.client.get(reverse("data_quality:home")).content.decode()
+        logout_url = reverse("data_quality:logout")
+        self.assertIn(f'action="{logout_url}"', html)
+        self.assertNotIn(f'href="{logout_url}"', html)
+
+    def test_navigation_hides_links_but_is_not_what_protects_them(self):
+        """
+        The nav is courtesy, not security. Typing a hidden URL directly must
+        still bounce an anonymous visitor to the login page.
+        """
+        for route in self.PROTECTED:
+            with self.subTest(route=route):
+                response = self.client.get(reverse(route))
+                self.assertEqual(response.status_code, 302)
+                self.assertIn(reverse("data_quality:login"), response["Location"])
+
+
+class AuthPageTests(TestCase):
+    """Part 1.1 and Part 2.4: the login and signup pages."""
+
+    def test_login_page_renders_with_the_site_shell(self):
+        response = self.client.get(reverse("data_quality:login"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "registration/login.html")
+        self.assertTemplateUsed(response, "data_quality/base.html")
+
+    def test_signup_page_renders_with_the_site_shell(self):
+        response = self.client.get(reverse("data_quality:signup"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "registration/signup.html")
+        self.assertTemplateUsed(response, "data_quality/base.html")
+
+    def test_both_pages_carry_a_csrf_token(self):
+        for route in ("data_quality:login", "data_quality:signup"):
+            with self.subTest(route=route):
+                response = self.client.get(reverse(route))
+                self.assertContains(response, "csrfmiddlewaretoken")
+
+    def test_login_keeps_the_next_field(self):
+        """
+        Without this hidden input a user bounced here from /reports/ lands on
+        the home page instead of the page they asked for.
+        """
+        response = self.client.get(reverse("data_quality:login"), {"next": "/reports/"})
+        self.assertContains(response, 'name="next"')
+        self.assertContains(response, 'value="/reports/"')
+
+    def test_login_returns_the_user_to_the_page_they_were_bounced_from(self):
+        User.objects.create_user("navuser", password="correct-horse-battery")
+        bounced = self.client.get(reverse("data_quality:reports"))
+        response = self.client.post(
+            bounced["Location"],
+            {"username": "navuser", "password": "correct-horse-battery",
+             "next": reverse("data_quality:reports")},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "data_quality/reports.html")
+
+    def test_google_button_partial_is_included_on_both_pages(self):
+        """
+        Part 2.4. The partial is included without "only" on purpose: it needs
+        the page's request for the CSRF token, and "only" would withhold it.
+        """
+        for route in ("data_quality:login", "data_quality:signup"):
+            with self.subTest(route=route):
+                response = self.client.get(reverse(route))
+                self.assertTemplateUsed(
+                    response, "data_quality/includes/_google_button.html"
+                )
+
+    def test_google_button_degrades_to_a_note_without_credentials(self):
+        """
+        With no GOOGLE_CLIENT_ID configured there is no provider to show, so
+        the page must still render rather than raise - that is what lets a
+        teammate run the site before the OAuth credentials reach them.
+        """
+        with self.settings(SOCIALACCOUNT_PROVIDERS={}):
+            response = self.client.get(reverse("data_quality:login"))
+            self.assertEqual(response.status_code, 200)

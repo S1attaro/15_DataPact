@@ -86,6 +86,10 @@ body {
     text-decoration: none;
     padding: 0.25rem 0;
     border-bottom: 2px solid transparent;
+    /* "Quality History" is two words and was breaking across two lines when
+       the bar filled up, which made the whole header taller. Let the bar wrap
+       between items instead of inside a label. */
+    white-space: nowrap;
 }
 .mainnav a:hover { color: #fff; }
 .mainnav a.is-active { color: #fff; border-bottom-color: #8fb0ff; }
@@ -267,6 +271,7 @@ input[type="text"],
 input[type="search"],
 input[type="number"],
 input[type="email"],
+input[type="password"],
 select,
 textarea {
     width: 100%;
@@ -337,6 +342,119 @@ button.btn--primary:hover { background: #2448b0; border-color: #2448b0; }
 .message--warning { border-left-color: var(--warn-ink); background: var(--warn-bg); color: var(--warn-ink); }
 .message--warning::before { content: "!"; color: var(--warn-ink); }
 
+/* ---- account area in the top bar (A5.1) ------------------------- */
+/* Pushed to the right end of the bar, away from the page navigation,
+   because signing in and out is not another place to go. */
+.useraccount {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: none;
+}
+.useraccount form { display: block; margin: 0; }
+.useraccount form button { margin-top: 0; }
+
+.useraccount__name {
+    color: #c4ccd6;
+    font-size: 0.85rem;
+    font-weight: 600;
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.useraccount__link {
+    color: #c4ccd6;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+.useraccount__link:hover { color: #fff; }
+
+/* Button variants the top bar needs: smaller, and one that reads as a
+   control rather than a call to action. */
+.btn--sm { padding: 0.35rem 0.7rem; font-size: 0.82rem; }
+
+.btn--ghost {
+    background: transparent;
+    border-color: #3b4654;
+    color: #c4ccd6;
+}
+.btn--ghost:hover { border-color: #6b7686; color: #fff; }
+
+/* ---- login and signup pages (A5.1) ------------------------------- */
+/* A sign-in form is one short column; the data tables' full width would
+   leave an input stranded in white space. */
+.panel--auth { max-width: 26rem; }
+.panel--auth .panel__body { padding: 1.4rem; }
+
+/* UserCreationForm and AuthenticationForm render through {{ form.as_p }},
+   so the fields arrive wrapped in <p> rather than in markup we control.
+
+   The site-wide `form` rule is a grid with justify-items: start, which sizes
+   each row to its content - right for a one-field filter bar, wrong here: a
+   password <p> has no wide content, so it collapsed to the input's intrinsic
+   ~20-character width and the fields came out ragged. Stretch the rows so
+   every field is the width of the panel. */
+.panel--auth form { justify-items: stretch; }
+.panel--auth form p { margin: 0 0 0.9rem; width: 100%; }
+.panel--auth form input[type="text"],
+.panel--auth form input[type="password"],
+.panel--auth form input[type="email"] { max-width: 100%; }
+.panel--auth form .btn { width: 100%; text-align: center; }
+
+/* Django's password validators explain themselves through helptext, which
+   is long and must not shout louder than the field it describes. */
+.panel--auth .helptext,
+.panel--auth ul {
+    margin: 0.3rem 0 0;
+    padding-left: 1rem;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: var(--ink-faint);
+}
+.panel--auth ul { list-style: disc; }
+
+.form__errors {
+    margin: 0 0 1rem;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--fail-ink);
+    border-left-width: 4px;
+    border-radius: var(--radius);
+    background: var(--fail-bg);
+    color: var(--fail-ink);
+    font-size: 0.9rem;
+}
+.form__errors p { margin: 0; }
+
+/* "or" rule between the password form and the Google button. */
+.authsplit {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.25rem 0 1rem;
+    color: var(--ink-faint);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+.authsplit::before, .authsplit::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+}
+
+/* The Google button is a POST form, so it needs to look like the submit
+   button above it rather than inheriting the form grid's spacing. */
+.panel--auth form[action*="google"] { display: block; margin: 0; }
+.panel--auth form[action*="google"] .btn {
+    margin-top: 0;
+    width: 100%;
+    font-weight: 600;
+}
+
 /* ---- footer ---------------------------------------------------- */
 .sitefoot {
     border-top: 1px solid var(--line);
@@ -346,9 +464,19 @@ button.btn--primary:hover { background: #2448b0; border-color: #2448b0; }
     color: var(--ink-faint);
 }
 
+/* Between a phone and a full desktop the bar runs out of room: nine nav
+   items plus the account area. Let it wrap onto a second line rather than
+   squeezing the log-out button off the edge. */
+@media (max-width: 1040px) {
+    .topbar__inner { flex-wrap: wrap; row-gap: 0.5rem; padding-top: 0.6rem; padding-bottom: 0.6rem; }
+    .mainnav { flex-wrap: wrap; row-gap: 0.35rem; }
+    .useraccount { margin-left: auto; }
+}
+
 @media (max-width: 620px) {
     .topbar__inner { flex-wrap: wrap; gap: 0.75rem; padding: 0.75rem 1rem; }
     .mainnav { gap: 1rem; font-size: 0.85rem; }
+    .useraccount { margin-left: 0; width: 100%; }
     .page { padding: 1.25rem 1rem 2rem; }
     .factlist { gap: 1rem; }
     input[type="text"], input[type="search"], select, textarea { max-width: 100%; }

@@ -76,6 +76,15 @@ stay in step.
     <div class="panel" style="margin-top: 1.25rem;">
         <div class="panel__head"><h2 class="panel__title">Where to go next</h2></div>
         <div class="panel__body">
+            {% comment %}
+                A5.1 Part 1.5 (Ashok). Every card below points at a
+                @login_required view, so to an anonymous visitor they were five
+                links that all bounce to the login page. The nav hides those
+                same destinations when signed out; this panel is navigation
+                too, so it has to agree with it - otherwise "protected links
+                hidden" is true of the header and false of the page under it.
+            {% endcomment %}
+            {% if user.is_authenticated %}
             <div class="cardgrid">
                 <a class="card" href="{% url 'data_quality:dataset-list' %}">
                     <span class="card__title">Datasets</span>
@@ -98,6 +107,20 @@ stay in step.
                     <p class="card__note">Add a new data feed for DataPact to watch.</p>
                 </a>
             </div>
+            {% else %}
+            <p class="prose">
+                The registry, contract search, quality history and reports are
+                available to signed-in users.
+                <a href="{% url 'data_quality:login' %}">Log in</a>, or
+                <a href="{% url 'data_quality:signup' %}">create an account</a>
+                - it takes a moment and needs nothing but a username.
+            </p>
+            <p class="prose">
+                The run-outcome summary at
+                <a href="{% url 'data_quality:api-run-outcomes' %}"><code>/api/run-outcomes/</code></a>
+                is public and needs no account.
+            </p>
+            {% endif %}
         </div>
     </div>
 {% endblock %}

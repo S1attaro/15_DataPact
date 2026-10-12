@@ -150,6 +150,21 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+# Authentication (A5.1 Part 1, Tejas)
+#
+# LOGIN_URL is where @login_required sends an anonymous visitor. It is given
+# as a URL *name* rather than a path so the route can move without this
+# becoming a silent 404 - a literal '/accounts/login/' here would keep
+# "working" by redirecting to a page that no longer exists.
+#
+# LOGIN_REDIRECT_URL and LOGOUT_REDIRECT_URL are deliberately NOT set here.
+# allauth reads the same two settings and defines them in the Google sign-in
+# section at the bottom of this file. Setting them in both places means the
+# lower one silently wins, so a later edit up here would appear to do nothing.
+# AuthSettingsTests asserts all three are present and reversible.
+LOGIN_URL = 'data_quality:login'
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
@@ -203,12 +218,31 @@ LOGOUT_REDIRECT_URL = 'data_quality:home'
 # to send a confirmation email, which this project has no mail server for.
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 
-# A Google email that matches an existing user signs into that user instead of
-# stopping at an extra signup form that can never succeed (the seeded demo
-# users already own their @illinois.edu addresses). allauth only does this when
-# Google reports the email as verified.
-SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
-SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+# Matching a Google sign-in to an existing account purely by email address is
+# OFF. (A5.1 integration, Tejas - this reverses the two settings Part 2
+# shipped with, and the reason is specific to this repository rather than a
+# general objection to the feature.)
+#
+# db.sqlite3 is tracked in Git and the seeded demo accounts are superusers
+# whose email addresses are real, guessable university addresses. With email
+# authentication on, anyone who controls one of those addresses could press
+# "Continue with Google" on the deployed site and be signed straight into a
+# superuser account, with /admin/ attached - no password needed. The email
+# would be genuinely verified by Google, so no amount of provider-side
+# checking prevents it; the weak link is that the stored address, not the
+# person, is what gets trusted.
+#
+# With these off, a Google sign-in whose email is unknown to us creates its
+# own ordinary account, and one that collides with an existing address is
+# sent to allauth's connect/signup page instead of being handed the account.
+# Linking Google to an existing login stays possible - it just has to be done
+# from inside that account, by someone who could already log into it.
+#
+# Local email verification is deliberately NOT enabled to compensate: there is
+# no mail backend configured, so turning it on would leave new accounts stuck
+# waiting for a confirmation message that is never sent.
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = False
 
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '').strip()
 GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '').strip()

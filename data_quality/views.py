@@ -5,6 +5,8 @@ import requests
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
@@ -15,11 +17,12 @@ from django.views.decorators.http import require_GET
 from django.views.generic import DetailView, ListView
 
 from . import charts, vega
+from .access import api_login_required, public_api
 from .forms import DatasetForm
 from .models import Contract, Dataset, ValidationRun, Violation
 
 
-class DatasetOverviewView(View):
+class DatasetOverviewView(LoginRequiredMixin, View):
     """
     Base CBV (inherits django.views.View).
 
@@ -54,7 +57,7 @@ class DatasetOverviewView(View):
         return render(request, self.template_name, context)
 
 
-class DatasetListView(ListView):
+class DatasetListView(LoginRequiredMixin, ListView):
     """
     Generic CBV: plain registry list of every Dataset, newest-name-first
     (Dataset.Meta.ordering). Mirrors wireframe screen 1 (Dashboard / Dataset
@@ -69,7 +72,7 @@ class DatasetListView(ListView):
         return Dataset.objects.select_related("owner")
 
 
-class DatasetDetailView(DetailView):
+class DatasetDetailView(LoginRequiredMixin, DetailView):
     """
     Generic CBV: one dataset with its contract version history. Mirrors
     wireframe screen 2 (Dataset Detail).
@@ -92,7 +95,7 @@ class DatasetDetailView(DetailView):
 # Author: Hriday Agarwal
 # ---------------------------------------------------------------
 
-class ContractSearchView(View):
+class ContractSearchView(LoginRequiredMixin, View):
     """GET searches Contract, POST looks up Violation (kept off GET since
     sample_values can hold raw values from the source file)."""
 
@@ -170,7 +173,7 @@ class ContractSearchView(View):
 # Author: Hriday Agarwal
 # ---------------------------------------------------------------
 
-class DatasetManageView(View):
+class DatasetManageView(LoginRequiredMixin, View):
     """GET filters the dataset list by source team, POST registers a new
     one (Post/Redirect/Get on success)."""
 
@@ -214,6 +217,7 @@ class DatasetManageView(View):
 # ---------------------------------------------------------------
 
 # View 1: HttpResponse (manual)
+@login_required
 def dataset_manual(request):
     datasets = Dataset.objects.all()
 
@@ -228,6 +232,7 @@ def dataset_manual(request):
 
 
 # View 2: render() (shortcut)
+@login_required
 def dataset_render(request):
     """
     Same dataset registry as DatasetListView, but built by a plain function:
@@ -250,6 +255,7 @@ def dataset_render(request):
 # Author: Connor Slattery (cslat)
 # ---------------------------------------------------------------
 
+@api_login_required
 def dataset_api(request):
     """
     JSON API for the dataset registry. Returns JsonResponse
@@ -309,6 +315,7 @@ def home(request):
     return render(request, "data_quality/home.html", context)
 
 
+@login_required
 def quality_history(request):
     """
     Quality History: how validation runs have been turning out.
@@ -325,6 +332,7 @@ def quality_history(request):
     return render(request, "data_quality/quality_history.html", context)
 
 
+@login_required
 def run_outcomes_chart(request):
     """
     The Quality History chart as a PNG, served straight from memory.
@@ -348,6 +356,7 @@ def _validation_runs_queryset():
     ).order_by("-started_at")
 
 
+@login_required
 def reports_view(request):
     """
     Reports page: two grouped summaries over ValidationRun (by outcome, and
@@ -375,6 +384,7 @@ def reports_view(request):
     return render(request, "data_quality/reports.html", context)
 
 
+@login_required
 def export_validation_runs_csv(request):
     """CSV export of every ValidationRun, newest first."""
     buffer = StringIO()
@@ -402,6 +412,7 @@ def export_validation_runs_csv(request):
     return response
 
 
+@login_required
 def export_validation_runs_json(request):
     """JSON export of every ValidationRun, with generated_at/record_count metadata."""
     runs = _validation_runs_queryset()
@@ -441,6 +452,7 @@ def export_validation_runs_json(request):
 
 
 @require_GET
+@public_api
 def api_run_outcomes(request):
     """
     GET /api/run-outcomes/ - validation runs grouped by outcome.
@@ -452,6 +464,7 @@ def api_run_outcomes(request):
 
 
 @require_GET
+@api_login_required
 def api_run_volume(request):
     """
     GET /api/run-volume/ - one row per validation run, with the rows checked
@@ -461,6 +474,7 @@ def api_run_volume(request):
 
 
 @require_GET
+@api_login_required
 def vega_chart_spec(request, number):
     """
     GET /vega-lite/chart<n>.json - the Vega-Lite specification itself.
@@ -475,6 +489,7 @@ def vega_chart_spec(request, number):
     return JsonResponse(build(), json_dumps_params={"indent": 2})
 
 
+@login_required
 def charts_page(request):
     """The two Vega-Lite charts, embedded on one page."""
     context = {
@@ -505,6 +520,7 @@ def charts_page(request):
 # Author: Connor Slattery (cslat)
 # ---------------------------------------------------------------
 
+@api_login_required
 def dataset_lookup_api(request):
     """
     Combines our internal Dataset registry with Open Library's public

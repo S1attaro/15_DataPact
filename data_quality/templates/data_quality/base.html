@@ -46,39 +46,73 @@ it in production. See docs/notes/notes.txt section 30.
                 <img class="brand__logo" src="{% static 'data_quality/img/datapact-logo.svg' %}" alt="">
                 DATA<span>PACT</span>
             </a>
+            {% comment %}
+                A5.1 Part 1.5 - conditional navigation (Ashok).
+
+                Every link below except Home points at a view wrapped in
+                @login_required / LoginRequiredMixin, so an anonymous visitor
+                following one only gets bounced to the login page. Hiding them
+                is about not offering a door that is locked: the nav should
+                describe what this visitor can actually do.
+
+                This hides links, it does not protect anything. The protection
+                is Tejas's decorators in views.py - if this {% if %} were
+                deleted tomorrow the site would still be secure, just ruder.
+            {% endcomment %}
             <nav class="mainnav">
-                {% comment %}
-                    request.resolver_match.url_name is the name= of the route
-                    that matched, so the current page's link highlights itself
-                    without any help from the view.
-                {% endcomment %}
-                <a href="{% url 'data_quality:dataset-list' %}"
-                   class="{% if request.resolver_match.url_name == 'dataset-list' %}is-active{% endif %}">Datasets</a>
-                <a href="{% url 'data_quality:dataset-cbv-base' %}"
-                   class="{% if request.resolver_match.url_name == 'dataset-cbv-base' %}is-active{% endif %}">Overview</a>
-                <a href="{% url 'data_quality:contract-search' %}"
-                   class="{% if request.resolver_match.url_name == 'contract-search' %}is-active{% endif %}">Contracts</a>
-                <a href="{% url 'data_quality:dataset-manage' %}"
-                   class="{% if request.resolver_match.url_name == 'dataset-manage' %}is-active{% endif %}">Manage</a>
-                {% comment %}
-                    Charts (A4 Part 1). {% url %} raises NoReverseMatch when the
-                    route is missing, and base.html is on every page, so writing
-                    it the plain way takes the whole site down until /charts/
-                    exists. The "as" form stores an empty string instead of
-                    raising, so this link simply is not rendered yet and appears
-                    on its own the moment the route is added - no second edit.
-                {% endcomment %}
-                {% url 'data_quality:charts' as charts_url %}
-                {% if charts_url %}
-                    <a href="{{ charts_url }}"
-                       class="{% if request.resolver_match.url_name == 'charts' %}is-active{% endif %}">Charts</a>
+                <a href="{% url 'data_quality:home' %}"
+                   class="{% if request.resolver_match.url_name == 'home' %}is-active{% endif %}">Home</a>
+
+                {% if user.is_authenticated %}
+                    {% comment %}
+                        request.resolver_match.url_name is the name= of the
+                        route that matched, so the current page's link
+                        highlights itself without any help from the view.
+                    {% endcomment %}
+                    <a href="{% url 'data_quality:dataset-list' %}"
+                       class="{% if request.resolver_match.url_name == 'dataset-list' %}is-active{% endif %}">Datasets</a>
+                    <a href="{% url 'data_quality:dataset-cbv-base' %}"
+                       class="{% if request.resolver_match.url_name == 'dataset-cbv-base' %}is-active{% endif %}">Overview</a>
+                    <a href="{% url 'data_quality:contract-search' %}"
+                       class="{% if request.resolver_match.url_name == 'contract-search' %}is-active{% endif %}">Contracts</a>
+                    <a href="{% url 'data_quality:dataset-manage' %}"
+                       class="{% if request.resolver_match.url_name == 'dataset-manage' %}is-active{% endif %}">Manage</a>
+                    {% comment %}
+                        Charts: {% url %} raises NoReverseMatch when the route
+                        is missing, and base.html is on every page, so writing
+                        it the plain way takes the whole site down. The "as"
+                        form stores an empty string instead of raising.
+                    {% endcomment %}
+                    {% url 'data_quality:charts' as charts_url %}
+                    {% if charts_url %}
+                        <a href="{{ charts_url }}"
+                           class="{% if request.resolver_match.url_name == 'charts' %}is-active{% endif %}">Charts</a>
+                    {% endif %}
+                    <span class="mainnav__planned" title="Wireframe screen 4 - not built yet">Upload</span>
+                    <a href="{% url 'data_quality:quality-history' %}"
+                       class="{% if request.resolver_match.url_name == 'quality-history' %}is-active{% endif %}">Quality History</a>
+                    <a href="{% url 'data_quality:reports' %}"
+                       class="{% if request.resolver_match.url_name == 'reports' %}is-active{% endif %}">Reports</a>
                 {% endif %}
-                <span class="mainnav__planned" title="Wireframe screen 4 - not built yet">Upload</span>
-                <a href="{% url 'data_quality:quality-history' %}"
-                   class="{% if request.resolver_match.url_name == 'quality-history' %}is-active{% endif %}">Quality History</a>
-                <a href="{% url 'data_quality:reports' %}"
-                   class="{% if request.resolver_match.url_name == 'reports' %}is-active{% endif %}">Reports</a>
             </nav>
+
+            {% comment %}
+                Logout is a POST, not a link. Django's LogoutView has refused
+                GET since 4.1, so <a href> returns 405 - and a link would also
+                mean any page could log you out with an <img> tag.
+            {% endcomment %}
+            <div class="useraccount">
+                {% if user.is_authenticated %}
+                    <span class="useraccount__name" title="Signed in">{{ user.username }}</span>
+                    <form method="post" action="{% url 'data_quality:logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn--ghost btn--sm">Log out</button>
+                    </form>
+                {% else %}
+                    <a class="useraccount__link" href="{% url 'data_quality:login' %}">Log in</a>
+                    <a class="btn btn--primary btn--sm" href="{% url 'data_quality:signup' %}">Sign up</a>
+                {% endif %}
+            </div>
         </div>
     </header>
 

@@ -1,0 +1,193 @@
+DataPact - A5.1 core authentication / access control
+Tejas Jaggi (tejasj2), branch tejas/a5-auth-core, cut from main @ f70582e
+
+What this branch does, and the interfaces Hriday and Ashok need to build
+against. Nothing here is deployed yet.
+
+========================================================================
+1. WHAT IS IN PLACE
+========================================================================
+
+Routes (data_quality/urls.py, names are namespaced data_quality:*):
+
+    accounts/login/     login     DataPactLoginView   (django.contrib.auth)
+    accounts/logout/    logout    DataPactLogoutView  POST only
+    accounts/signup/    signup    auth_views.signup   (UserCreationForm)
+
+Settings (datapact_project/settings/base.py):
+
+    LOGIN_URL           = 'data_quality:login'
+    LOGIN_REDIRECT_URL  = 'data_quality:home'
+    LOGOUT_REDIRECT_URL = 'data_quality:home'
+
+    Given as URL names, not paths, so a renamed route fails loudly instead
+    of redirecting to a 404.
+
+Access control (data_quality/access.py):
+
+    api_login_required   401 JSON for anonymous callers, never an HTML
+                         redirect. On every JSON endpoint but one.
+    public_api           marks the single public endpoint and adds the
+                         CORS header. Sets .datapact_public = True, which
+                         the test suite counts.
+
+========================================================================
+2. THE PUBLIC / PROTECTED SPLIT (A5.1 Part 3.1)
+========================================================================
+
+PUBLIC, deliberately, exactly one:
+
+    /api/run-outcomes/      200 to anyone, application/json
+
+      Chosen because it is an aggregate - three rows of
+      {"outcome", "runs"} - so it exposes no file names, no dataset
+      names, no owner usernames, and no per-run detail. It is also the
+      endpoint the A4 bar chart already reads, so Part 3.1 (public API),
+      3.2 (Vega-Lite from it) and 3.3 (submit the spec) all key off one
+      decision.
+
+PROTECTED, 401 JSON when anonymous:
+
+    /api/datasets/          owner usernames + descriptions
+    /api/run-volume/        per-run file names and dataset names
+    /api/lookup/            also makes an outbound call to Open Library,
+                            so leaving it open would let strangers use
+                            our server as a proxy
+    /vega-lite/chart1.json  chart specifications; only the authenticated
+    /vega-lite/chart2.json  charts page needs them
+
+PROTECTED, 302 to the login page (browser pages and downloads, where a
+redirect is the right answer and no data is sent):
+
+    /datasets/ and all dataset pages, /contracts/search/,
+    /datasets/manage/, /quality/, /quality/run-outcomes.png, /charts/,
+    /reports/, both /reports/export/* downloads
+
+PUBLIC on purpose:
+
+    /                       landing page, so an anonymous visitor has
+                            somewhere to arrive and find login/signup
+    /accounts/login|signup/ obviously
+
+    Note for A5.2: the five external reviewers each need an account to
+    see past the home page. Signup is open, so that works, but it is
+    worth saying so when you send them the link.
+
+========================================================================
+3. ASHOK - what is yours, and the two things that must survive
+========================================================================
+
+Templates created, deliberately plain, for you to style:
+
+    data_quality/templates/registration/login.html
+    data_quality/templates/registration/signup.html
+
+Both extend data_quality/base.html and already use the site's panel
+classes. Restyle freely. Two things must not be removed:
+
+  - {% csrf_token %} inside each form. Remove it and every login and
+    signup POST returns 403.
+  - the hidden "next" input on login.html. Remove it and a user bounced
+    to login from /reports/ lands on the home page instead of /reports/.
+
+Each template has an empty {% block oauth %} where the "Continue with
+Google" button goes, so you and Hriday are not editing the same lines.
+
+Conditional navigation in base.html is yours and I have not touched it.
+What you need from the template context:
+
+    {% if user.is_authenticated %} ... {% endif %}
+
+  works already - django.contrib.auth.context_processors.auth is in
+  TEMPLATES and was there before A5.
+
+  Logout must be a POST, not a link:
+
+      <form method="post" action="{% url 'data_quality:logout' %}">
+        {% csrf_token %}<button type="submit">Log out</button>
+      </form>
+
+  A plain <a href> logout returns 405 - that is Django's own behaviour
+  since 4.1, not something I added, and there is a test pinning it.
+
+  Protected links to hide when anonymous: Datasets, Contracts, Manage,
+  Quality History, Charts, Reports. Home stays visible.
+
+========================================================================
+4. HRIDAY - the OAuth interface, and one collision to resolve
+========================================================================
+
+I have NOT installed django-allauth. No allauth app, no SITE_ID, no
+AUTHENTICATION_BACKENDS, no allauth URLs, no dependency added. That is
+yours, so we do not both write it.
+
+What I have already set up that allauth reads:
+
+  - LOGIN_REDIRECT_URL and LOGOUT_REDIRECT_URL are configured; allauth
+    uses these same settings, so change the values rather than adding a
+    second set somewhere else.
+  - django.contrib.auth and AuthenticationMiddleware are installed.
+
+COLLISION TO RESOLVE BEFORE YOU START.
+
+  allauth defines accounts/login/, accounts/signup/ and
+  accounts/logout/. So do I, at exactly those paths. Two options:
+
+  (a) Mount allauth so it does not shadow those three, and keep my
+      Django views as the username/password path (Part 1) while allauth
+      provides the Google flow (Part 2).
+
+  (b) Let allauth own all three and I delete my views, with allauth's
+      templates overridden to look like Ashok's.
+
+  Either satisfies the rubric. (a) is less churn now and keeps Part 1
+  and Part 2 separable; (b) is tidier long term. Pick one and tell me -
+  I will do the URL integration either way, since shared URL config is
+  my slice. Do not add an allauth include that silently shadows my
+  routes, because the tests will still pass while the pages change.
+
+MIGRATIONS - please read before running anything.
+
+  allauth and django.contrib.sites both ship migrations, and db.sqlite3
+  is tracked in Git because A4 requires it. Git cannot merge a binary
+  file: if two of us run migrate and commit, the conflict is
+  unresolvable and someone's work is lost.
+
+  My branch adds NO migrations - signup uses the built-in User model -
+  and db.sqlite3 is byte-identical to main. So you can be the single
+  owner of the migration commit. Run migrate once, commit db.sqlite3 in
+  that same commit, and tell the rest of us to pull before we touch it.
+
+========================================================================
+5. CONNOR - what you can point your three demos at
+========================================================================
+
+Part 3.4 needs three alternative uses of the public API. The endpoint is
+
+    https://tjaggi.pythonanywhere.com/api/run-outcomes/
+
+once this branch is deployed. It returns, today, exactly:
+
+    [{"outcome": "Passed", "runs": 4},
+     {"outcome": "Failed", "runs": 7},
+     {"outcome": "Error",  "runs": 1}]
+
+It needs no key and no login, and it now sends
+Access-Control-Allow-Origin: *, so a browser-based demo works too.
+The shape will not change under you - there is a test asserting it.
+
+========================================================================
+6. NOT DONE / NOT VERIFIED
+========================================================================
+
+  - Nothing is deployed. Every result above is local.
+  - CORS is NOT live on production yet, because production still runs
+    the pre-A5 code. Until this is deployed, the submitted Vega-Lite
+    spec will fail in the Vega-Lite editor with a CORS error. Checked
+    against the live site: no Access-Control-Allow-Origin header today.
+  - Google OAuth is not implemented and not tested. I have no
+    credentials and have not created any.
+  - base.html navigation still shows every link to anonymous visitors.
+    The links 302 to login when followed, so nothing leaks, but the
+    "hide nav items unless authenticated" half of Part 1.5 is Ashok's
+    and is not done.
