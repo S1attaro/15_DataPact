@@ -13,7 +13,7 @@ import json
 
 from django.contrib.auth.models import User
 from django.test import TestCase
-from django.urls import reverse
+from django.urls import NoReverseMatch, get_resolver, reverse
 
 # Every JSON-returning route in the project, with the arguments needed to
 # reverse it. Add to this list when a JSON endpoint is added - the counting
@@ -176,3 +176,127 @@ class ExportAccessTests(TestCase):
                 response = self.client.get(reverse(name))
                 self.assertEqual(response.status_code, 200)
                 self.assertIn("attachment", response["Content-Disposition"])
+
+
+# ---------------------------------------------------------------------------
+# Resolver-driven sweep (added during A5.1 integration review).
+#
+# JSON_ROUTES above is maintained by hand. That is fine for the endpoints
+# that existed when it was written and worth nothing against the ones nobody
+# has added yet: an endpoint missing from the list is invisible to the
+# counting test, and the marker test only inspects views that carry
+# @public_api, so a view with no decorator at all passes both checks while
+# sitting wide open.
+#
+# That is not hypothetical. /demos/fetch/ was added after this file was
+# written and appears in neither place. It returns HTML, so nothing leaked,
+# but it proves a route can arrive without this file noticing.
+#
+# The sweep below asks the resolver for our own routes instead of trusting a
+# list, and tests the one thing that actually matters: did an anonymous
+# caller get a 200 with a JSON body? That is the property the rubric cares
+# about, and checking it needs no guess about what a route is "for" - an
+# endpoint is public if it hands data to a stranger, whatever it is called.
+#
+# Only our own namespace is swept. admin and allauth are third-party URLconfs
+# that we neither wrote nor control, and policing their routes here would
+# break the suite on a dependency upgrade rather than on our own mistake.
+# ---------------------------------------------------------------------------
+
+APP_NAMESPACE = "data_quality"
+
+# Sample arguments for the routes that take parameters. Discovery cannot
+# invent these. A new parameterised route missing from this map is NOT
+# quietly skipped - test_every_app_route_was_actually_checked fails and
+# names it, so the gap this whole section exists to close cannot reopen.
+ROUTE_ARGS = {
+    "dataset-detail": [1],
+    "vega-chart-spec": [1],
+}
+
+
+def app_url_patterns():
+    """Every URL pattern in our own app's include, found by namespace."""
+    includes = [
+        resolver
+        for resolver in get_resolver().url_patterns
+        if getattr(resolver, "namespace", None) == APP_NAMESPACE
+    ]
+    if len(includes) != 1:
+        raise AssertionError(
+            f"expected exactly one {APP_NAMESPACE} include in the root URLconf, "
+            f"found {len(includes)}"
+        )
+    return includes[0].url_patterns
+
+
+def discover_app_routes():
+    """Return ({name: url} for routes we can call, [names we could not])."""
+    reversible, unreversible = {}, []
+    for pattern in app_url_patterns():
+        name = pattern.name
+        try:
+            reversible[name] = reverse(
+                f"{APP_NAMESPACE}:{name}", args=ROUTE_ARGS.get(name, [])
+            )
+        except NoReverseMatch:
+            unreversible.append(name)
+    return reversible, unreversible
+
+
+def serves_json(response):
+    """True when the body is JSON, whatever charset suffix is attached."""
+    media_type = response.headers.get("Content-Type", "").split(";")[0].strip()
+    return media_type.endswith("json")
+
+
+class NoUndeclaredPublicJsonApiTests(TestCase):
+    """A new JSON endpoint cannot become public without this failing."""
+
+    def setUp(self):
+        self.routes, self.unreversible = discover_app_routes()
+        self.public_name = PUBLIC_ROUTE.split(":", 1)[1]
+
+    def test_every_app_route_was_actually_checked(self):
+        # Guards the guard. If a route cannot be reversed it drops out of the
+        # sweep, which would silently recreate the hole this section closes,
+        # so that is a failure with instructions rather than a skip.
+        self.assertEqual(
+            self.unreversible,
+            [],
+            "these routes could not be reversed and so went unchecked; add "
+            "sample arguments for them to ROUTE_ARGS: "
+            f"{self.unreversible}",
+        )
+        self.assertEqual(len(self.routes), len(app_url_patterns()))
+
+    def test_only_the_declared_public_route_returns_json_to_anonymous_callers(self):
+        open_json = sorted(
+            name
+            for name, url in self.routes.items()
+            if (lambda r: r.status_code == 200 and serves_json(r))(self.client.get(url))
+        )
+        self.assertEqual(
+            open_json,
+            [self.public_name],
+            "exactly one route may hand JSON to an anonymous caller. If a new "
+            "endpoint is listed here, decorate it with @api_login_required "
+            "rather than changing this test.",
+        )
+
+    def test_cors_is_scoped_to_the_declared_public_route(self):
+        # The header is what lets a page on another origin read a response,
+        # so it belongs on the one endpoint meant to be read that way and
+        # nowhere else.
+        with_cors = sorted(
+            name
+            for name, url in self.routes.items()
+            if self.client.get(url).has_header("Access-Control-Allow-Origin")
+        )
+        self.assertEqual(with_cors, [self.public_name])
+
+    def test_the_hand_written_list_has_not_drifted_from_the_real_routes(self):
+        # JSON_ROUTES is still used by the more detailed tests above, so it
+        # must keep naming routes that exist.
+        listed = {name.split(":", 1)[1] for name, _ in JSON_ROUTES}
+        self.assertEqual(listed - set(self.routes), set())
