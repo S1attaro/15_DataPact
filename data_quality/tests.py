@@ -930,6 +930,14 @@ class HomePageTests(TestCase):
         self.assertTemplateUsed(response, "data_quality/base.html")
 
     def test_home_page_links_to_the_main_sections(self):
+        """
+        A5.1 note (Ashok): this test was written in A3, when the home page
+        showed its section cards to everyone. A5.1 Part 1.5 requires protected
+        links to be hidden until login, and every section below is behind
+        @login_required - so the cards now render only for a signed-in user.
+        The assertion is unchanged; it just signs in first.
+        """
+        self.client.force_login(User.objects.create_user("navuser", password="pw"))
         response = self.client.get("/")
         for route in (
             "data_quality:dataset-list",
@@ -938,6 +946,26 @@ class HomePageTests(TestCase):
         ):
             with self.subTest(route=route):
                 self.assertContains(response, f'href="{reverse(route)}"')
+
+    def test_home_page_offers_login_instead_of_protected_links_when_anonymous(self):
+        """The other half of the same rule: nothing protected is advertised."""
+        response = self.client.get("/")
+        for route in (
+            "data_quality:dataset-list",
+            "data_quality:dataset-cbv-base",
+            "data_quality:quality-history",
+            "data_quality:contract-search",
+            "data_quality:dataset-manage",
+        ):
+            with self.subTest(route=route):
+                self.assertNotContains(response, f'href="{reverse(route)}"')
+
+        self.assertContains(response, f'href="{reverse("data_quality:login")}"')
+        self.assertContains(response, f'href="{reverse("data_quality:signup")}"')
+        # The one endpoint that is public on purpose stays advertised.
+        self.assertContains(
+            response, f'href="{reverse("data_quality:api-run-outcomes")}"'
+        )
 
     def test_home_page_summary_counts_come_from_the_database(self):
         owner = User.objects.create_user("owner1", password="pw")
@@ -1887,3 +1915,139 @@ class AccountsUrlOrderTests(TestCase):
         self.assertEqual(resolve("/accounts/google/login/").url_name, "google_login")
         self.assertEqual(resolve("/accounts/google/login/callback/").url_name, "google_callback")
         self.assertEqual(resolve("/accounts/3rdparty/signup/").url_name, "socialaccount_signup")
+
+
+# ---------------------------------------------------------------
+# A5.1 Part 1.5 / 2.4 - authentication UI
+# Author: Ashok Chacko (aschacko)
+#
+# The nav, the login and signup pages, and the Google button. These
+# cover presentation only: the access control itself is Tejas's
+# decorators, and hiding a link is not what makes a page safe.
+# ---------------------------------------------------------------
+
+
+class ConditionalNavigationTests(TestCase):
+    """Part 1.5: protected links hidden before login, visible after."""
+
+    PROTECTED = (
+        "data_quality:dataset-list",
+        "data_quality:dataset-cbv-base",
+        "data_quality:contract-search",
+        "data_quality:dataset-manage",
+        "data_quality:quality-history",
+        "data_quality:reports",
+    )
+
+    def test_anonymous_visitor_is_offered_no_protected_link(self):
+        response = self.client.get(reverse("data_quality:home"))
+        for route in self.PROTECTED:
+            with self.subTest(route=route):
+                self.assertNotContains(response, f'href="{reverse(route)}"')
+
+    def test_anonymous_visitor_is_offered_home_login_and_signup(self):
+        response = self.client.get(reverse("data_quality:home"))
+        for route in ("data_quality:home", "data_quality:login", "data_quality:signup"):
+            with self.subTest(route=route):
+                self.assertContains(response, f'href="{reverse(route)}"')
+
+    def test_signed_in_user_sees_every_protected_link(self):
+        self.client.force_login(User.objects.create_user("navuser", password="pw"))
+        response = self.client.get(reverse("data_quality:home"))
+        for route in self.PROTECTED:
+            with self.subTest(route=route):
+                self.assertContains(response, f'href="{reverse(route)}"')
+
+    def test_signed_in_user_sees_their_username_and_no_login_link(self):
+        self.client.force_login(User.objects.create_user("navuser", password="pw"))
+        response = self.client.get(reverse("data_quality:home"))
+        self.assertContains(response, "navuser")
+        self.assertNotContains(response, f'href="{reverse("data_quality:login")}"')
+
+    def test_logout_is_a_post_form_not_a_link(self):
+        """
+        Django's LogoutView has refused GET since 4.1, so an <a href> logout
+        returns 405 - and a link would also let any page log the user out with
+        an <img> tag. The nav therefore submits a form.
+        """
+        self.client.force_login(User.objects.create_user("navuser", password="pw"))
+        html = self.client.get(reverse("data_quality:home")).content.decode()
+        logout_url = reverse("data_quality:logout")
+        self.assertIn(f'action="{logout_url}"', html)
+        self.assertNotIn(f'href="{logout_url}"', html)
+
+    def test_navigation_hides_links_but_is_not_what_protects_them(self):
+        """
+        The nav is courtesy, not security. Typing a hidden URL directly must
+        still bounce an anonymous visitor to the login page.
+        """
+        for route in self.PROTECTED:
+            with self.subTest(route=route):
+                response = self.client.get(reverse(route))
+                self.assertEqual(response.status_code, 302)
+                self.assertIn(reverse("data_quality:login"), response["Location"])
+
+
+class AuthPageTests(TestCase):
+    """Part 1.1 and Part 2.4: the login and signup pages."""
+
+    def test_login_page_renders_with_the_site_shell(self):
+        response = self.client.get(reverse("data_quality:login"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "registration/login.html")
+        self.assertTemplateUsed(response, "data_quality/base.html")
+
+    def test_signup_page_renders_with_the_site_shell(self):
+        response = self.client.get(reverse("data_quality:signup"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "registration/signup.html")
+        self.assertTemplateUsed(response, "data_quality/base.html")
+
+    def test_both_pages_carry_a_csrf_token(self):
+        for route in ("data_quality:login", "data_quality:signup"):
+            with self.subTest(route=route):
+                response = self.client.get(reverse(route))
+                self.assertContains(response, "csrfmiddlewaretoken")
+
+    def test_login_keeps_the_next_field(self):
+        """
+        Without this hidden input a user bounced here from /reports/ lands on
+        the home page instead of the page they asked for.
+        """
+        response = self.client.get(reverse("data_quality:login"), {"next": "/reports/"})
+        self.assertContains(response, 'name="next"')
+        self.assertContains(response, 'value="/reports/"')
+
+    def test_login_returns_the_user_to_the_page_they_were_bounced_from(self):
+        User.objects.create_user("navuser", password="correct-horse-battery")
+        bounced = self.client.get(reverse("data_quality:reports"))
+        response = self.client.post(
+            bounced["Location"],
+            {"username": "navuser", "password": "correct-horse-battery",
+             "next": reverse("data_quality:reports")},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "data_quality/reports.html")
+
+    def test_google_button_partial_is_included_on_both_pages(self):
+        """
+        Part 2.4. The partial is included without "only" on purpose: it needs
+        the page's request for the CSRF token, and "only" would withhold it.
+        """
+        for route in ("data_quality:login", "data_quality:signup"):
+            with self.subTest(route=route):
+                response = self.client.get(reverse(route))
+                self.assertTemplateUsed(
+                    response, "data_quality/includes/_google_button.html"
+                )
+
+    def test_google_button_degrades_to_a_note_without_credentials(self):
+        """
+        With no GOOGLE_CLIENT_ID configured there is no provider to show, so
+        the page must still render rather than raise - that is what lets a
+        teammate run the site before the OAuth credentials reach them.
+        """
+        with self.settings(SOCIALACCOUNT_PROVIDERS={}):
+            response = self.client.get(reverse("data_quality:login"))
+            self.assertEqual(response.status_code, 200)
