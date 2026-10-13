@@ -10,7 +10,9 @@ Run with the dev server up at http://127.0.0.1:8000/:
 
 import pandas as pd
 
-API_URL = "http://127.0.0.1:8000/api/run-outcomes/"
+API_URL = "https://tjaggi.pythonanywhere.com/api/run-outcomes/"
+
+print(f"Calling production API: {API_URL}")
 
 
 def main():
