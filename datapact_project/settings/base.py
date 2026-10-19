@@ -254,6 +254,13 @@ AI_LOCAL_MODEL_ID = os.getenv('AI_LOCAL_MODEL_ID', '').strip() or 'HuggingFaceTB
 AI_LOCAL_DEVICE = os.getenv('AI_LOCAL_DEVICE', '').strip().lower() or 'auto'
 AI_MAX_NEW_TOKENS = 160
 
+# A6 Part 2.3: the external-API explanation (data_quality/ai/groq_client.py).
+# The key lives only in .env; with it blank the Groq button answers "not
+# available" and nothing is sent. Sample values are never sent to Groq.
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '').strip()
+GROQ_MODEL = os.getenv('GROQ_MODEL', '').strip() or 'openai/gpt-oss-20b'
+GROQ_TIMEOUT_SECONDS = 20
+
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '').strip()
 GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '').strip()
 GOOGLE_OAUTH_CONFIGURED = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)

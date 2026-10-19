@@ -8,7 +8,10 @@ Context (supplied by ai_views.violation_explain):
     attempted    True after a POST
     result       an Explanation, or None when the reply failed the checks
     cause_label  human label for result.likely_cause
-    unavailable  True when the local model could not be used (status 503)
+    unavailable  True when the chosen engine could not be used (status 503)
+    engine       "local" or "groq" after a POST; engine_label names it
+The two buttons post engine=local (SmolLM2 on this machine, Part 2.2) or
+engine=groq (Groq's API, Part 2.3; sample values are not sent to it).
 Sample values and violation.message are deliberately not shown: the existing
 lookup keeps them off GET pages (the message can quote values from the file),
 and this page follows suit. Everything the model wrote is escaped
@@ -24,7 +27,7 @@ by Django's autoescaping; nothing here uses |safe.
 {% endblock %}
 {% block page_title %}Explain this violation{% endblock %}
 {% block page_subtitle %}
-    <p class="page__subtitle">A local language model suggests why this check failed and what to do next.</p>
+    <p class="page__subtitle">A language model suggests why this check failed and what to do next: the local model, or Groq's API.</p>
 {% endblock %}
 {% block content %}
     <div class="panel">
@@ -39,8 +42,10 @@ by Django's autoescaping; nothing here uses |safe.
             </dl>
             <form method="post" action="{% url 'data_quality:violation-explain' violation.pk %}">
                 {% csrf_token %}
-                <button type="submit" class="btn btn--primary">Explain with AI</button>
+                <button type="submit" name="engine" value="local" class="btn btn--primary">Explain with AI</button>
+                <button type="submit" name="engine" value="groq" class="btn btn--ghost">Explain with Groq (external API)</button>
             </form>
+            <p class="card__note">Groq receives the dataset, column, rule and row counts, never the sample values.</p>
         </div>
     </div>
 
@@ -49,9 +54,14 @@ by Django's autoescaping; nothing here uses |safe.
             <div class="panel__head"><h2 class="panel__title">AI suggestion</h2></div>
             <div class="panel__body">
                 {% if unavailable %}
-                    <p>The local AI model is not available right now. The violation details above are unchanged; please try again later.</p>
+                    {% if engine == "groq" %}
+                        <p>The Groq API is not available right now (it may not be configured, or it is busy). The violation details above are unchanged; please try again later or use the local model.</p>
+                    {% else %}
+                        <p>The local AI model is not available right now. The violation details above are unchanged; please try again later.</p>
+                    {% endif %}
                 {% elif result %}
                     <dl class="facts">
+                        <dt>Answered by</dt><dd>{{ engine_label }}</dd>
                         <dt>Explanation</dt><dd>{{ result.explanation }}</dd>
                         <dt>Likely cause</dt><dd>{{ cause_label }}</dd>
                         <dt>Suggested action</dt><dd>{{ result.suggested_action }}</dd>
