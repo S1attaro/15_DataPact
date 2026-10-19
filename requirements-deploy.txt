@@ -1,0 +1,15 @@
+# Deployment requirements (PythonAnywhere): requirements.txt without the A6
+# local-model libraries (torch, transformers, accelerate). The deployed site runs
+# with AI_LOCAL_ENABLED off (the production default), so it never imports them,
+# and torch alone would not fit the host's disk. Install here with:
+#     pip install -r requirements-deploy.txt
+# Keep the pins identical to requirements.txt; a test checks they match.
+asgiref==3.12.1
+Django==5.2.17
+sqlparse==0.6.0
+tzdata==2026.3
+python-dotenv==1.2.3
+matplotlib==3.11.2
+whitenoise==6.11.0
+requests==2.32.3
+django-allauth[socialaccount]==65.14.3
