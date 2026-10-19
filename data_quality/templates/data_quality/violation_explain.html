@@ -11,7 +11,7 @@ Context (supplied by ai_views.violation_explain):
     unavailable  True when the chosen engine could not be used (status 503)
     engine       "local" or "groq" after a POST; engine_label names it
 The two buttons post engine=local (SmolLM2 on this machine, Part 2.2) or
-engine=groq (Groq's API, Part 2.3; sample values are not sent to it).
+engine=groq (Groq's API, Part 2.3; only a few short, safe sample values are sent).
 Sample values and violation.message are deliberately not shown: the existing
 lookup keeps them off GET pages (the message can quote values from the file),
 and this page follows suit. Everything the model wrote is escaped
@@ -45,7 +45,7 @@ by Django's autoescaping; nothing here uses |safe.
                 <button type="submit" name="engine" value="local" class="btn btn--primary">Explain with AI</button>
                 <button type="submit" name="engine" value="groq" class="btn btn--ghost">Explain with Groq (external API)</button>
             </form>
-            <p class="card__note">Groq receives the dataset, column, rule and row counts, never the sample values.</p>
+            <p class="card__note">Groq receives the dataset, column, rule, row counts and up to 3 short sample codes (like AUDIT). IDs, emails and free text are never sent.</p>
         </div>
     </div>
 
