@@ -7,9 +7,9 @@
 | `ai_prototype_full_range.ipynb` | The first design of the same lab, with models from 0.13B up to 8B (the larger ones in 4-bit). Its Colab runs ran out of memory, so it has **no results**; the benchmark above replaced it. Kept for reference. |
 
 The benchmark was written as `ai_prototype_light.ipynb` and renamed to
-`ai_prototype.ipynb`, the path the assignment names. Its contents are unchanged.
-Its introduction still calls the full-range design "the first notebook
-(`ai_prototype.ipynb`)": that now means `ai_prototype_full_range.ipynb`.
+`ai_prototype.ipynb`, the path the assignment names. The only edit to it since
+the run is one filename in its introduction, which now points at
+`ai_prototype_full_range.ipynb`; its code, outputs and results are unchanged.
 
 **Result used by the Django app.** `HuggingFaceTB/SmolLM2-1.7B-Instruct` with the
 few-shot prompt (3 examples): 8/8 valid replies and 8/8 correct causes, at about
