@@ -12,3 +12,11 @@ __pycache__/
 *.local.sqlite3
 # collectstatic output (generated; source lives in data_quality/static/)
 staticfiles/
+# A6: model weights must never be committed. Notebooks (*.ipynb) are tracked.
+*.bin
+*.safetensors
+*.pt
+.ipynb_checkpoints/
+# A6: smoke-test output and half-written result files are never part of the evaluation.
+llm-test/results/smoke/
+*.tmp
