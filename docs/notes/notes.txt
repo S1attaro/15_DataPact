@@ -1845,6 +1845,15 @@ Drafted by Tejas for team review
              $0.1664/h. A month is 730 hours.
              Groq openai/gpt-oss-20b, from console.groq.com on 19 Oct
              2026: $0.075 per 1M input tokens, $0.30 per 1M output tokens.
+  Limits     console.groq.com/docs/rate-limits on 19 Oct 2026. The table
+             there is labelled "the base limits for the Developer plan".
+             For openai/gpt-oss-20b: 30 requests/minute, 1,000
+             requests/day, 8,000 tokens/minute, 200,000 tokens/day. The
+             page says each account's own (for example free-plan) limits
+             are on its account limits page. We did not check those.
+  Model card huggingface.co/openai/gpt-oss-20b on 19 Oct 2026: "21B
+             parameters with 3.6B active parameters"; can "run within
+             16GB of memory".
   Estimates  Anything marked (est.) is a calculation from the figures
              above plus a stated assumption. It is not a measurement.
 
@@ -1895,16 +1904,20 @@ answers it buys:
   --------------------  -------------------  ----------------------------  -------------------------------
   Ultra-light           CPU or any GPU                  698                    $0.00075
   Light                 CPU or any GPU                1,286                    $0.00041
-  Small                 T4, or 16 GB CPU box          1,040                    $0.00051
-  Medium                T4, or 16 GB CPU box          1,348                    $0.00039
-  Large                 T4, or 16 GB CPU box          1,263                    $0.00042
-  SmolLM2-1.7B few-shot (the chosen model and prompt) 2,353                    $0.00022
+  Small                 T4, or 16 GB CPU box          1,041                    $0.00051
+  Medium                T4, or 16 GB CPU box          1,347                    $0.00039
+  Large                 T4, or 16 GB CPU box          1,262                    $0.00042
+  SmolLM2-1.7B few-shot (the chosen model and prompt) 2,347                    $0.00022
 
-  (est.) Answers/hour = 3600 / measured average seconds, one request at a
-  time with no batching. $ per answer = $0.526/h / answers per hour. That
-  is the best case, because an idle server costs the same per hour.
-  Ultra-light is slow per answer because those models ramble up to the
-  160-token limit.
+  (est.) Answers/hour = 3600 / measured average seconds per answer
+  (unrounded, from the CSVs), one request at a time with no batching.
+  $ per answer = $0.526/h / answers per hour. That is the best case,
+  because an idle server costs the same per hour.
+  Ultra-light is the slowest category on average, mostly because of two
+  of its three models. SmolLM2-135M and SmolLM-360M averaged 127 and 153
+  new tokens per answer, and 7 of their 16 answers hit the 160-token
+  limit (7.56 s and 6.51 s per answer). The third, SmolLM2-360M, averaged
+  only 30 new tokens and 1.40 s, but none of its answers was valid JSON.
 
   CPU only: a t3.xlarge (16 GiB, $0.1664/h = about $121/month) has enough
   RAM for any one of these models in 32-bit (SmolLM2-1.7B needs about
@@ -1931,13 +1944,20 @@ reasoning at reasoning_effort=low, which we have not measured).
   -----------------  ------------------------  -----------------------------------
   10,000  (1/user)        $37                  1 x g4dn.xlarge = $384
   30,000  (3/user)       $111                  2 x g4dn.xlarge = $768
-  100,000 (10/user)      $371                  3-4 x g4dn.xlarge = $1,152-$1,536
+  100,000 (10/user)      $371                  6 x g4dn.xlarge = $2,304
 
-  Local sizing (est.): one T4 answers about 2,353 an hour, one at a time.
-  30,000 a day is 1,250 an hour on average. If the busiest hour is 3x
-  the average (3,750 an hour), that needs 2 servers, before allowing for
-  a spare when one fails. A batching server such as vLLM or TGI would
-  get more from each GPU, but we have not measured that.
+  Local sizing (est.): one T4 answers about 2,347 an hour, one at a time
+  (section 48). We assume the busiest hour is 3x the average hour, and
+  round the server count up:
+
+    Explanations/day   Average/hour   Busiest hour (3x)   T4 servers
+    10,000                   417          1,250              1
+    30,000                 1,250          3,750              2
+    100,000                4,167         12,500              6
+
+  The counts allow no spare for when a server fails. A batching server
+  such as vLLM or TGI would get more from each GPU, but we have not
+  measured that. Groq months are 30 days; server months are 730 hours.
 
 Decision: at 10,000 daily users we would move the main path to the API.
 
@@ -1945,11 +1965,15 @@ Decision: at 10,000 daily users we would move the main path to the API.
     servers to patch, monitor or scale.
   - It scales to zero at night and absorbs spikes; our own servers would
     have to be sized for the peak.
-  - The catch is limits. Groq's published base limits for gpt-oss-20b are
-    30 requests/minute, 1,000 requests/day and 200,000 tokens/day. That
-    is roughly 220 explanations a day at about 900 tokens each, enough
-    for the class demo but nowhere near 30,000. Production would need a
-    paid tier with higher limits, and we have not checked those terms.
+  - The catch is limits. Groq's rate-limit page lists these as the base
+    limits for its Developer plan, for gpt-oss-20b: 30 requests/minute,
+    1,000 requests/day, 8,000 tokens/minute and 200,000 tokens/day. At
+    about 900 tokens per explanation (est.), the token limits bind
+    first: roughly 220 explanations a day and 8 a minute. That is enough
+    for the class demo but far below 30,000 a day. We have not checked
+    our own account's limits, or how to get higher ones and what they
+    cost. When a limit is hit, Groq answers HTTP 429 with a retry-after
+    header.
   - Quality: we have not measured gpt-oss-20b on our 8 test inputs. Before
     switching, it should go through the same test as the 15 local models.
 
@@ -2002,10 +2026,12 @@ Closest cloud match: g5.4xlarge (16 vCPU, 64 GiB, one A10G with 24 GB,
 600 GiB NVMe) at $1.624/h = about $1,186/month on demand, plus extra
 disk for the full 1 TB. We read "16-core GPU" as one 24 GB-class card.
 
-What it can hold: SmolLM2-1.7B needs 3.6 GB, so about 6 copies fit side
-by side. A 7-8B model in 16-bit (about 15-16 GB) also fits. So does a
-gpt-oss-20b-class model in its 4-bit release (OpenAI states it runs in
-16 GB). We have not run anything on this card.
+What it can hold (est.): SmolLM2-1.7B peaked at 3.59 GB (measured,
+few-shot, on a T4), so about 6 copies fit in 24 GB side by side. A 7-8B
+model in 16-bit needs about 14-16 GB for its weights (2 bytes per
+parameter), so it fits too. gpt-oss-20b (21B parameters, 3.6B active)
+can "run within 16GB of memory", according to its Hugging Face model
+card, so it should fit as well. We have not run anything on this card.
 
 Break-even against Groq (est.):
   $1,186/month / $0.00012 per explanation = about 9.6 million a month,
