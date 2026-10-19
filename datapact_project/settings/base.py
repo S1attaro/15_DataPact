@@ -64,6 +64,11 @@ ALLOWED_HOSTS = [
 # key already lives in .env rather than in code (A2 Section 1B).
 API_KEY = os.getenv('API_KEY', '')
 
+# A6: external AI API (Groq). Blank key means the feature answers 503 and the
+# rest of the site keeps working. The model can be swapped without code changes.
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '').strip()
+GROQ_MODEL = os.getenv('GROQ_MODEL', 'openai/gpt-oss-20b').strip()
+
 
 # Application definition
 
