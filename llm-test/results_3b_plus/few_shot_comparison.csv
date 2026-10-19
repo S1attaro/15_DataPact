@@ -1,0 +1,6 @@
+model,params_b,json_pct,schema_pct,accuracy_pct,sec_per_answer,tokens_per_s,peak_mem_gb
+SmolLM2-1.7B-Instruct,1.71,100.0,100.0,100.0,1.53,35.4,3.59
+Falcon3-3B-Instruct,3.23,100.0,100.0,62.0,1.37,42.9,6.67
+Qwen2.5-3B-Instruct,3.09,100.0,100.0,75.0,1.4,37.4,6.36
+Phi-3.5-mini-instruct,3.82,100.0,100.0,50.0,3.68,33.7,8.06
+Qwen2.5-7B-Instruct,7.62,100.0,100.0,62.0,1.71,30.4,15.46
