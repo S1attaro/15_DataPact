@@ -113,6 +113,26 @@ class ViolationToCaseTests(TestCase):
                 case = prompts.violation_to_case(make_violation(rule_type, parameters))
                 self.assertEqual(case["rule"], text)
 
+    def test_parameters_that_are_not_an_object_are_read_as_empty(self):
+        # parameters is a JSONField the admin can edit, so it can hold a list, text or a number.
+        expected = {"RANGE": "RANGE {}", "TYPE_MATCH": "TYPE_MATCH {}", "ALLOWED_VALUES": "ALLOWED_VALUES []",
+                    "REGEX": 'REGEX ""', "NOT_NULL": "NOT_NULL"}
+        violation = make_violation()
+        for parameters in (["USD", "CAD"], "USD", 5, None):
+            for rule_type, text in expected.items():
+                with self.subTest(parameters=parameters, rule_type=rule_type):
+                    violation.rule.rule_type = rule_type
+                    violation.rule.parameters = parameters
+                    self.assertEqual(prompts.format_rule(violation.rule), text)
+
+    def test_samples_without_a_value_are_left_out(self):
+        samples = [{"row": 1}, {"row": 2, "value": "X"}, {"row": 3, "value": None}, "bare", 7]
+        case = prompts.violation_to_case(make_violation(samples=samples))
+        # A recorded null stays null; an entry with no value at all is not evidence of one.
+        self.assertEqual(json.loads(case["samples"]), ["X", None, "bare", 7])
+        case = prompts.violation_to_case(make_violation(samples=[{"row": 1}, {"row": 2}]))
+        self.assertEqual(case["samples"], "[]")
+
     def test_the_other_fields(self):
         case = prompts.violation_to_case(make_violation())
         self.assertEqual(case["dataset"], "Monthly Enrollment Export")
@@ -275,6 +295,25 @@ class ViolationExplainViewTests(TestCase):
         self.assertContains(response, "csrfmiddlewaretoken")
         self.assertNotContains(response, "SECRET-SAMPLE-123")
         self.get_generator.assert_not_called()
+
+    def test_the_violation_message_is_not_shown_because_it_can_quote_file_values(self):
+        self.violation.message = "4 rows in status contain the value SECRET-MESSAGE-VALUE."
+        self.violation.save()
+        self.client.force_login(self.user)
+        for method in ("get", "post"):
+            with self.subTest(method=method):
+                response = getattr(self.client, method)(self.url)
+                self.assertEqual(response.status_code, 200)
+                self.assertNotContains(response, "SECRET-MESSAGE-VALUE")
+
+    def test_a_rule_with_malformed_parameters_still_opens(self):
+        self.violation.rule.rule_type = ValidationRule.RuleType.ALLOWED_VALUES
+        self.violation.rule.parameters = ["not", "an", "object"]
+        self.violation.rule.save()
+        self.client.force_login(self.user)
+        for method in ("get", "post"):
+            with self.subTest(method=method):
+                self.assertEqual(getattr(self.client, method)(self.url).status_code, 200)
 
     def test_post_without_a_csrf_token_is_rejected(self):
         self.client.handler.enforce_csrf_checks = True

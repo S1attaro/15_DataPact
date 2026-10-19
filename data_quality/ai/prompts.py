@@ -113,8 +113,12 @@ def build_messages(case, n_shots):
 
 
 def format_rule(rule):
-    """Write a rule the way the notebook's cases do, e.g. RANGE {"min": 0, "max": 24}."""
-    params = rule.parameters or {}
+    """Write a rule the way the notebook's cases do, e.g. RANGE {"min": 0, "max": 24}.
+
+    parameters is an admin-editable JSONField, so anything other than an object
+    is read as no parameters instead of failing the page.
+    """
+    params = rule.parameters if isinstance(rule.parameters, dict) else {}
     kind = rule.rule_type
     if kind in ("RANGE", "TYPE_MATCH"):
         text = f"{kind} {json.dumps(params)}"
@@ -143,7 +147,9 @@ def violation_to_case(violation):
     """The five fields the benchmark prompt uses, built from a Violation."""
     rule = violation.rule
     samples = violation.sample_values if isinstance(violation.sample_values, list) else []
-    values = [clean_value(s.get("value") if isinstance(s, dict) else s) for s in samples[:MAX_SAMPLES]]
+    # An entry with no "value" key is skipped, so the model never reads it as a recorded null.
+    samples = [s for s in samples if not isinstance(s, dict) or "value" in s]
+    values = [clean_value(s["value"] if isinstance(s, dict) else s) for s in samples[:MAX_SAMPLES]]
     return {
         "dataset": clean_text(rule.contract.dataset.name, MAX_NAME_CHARS),
         "column": clean_text(rule.column_name, MAX_NAME_CHARS),

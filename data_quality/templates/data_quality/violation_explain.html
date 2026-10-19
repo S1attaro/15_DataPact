@@ -9,8 +9,9 @@ Context (supplied by ai_views.violation_explain):
     result       an Explanation, or None when the reply failed the checks
     cause_label  human label for result.likely_cause
     unavailable  True when the local model could not be used (status 503)
-Sample values are deliberately not shown: the existing lookup keeps them off
-GET pages, and this page follows suit. Everything the model wrote is escaped
+Sample values and violation.message are deliberately not shown: the existing
+lookup keeps them off GET pages (the message can quote values from the file),
+and this page follows suit. Everything the model wrote is escaped
 by Django's autoescaping; nothing here uses |safe.
 =============================================================================
 {% endcomment %}
@@ -34,7 +35,6 @@ by Django's autoescaping; nothing here uses |safe.
                 <dt>Column</dt><dd>{{ violation.rule.column_name }}</dd>
                 <dt>Rule</dt><dd><code>{{ rule_text }}</code></dd>
                 <dt>Rows failed</dt><dd>{{ violation.failed_row_count }} of {{ violation.run.row_count }}</dd>
-                <dt>Message</dt><dd>{{ violation.message }}</dd>
                 <dt>Recorded resolution</dt><dd>{{ violation.get_resolution_display }}</dd>
             </dl>
             <form method="post" action="{% url 'data_quality:violation-explain' violation.pk %}">
@@ -58,7 +58,7 @@ by Django's autoescaping; nothing here uses |safe.
                     </dl>
                     <p class="card__note">This is a suggestion from a model. It does not change the recorded resolution; a person decides that.</p>
                 {% else %}
-                    <p>The model could not produce a reliable explanation for this violation. The message above still describes what failed.</p>
+                    <p>The model could not produce a reliable explanation for this violation. The details above still describe what failed.</p>
                 {% endif %}
             </div>
         </div>
