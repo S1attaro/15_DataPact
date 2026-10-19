@@ -212,6 +212,7 @@ APP_NAMESPACE = "data_quality"
 ROUTE_ARGS = {
     "dataset-detail": [1],
     "vega-chart-spec": [1],
+    "violation-explain": [1],
 }
 
 

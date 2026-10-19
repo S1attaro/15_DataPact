@@ -68,6 +68,11 @@ WHITENOISE_USE_FINDERS = True
 # on purpose: it would break the plain-http local production-mode run that A2
 # asks us to demonstrate. Enable it together with a real HTTPS deployment.
 
+# A6: the local model is off in production unless the server's .env turns it
+# on. SmolLM2-1.7B needs ~3.4 GB of disk and ~7 GB of RAM on CPU, more than the
+# PythonAnywhere plans this site has used provide.
+AI_LOCAL_ENABLED = os.getenv('AI_LOCAL_ENABLED', 'false').strip().lower() in ('1', 'true', 'yes')
+
 # Google sign-in callback URL.
 #
 # PythonAnywhere serves the site over HTTPS but hands Django a plain-http

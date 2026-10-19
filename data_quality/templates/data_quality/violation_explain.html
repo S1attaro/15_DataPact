@@ -1,0 +1,66 @@
+{% extends "data_quality/base.html" %}
+{% comment %}
+=============================================================================
+Explain a violation - A6 Part 2.2 (local Hugging Face model), Tejas Jaggi
+Context (supplied by ai_views.violation_explain):
+    violation    the Violation, with its rule, contract, dataset and run
+    rule_text    the rule written as the model sees it
+    attempted    True after a POST
+    result       an Explanation, or None when the reply failed the checks
+    cause_label  human label for result.likely_cause
+    unavailable  True when the local model could not be used (status 503)
+Sample values are deliberately not shown: the existing lookup keeps them off
+GET pages, and this page follows suit. Everything the model wrote is escaped
+by Django's autoescaping; nothing here uses |safe.
+=============================================================================
+{% endcomment %}
+{% block title %}Explain violation - DataPact{% endblock %}
+{% block breadcrumbs %}
+    <p class="breadcrumbs">
+        <a href="{% url 'data_quality:home' %}">Home</a> /
+        <a href="{% url 'data_quality:contract-search' %}">Contract search</a> / Explain violation
+    </p>
+{% endblock %}
+{% block page_title %}Explain this violation{% endblock %}
+{% block page_subtitle %}
+    <p class="page__subtitle">A local language model suggests why this check failed and what to do next.</p>
+{% endblock %}
+{% block content %}
+    <div class="panel">
+        <div class="panel__head"><h2 class="panel__title">The failed check</h2></div>
+        <div class="panel__body">
+            <dl class="facts">
+                <dt>Dataset</dt><dd><a href="{{ violation.rule.contract.dataset.get_absolute_url }}">{{ violation.rule.contract.dataset.name }}</a> (contract v{{ violation.rule.contract.version_number }})</dd>
+                <dt>Column</dt><dd>{{ violation.rule.column_name }}</dd>
+                <dt>Rule</dt><dd><code>{{ rule_text }}</code></dd>
+                <dt>Rows failed</dt><dd>{{ violation.failed_row_count }} of {{ violation.run.row_count }}</dd>
+                <dt>Message</dt><dd>{{ violation.message }}</dd>
+                <dt>Recorded resolution</dt><dd>{{ violation.get_resolution_display }}</dd>
+            </dl>
+            <form method="post" action="{% url 'data_quality:violation-explain' violation.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn--primary">Explain with AI</button>
+            </form>
+        </div>
+    </div>
+
+    {% if attempted %}
+        <div class="panel">
+            <div class="panel__head"><h2 class="panel__title">AI suggestion</h2></div>
+            <div class="panel__body">
+                {% if unavailable %}
+                    <p>The local AI model is not available right now. The violation details above are unchanged; please try again later.</p>
+                {% elif result %}
+                    <dl class="facts">
+                        <dt>Explanation</dt><dd>{{ result.explanation }}</dd>
+                        <dt>Likely cause</dt><dd>{{ cause_label }}</dd>
+                        <dt>Suggested action</dt><dd>{{ result.suggested_action }}</dd>
+                    </dl>
+                    <p class="card__note">This is a suggestion from a model. It does not change the recorded resolution; a person decides that.</p>
+                {% else %}
+                    <p>The model could not produce a reliable explanation for this violation. The message above still describes what failed.</p>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

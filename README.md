@@ -82,6 +82,9 @@ python manage.py seed_demo
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional. The OAuth client from the Google Cloud Console, used for Google sign-in (see "Google sign-in" below). Leave them blank and the site still runs; the Google button then shows a "not configured" note. |
 | `ACCOUNT_DEFAULT_HTTP_PROTOCOL` | Optional, production only. Defaults to `https` so Google gets an `https://` callback behind PythonAnywhere's proxy. Set it to `http` only to try production mode over plain http on your own machine. |
 | `DATABASE_NAME` | Optional, development only. Set it to `db.local.sqlite3` to work against a throwaway database (ignored by Git) instead of the demo `db.sqlite3`. Run `python manage.py migrate` once after setting it. |
+| `AI_LOCAL_ENABLED` | Optional (A6). Turns the "Explain with AI" local model on or off. On by default in development, off by default in production. |
+| `AI_LOCAL_MODEL_ID` | Optional (A6). Hugging Face model to load. Defaults to `HuggingFaceTB/SmolLM2-1.7B-Instruct`, the model the benchmark notebook chose. |
+| `AI_LOCAL_DEVICE` | Optional (A6). `auto` (GPU if there is one), `cuda` or `cpu`. The model needs about 4 GB of free GPU memory, or about 7 GB of free RAM on CPU. |
 
 To make a new secret key:
 
@@ -136,6 +139,7 @@ Skip that step and the pages still render, just without the content hash in the 
 | `/vega-lite/chart<n>.json` | `vega_chart_spec` | Function-based, JsonResponse (chart spec) |
 | `/api/datasets/` | `dataset_api` | Function-based, JsonResponse (dataset registry) |
 | `/api/lookup/` | `dataset_lookup_api` | Function-based, JsonResponse (external API) |
+| `/violations/<id>/explain/` | `violation_explain` | Function-based, render() (A6 local AI; GET shows, POST explains) |
 | `/reports/` | `reports_view` | Function-based, render() |
 | `/reports/export/validation-runs.csv` | `export_validation_runs_csv` | Function-based, CSV via HttpResponse |
 | `/reports/export/validation-runs.json` | `export_validation_runs_json` | Function-based, JsonResponse |
@@ -307,7 +311,7 @@ Google matches redirect URIs exactly, including the trailing slash, and `localho
 
 **URL order.** In `datapact_project/urls.py` the project's own routes (`data_quality.urls`) come before `allauth.urls`. Django uses the first pattern that matches, so a project view on the same path as an allauth one, such as a custom `accounts/login/`, is not shadowed, while allauth still serves the Google login, its callback and the rest. A test guards the order.
 
-**On PythonAnywhere:** pull the code, `pip install -r requirements.txt`, `python manage.py migrate`, `python manage.py collectstatic`, make sure the server's `.env` has both Google values, then reload the web app. Production settings send an `https://` callback (`ACCOUNT_DEFAULT_HTTP_PROTOCOL`), because PythonAnywhere hands Django a plain-http request and Google would otherwise reject the callback with `redirect_uri_mismatch`.
+**On PythonAnywhere:** pull the code, `pip install -r requirements-deploy.txt` (the same pins as `requirements.txt` minus torch, transformers and accelerate, which the host cannot fit; the local AI model stays off there), `python manage.py migrate`, `python manage.py collectstatic`, make sure the server's `.env` has both Google values, then reload the web app. Production settings send an `https://` callback (`ACCOUNT_DEFAULT_HTTP_PROTOCOL`), because PythonAnywhere hands Django a plain-http request and Google would otherwise reject the callback with `redirect_uri_mismatch`.
 
 **After pulling this change locally**, install the new package and create the allauth tables:
 

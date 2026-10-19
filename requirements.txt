@@ -7,3 +7,8 @@ matplotlib==3.11.2
 whitenoise==6.11.0
 requests==2.32.3
 django-allauth[socialaccount]==65.14.3
+# A6 text intelligence. PyPI's torch is CPU-only on Windows; for an NVIDIA GPU,
+# first run: pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cu132
+torch==2.14.1
+transformers==5.20.1
+accelerate==1.15.0
