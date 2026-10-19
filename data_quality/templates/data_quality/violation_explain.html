@@ -44,6 +44,53 @@ by Django's autoescaping; nothing here uses |safe.
         </div>
     </div>
 
+    {# A6 Part 2.3: the same question sent to the Groq API instead (Connor). #}
+    {# Works where the local model is off, e.g. on PythonAnywhere.           #}
+    <div class="panel">
+        <div class="panel__head"><h2 class="panel__title">Or ask the cloud AI (Groq)</h2></div>
+        <div class="panel__body">
+            <button type="button" class="btn js-groq" data-url="{% url 'data_quality:violation-explain-groq' violation.pk %}">Explain with Groq (cloud)</button>
+            <div class="js-groq-result" aria-live="polite"></div>
+        </div>
+    </div>
+    <script>
+    // Asks /api/violations/<id>/explain/ and shows the answer under the button.
+    // textContent (not innerHTML) so nothing the AI writes can run as HTML.
+    (function () {
+        var button = document.querySelector(".js-groq");
+        var box = document.querySelector(".js-groq-result");
+        var labels = {DATA_ISSUE: "Data issue", CONTRACT_UPDATED: "Contract out of date"};
+        button.addEventListener("click", function () {
+            button.disabled = true;
+            box.textContent = "Asking Groq...";
+            fetch(button.dataset.url, {credentials: "same-origin"})
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    button.disabled = false;
+                    if (data.error) { box.textContent = data.error; return; }
+                    box.textContent = "";
+                    var list = document.createElement("dl");
+                    list.className = "facts";
+                    [["Explanation", data.explanation],
+                     ["Likely cause", labels[data.likely_cause]],
+                     ["Suggested action", data.suggested_action]].forEach(function (row) {
+                        var dt = document.createElement("dt");
+                        var dd = document.createElement("dd");
+                        dt.textContent = row[0];
+                        dd.textContent = row[1];
+                        list.appendChild(dt);
+                        list.appendChild(dd);
+                    });
+                    box.appendChild(list);
+                })
+                .catch(function () {
+                    button.disabled = false;
+                    box.textContent = "Could not reach the AI service.";
+                });
+        });
+    })();
+    </script>
+
     {% if attempted %}
         <div class="panel">
             <div class="panel__head"><h2 class="panel__title">AI suggestion</h2></div>
