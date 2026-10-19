@@ -1824,3 +1824,228 @@ time. Rotating is one button in the Google Cloud console, then update
     so the button renders and can be styled; clicking it will not
     complete a real Google round trip. Hriday has tested the real flow.
   - Anything on production. Everything above is local.
+
+
+=============================================
+A6 - PART 3: PRODUCTION REFLECTION (Week of 2026-10-19)
+Drafted by Tejas for team review
+=============================================
+
+47. WHERE THE NUMBERS COME FROM
+
+  Measured   llm-test/results_light/matrix_results.csv (15 models x 8
+             inputs, zero-shot) and prompting_results.csv (3 models x 4
+             methods x 8 inputs), both from the Colab T4 run of
+             llm-test/ai_prototype.ipynb. Also the real-model Django test
+             in README_AI.md (RTX 3050 Ti Laptop GPU, 4 GB).
+  Prices     AWS on-demand Linux, as listed on instances.vantage.sh on
+             19 Oct 2026: g4dn.xlarge (1x T4 16 GB, 4 vCPU, 16 GiB)
+             $0.526/h; g5.4xlarge (1x A10G 24 GB, 16 vCPU, 64 GiB,
+             600 GiB NVMe) $1.624/h; t3.xlarge (4 vCPU, 16 GiB, no GPU)
+             $0.1664/h. A month is 730 hours.
+             Groq openai/gpt-oss-20b, from console.groq.com on 19 Oct
+             2026: $0.075 per 1M input tokens, $0.30 per 1M output tokens.
+  Estimates  Anything marked (est.) is a calculation from the figures
+             above plus a stated assumption. It is not a measurement.
+
+  Each method was scored on only 8 inputs, so one answer moves a score by
+  12.5 points. Every model tested is under 2B parameters. The full-range
+  notebook (up to 8B) ran out of memory on free Colab and has no results.
+
+
+48. Q1 - SIZE VS QUALITY: WHERE IS THE SWEET SPOT?
+
+Zero-shot matrix test, 3 models x 8 inputs = 24 answers per category:
+
+  Category     Params      Valid schema   Correct cause   Avg s/answer   Peak GPU (16-bit)
+  -----------  ----------  -------------  --------------  -------------  -----------------
+  Ultra-light  0.1-0.4B     1/24 ( 4%)     1/24 ( 4%)      5.16           0.29-0.76 GB
+  Light        0.4-0.6B    11/24 (46%)     5/24 (21%)      2.80           1.01-1.06 GB
+  Small        1.0-1.5B    17/24 (71%)     8/24 (33%)      3.46           2.24-3.03 GB
+  Medium       1.5-1.7B    15/24 (62%)     8/24 (33%)      2.67           3.12-3.38 GB
+  Large        1.7-2.0B    21/24 (88%)    12/24 (50%)      2.85           3.50-3.76 GB
+
+Sweet spot: the Large category (1.7-1.8B), and specifically
+SmolLM2-1.7B-Instruct.
+
+  - Below 0.5B the models cannot do the task. They loop, drop the braces,
+    or answer 1 in 8.
+  - In the zero-shot test, SmolLM2-1.7B was the only model that really
+    told the two causes apart (6/8). Most models at 50% gave the same
+    label for all 8 inputs.
+  - With few-shot prompting (3 examples) SmolLM2-1.7B reached 8/8 valid and
+    8/8 correct, at 1.53 s per answer and 3.59 GB.
+  - Size is not everything. Falcon3-1B (1.67B) got 0/8 valid because it
+    left out commas, and h2o-danube2-1.8b got 5/8 because it escaped
+    underscores. The model family's training mattered as much as size.
+
+Was a "massive" model much better? We cannot say from data: we never got
+results for anything above 1.84B. Inside our range, going from 0.4B to
+1.7B was the difference between unusable and usable. Between 1.1B and
+1.8B, the model family mattered more than size. A 7B+ model would
+probably handle the ambiguous cases better (see the AUDIT example in
+section 50), but that is an assumption we did not test.
+
+Expected cost to run each category on a server. All 15 models fit on the
+smallest AWS GPU box (one T4 16 GB, $0.526/h = about $384/month). So the
+monthly bill is the same for every category, and what differs is how many
+answers it buys:
+
+  Category              Fits on              Answers/hour on 1 T4 (est.)   $ per answer at full use (est.)
+  --------------------  -------------------  ----------------------------  -------------------------------
+  Ultra-light           CPU or any GPU                  698                    $0.00075
+  Light                 CPU or any GPU                1,286                    $0.00041
+  Small                 T4, or 16 GB CPU box          1,040                    $0.00051
+  Medium                T4, or 16 GB CPU box          1,348                    $0.00039
+  Large                 T4, or 16 GB CPU box          1,263                    $0.00042
+  SmolLM2-1.7B few-shot (the chosen model and prompt) 2,353                    $0.00022
+
+  (est.) Answers/hour = 3600 / measured average seconds, one request at a
+  time with no batching. $ per answer = $0.526/h / answers per hour. That
+  is the best case, because an idle server costs the same per hour.
+  Ultra-light is slow per answer because those models ramble up to the
+  160-token limit.
+
+  CPU only: a t3.xlarge (16 GiB, $0.1664/h = about $121/month) has enough
+  RAM for any one of these models in 32-bit (SmolLM2-1.7B needs about
+  7 GB). We did not measure CPU speed, so we cannot give a cost per answer
+  on CPU. PythonAnywhere's free plan (512 MB disk) cannot hold even the
+  smallest Large model, which is why the local model is off in production.
+
+
+49. Q2 - 10,000 DAILY USERS: STAY LOCAL OR MOVE TO THE API?
+
+Assumption: each user asks for 3 explanations a day, so 30,000 a day.
+The table also shows 1 and 10 per user.
+
+Per-explanation token use (est.): about 650 input tokens (the few-shot
+prompt is 602 tokens in SmolLM2's tokenizer; gpt-oss's tokenizer
+differs) and about 250 output tokens (a ~55-token answer plus
+reasoning at reasoning_effort=low, which we have not measured).
+
+  Groq cost per explanation (est.) = 650 x $0.075/1M + 250 x $0.30/1M
+                                   = $0.0000488 + $0.0000750
+                                   = about $0.00012
+
+  Explanations/day   Groq API / month (est.)   Local on T4 servers / month (est.)
+  -----------------  ------------------------  -----------------------------------
+  10,000  (1/user)        $37                  1 x g4dn.xlarge = $384
+  30,000  (3/user)       $111                  2 x g4dn.xlarge = $768
+  100,000 (10/user)      $371                  3-4 x g4dn.xlarge = $1,152-$1,536
+
+  Local sizing (est.): one T4 answers about 2,353 an hour, one at a time.
+  30,000 a day is 1,250 an hour on average. If the busiest hour is 3x
+  the average (3,750 an hour), that needs 2 servers, before allowing for
+  a spare when one fails. A batching server such as vLLM or TGI would
+  get more from each GPU, but we have not measured that.
+
+Decision: at 10,000 daily users we would move the main path to the API.
+
+  - It is about 7x cheaper at 3 per user ($111 against $768), with no GPU
+    servers to patch, monitor or scale.
+  - It scales to zero at night and absorbs spikes; our own servers would
+    have to be sized for the peak.
+  - The catch is limits. Groq's published base limits for gpt-oss-20b are
+    30 requests/minute, 1,000 requests/day and 200,000 tokens/day. That
+    is roughly 220 explanations a day at about 900 tokens each, enough
+    for the class demo but nowhere near 30,000. Production would need a
+    paid tier with higher limits, and we have not checked those terms.
+  - Quality: we have not measured gpt-oss-20b on our 8 test inputs. Before
+    switching, it should go through the same test as the 15 local models.
+
+  We would keep the local model as a fallback for when the API is down or
+  rate-limited, and for anyone who cannot send data out.
+
+
+50. Q3 - HYBRID: LOCAL AND API TOGETHER
+
+What the app already does:
+  - Two engines on one page, behind one parser. parse_reply() checks both
+    replies with the same rules, so they are interchangeable.
+  - A privacy split. The local model sees sample values; Groq gets only
+    the dataset, column, rule and row counts. Raw file values never
+    leave the server.
+
+How they could work together to cut cost while keeping quality:
+
+  1. Local first, API only when needed. Try SmolLM2. Call the API only if
+     the local reply fails parse_reply() or the local model is
+     unavailable. In our tests SmolLM2 few-shot gave 8/8 valid replies on
+     the benchmark and 3/3 in the real Django test. If it held at even
+     90% in real use, the API bill would be about a tenth of the
+     all-API figure (est.), although the local server still costs money.
+  2. Route by difficulty. Formulaic cases (RANGE, NOT_NULL, TYPE_MATCH:
+     "negative hours are a data error") go to the local model. Ambiguous
+     ALLOWED_VALUES cases ("is AUDIT a new status or a typo?") go to the
+     bigger API model. In our real test the local model's advice on
+     AUDIT contradicted itself ("verify AUDIT is valid and remove it"),
+     exactly the case where a larger model should help.
+  3. Local preprocessing, API final text (the assignment's example). The
+     local model turns the samples into a description with no raw values
+     ("4 rows share one new value"), and the API writes the explanation.
+     Quality improves without sending file contents out.
+  4. Cache. A stored violation never changes, so each one needs
+     explaining only once. Saving the answer (in a separate table, so
+     the recorded resolution is still never touched) would make repeat
+     views free. This is not built yet; the current code writes nothing.
+
+Which saves the most: at 10,000 users the pure API is already cheap
+($111/month, est.). The hybrid pays for itself mainly in privacy, in
+resilience when the API is down or rate-limited, and in quality on the
+hard cases. On cost alone, it beats the pure API only once a local GPU
+is already paid for.
+
+
+51. Q4 - OUR OWN SERVER (16-core CPU, 16-core GPU, 64 GB RAM, 1 TB)
+
+Closest cloud match: g5.4xlarge (16 vCPU, 64 GiB, one A10G with 24 GB,
+600 GiB NVMe) at $1.624/h = about $1,186/month on demand, plus extra
+disk for the full 1 TB. We read "16-core GPU" as one 24 GB-class card.
+
+What it can hold: SmolLM2-1.7B needs 3.6 GB, so about 6 copies fit side
+by side. A 7-8B model in 16-bit (about 15-16 GB) also fits. So does a
+gpt-oss-20b-class model in its 4-bit release (OpenAI states it runs in
+16 GB). We have not run anything on this card.
+
+Break-even against Groq (est.):
+  $1,186/month / $0.00012 per explanation = about 9.6 million a month,
+  or about 320,000 explanations a day, sustained.
+
+When self-hosting on that server is the right choice:
+  - Volume is high and steady: above roughly 300,000 explanations a day,
+    every day, so the GPU is busy rather than idle.
+  - The data cannot leave. Enrollment and payroll exports are exactly the
+    kind of records (student data, staff pay) a university may not be
+    allowed to send to an outside company. If sample values must be
+    shown to the model, local is the only option.
+  - It must work offline or without a vendor: no rate limits, no outages
+    on someone else's side, no price changes.
+  - We need a model the API does not offer, such as our own fine-tune
+    (Route B) or a specific open model.
+  - The hardware is already owned. Then each extra answer costs only
+    electricity, and the break-even point drops a long way.
+
+When a paid API of comparable size is better:
+  - Volume is low or spiky. For a class project or 10,000 users, most of
+    the $1,186/month would pay for an idle GPU.
+  - No one on the team can run GPU servers (drivers, CUDA, updates,
+    monitoring, failover).
+  - We want a bigger model than the box can hold, or want to switch
+    models without buying hardware.
+  - We need to scale to zero, or to start today with no up-front cost.
+
+For DataPact as it is now, the API is the better default, with the local
+model kept for private data and as a fallback.
+
+
+52. NOT MEASURED (SO NOT CLAIMED)
+
+  - Any model above 1.84B parameters, including gpt-oss-20b, on our test
+    inputs.
+  - A real Groq call from the app: no key was available when this was
+    written. The request format follows Groq's API reference.
+  - Groq's actual tokens per explanation, including reasoning tokens.
+  - CPU-only speed of any model.
+  - Throughput with batching (vLLM/TGI) or on an A10G.
+  - Prices for Groq's paid tiers, and AWS reserved or spot prices (all
+    prices above are on-demand).
