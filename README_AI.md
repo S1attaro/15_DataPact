@@ -138,7 +138,7 @@ python manage.py runserver
 | Check | Result |
 | --- | --- |
 | Automated tests (`python manage.py test`) | All pass. The AI tests use a fake local model and fake Groq responses. |
-| **Real local model through Django** (19 Oct 2026, RTX 3050 Ti Laptop GPU, 4 GB) | Signed in over HTTP, looked up "Enrollment", and clicked Explain with AI on 3 violations. All 3 replies were valid and matched the cause a person had recorded. The first click took 46.0 s (loading the model); the next took 2.7 s and 2.1 s. GPU memory in use: 3.56 GB. |
+| **Real local model through Django** (19 Oct 2026, RTX 3050 Ti Laptop GPU, 4 GB) | Signed in over HTTP, looked up "Enrollment", and clicked Explain with AI on 3 violations. All 3 replies were valid and matched the cause a person had recorded. The first click took 46.0 s (loading the model); the next took 2.7 s and 2.1 s. With the model loaded, `nvidia-smi` showed 3,559 MiB of the GPU's 4,096 MiB in use (0 MiB before the server started). That is the whole GPU's usage, not the benchmark's peak-allocation figure. |
 | Local model failure cases (same machine) | A model ID that does not exist, and `AI_LOCAL_ENABLED=false`: both gave the friendly 503, with the reason in the server log. |
 | Groq with no key (live dev server) | Friendly 503; no request was sent. |
 | **Real Groq call** | **Not done yet**: no key was available when this was written. The request format follows Groq's API reference (19 Oct 2026). Groq's output quality on our 8 test inputs has not been measured. |
