@@ -244,6 +244,16 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = False
 
+# A6: local text-intelligence model (data_quality/ai/). No secrets here: the
+# model is public and downloads by name. The model and the few-shot prompt come
+# from the benchmark notebook, llm-test/ai_prototype.ipynb. AI_LOCAL_DEVICE is "auto" (GPU if
+# there is one), "cuda" or "cpu". production.py switches the model off unless
+# AI_LOCAL_ENABLED is set, because a 1.7B model does not fit a small host.
+AI_LOCAL_ENABLED = os.getenv('AI_LOCAL_ENABLED', 'true').strip().lower() in ('1', 'true', 'yes')
+AI_LOCAL_MODEL_ID = os.getenv('AI_LOCAL_MODEL_ID', '').strip() or 'HuggingFaceTB/SmolLM2-1.7B-Instruct'
+AI_LOCAL_DEVICE = os.getenv('AI_LOCAL_DEVICE', '').strip().lower() or 'auto'
+AI_MAX_NEW_TOKENS = 160
+
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '').strip()
 GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '').strip()
 GOOGLE_OAUTH_CONFIGURED = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)

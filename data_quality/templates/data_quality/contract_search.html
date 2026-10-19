@@ -138,6 +138,7 @@
                             <th scope="col">Column / Rule</th>
                             <th scope="col" class="num">Failed rows</th>
                             <th scope="col">Resolution</th>
+                            <th scope="col">AI</th>
                         </tr>
                     </thead>
                 {% endif %}
@@ -148,10 +149,11 @@
                             <td>{{ violation.rule.column_name }} - {{ violation.rule.get_rule_type_display }}</td>
                             <td class="num">{{ violation.failed_row_count }}</td>
                             <td>{{ violation.get_resolution_display }}</td>
+                            <td><a href="{% url 'data_quality:violation-explain' violation.pk %}">Explain</a></td>
                         </tr>
                     {% empty %}
                         <tr class="is-emptyrow">
-                            <td colspan="4">
+                            <td colspan="5">
                                 {% include "data_quality/includes/_empty_state.html" with headline="No violations matched that lookup." message="Try a different dataset name or clear the resolution filter." only %}
                             </td>
                         </tr>

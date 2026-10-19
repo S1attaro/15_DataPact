@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import auth_views, views
+from . import ai_views, auth_views, views
 
 app_name = "data_quality"
 
@@ -61,6 +61,13 @@ urlpatterns = [
 
     # --- A5: alternative API-use demos (Connor) ---
     path("demos/fetch/", views.demo4_fetch_page, name="demo4-fetch-page"),
+
+    # --- A6 Part 2.2: explain a violation with the local model (Tejas) ---
+    path(
+        "violations/<int:pk>/explain/",
+        ai_views.violation_explain,
+        name="violation-explain",
+    ),
 
     # --- A4 Part 3: reports and exports (Hriday) ---
     path("reports/", views.reports_view, name="reports"),
