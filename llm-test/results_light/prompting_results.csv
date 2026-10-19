@@ -1,0 +1,209 @@
+model,model_id,category,method,case,label,prompt_tokens,new_tokens,seconds,tokens_per_s,output,valid_json,schema_ok,correct,predicted,peak_mem_gb
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T1,DATA_ISSUE,204,67,1.85,36.2,"{
+  ""explanation"": ""The incoming data contains values outside the expected range of 0 to 24."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the data for any invalid or out-of-range values and correct them if necessary.""
+}",True,True,True,DATA_ISSUE,3.52
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T2,CONTRACT_UPDATED,220,66,1.8,36.6,"{
+  ""explanation"": ""The rule is out of date as the column 'status' contains values that are not allowed by the rule."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the updated rule and ensure it matches the current data.""
+}",True,True,True,CONTRACT_UPDATED,3.52
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T3,DATA_ISSUE,218,64,1.77,36.1,"{
+  ""explanation"": ""The incoming data contains student IDs with extra characters or non-numeric characters."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the data for any extra characters or non-numeric characters and correct them before proceeding.""
+}",True,True,True,DATA_ISSUE,3.52
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T4,DATA_ISSUE,213,69,1.81,38.1,"{
+  ""explanation"": ""The data is likely to be incorrect due to invalid values (-9999) in the 'temperature_c' column."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the data for invalid values and correct them if necessary.""
+}",True,True,True,DATA_ISSUE,3.52
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T5,CONTRACT_UPDATED,220,123,3.25,37.8,"{
+  ""explanation"": ""The rule is out of date as the allowed values for the 'branch' column are now 'MAIN', 'GRAINGER', and 'UNDERGRAD' instead of 'MAIN', 'GRAINGER', 'UNDERGRAD', 'FUNK_ACES', 'FUNK_ACES', 'FUNK_ACES'."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the updated rule and update the column to match the new allowed values.""
+}",True,True,True,CONTRACT_UPDATED,3.52
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T6,CONTRACT_UPDATED,215,54,1.45,37.3,"{
+  ""explanation"": ""The data is legitimate and the rule is out of date."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the updated rule for the latest allowed values.""
+}",True,True,True,CONTRACT_UPDATED,3.52
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T7,CONTRACT_UPDATED,204,63,1.69,37.2,"{
+  ""explanation"": ""The incoming data contains invalid term codes ('WI', 'WI', 'WI')."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the data for any errors and correct them before proceeding.""
+}",True,True,False,DATA_ISSUE,3.52
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T8,DATA_ISSUE,219,62,1.64,37.8,"{
+  ""explanation"": ""The order_id column contains duplicate values, violating the UNIQUE rule."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the contract for any updates or changes to the data validation rules.""
+}",True,True,False,CONTRACT_UPDATED,3.52
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,one-shot,T1,DATA_ISSUE,329,59,1.67,35.3,"{""explanation"": ""Some rows have credit hours greater than 24, which is not possible."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the data entry for these rows and ensure credit hours are within the valid range.""}",True,True,True,DATA_ISSUE,3.54
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,one-shot,T2,CONTRACT_UPDATED,345,79,2.12,37.3,"{""explanation"": ""The status column contains values that are not allowed, such as 'AUDIT' instead of 'ENROLLED', 'DROPPED', or 'WITHDRAWN'."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Verify the status values in the column and correct them accordingly.""}",True,True,False,DATA_ISSUE,3.54
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,one-shot,T3,DATA_ISSUE,343,57,1.53,37.3,"{""explanation"": ""The student IDs do not follow the expected format (8 digits), which is not allowed."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the student IDs and ensure they are in the correct format.""}",True,True,True,DATA_ISSUE,3.54
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,one-shot,T4,DATA_ISSUE,338,60,1.6,37.6,"{""explanation"": ""The sensor readings have values outside the valid temperature range (-10 to 50 degrees Celsius)."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the sensor calibration and ensure it is within the valid range.""}",True,True,True,DATA_ISSUE,3.54
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,one-shot,T5,CONTRACT_UPDATED,345,70,1.88,37.3,"{""explanation"": ""The branch values are not allowed, they should be one of the allowed values: 'MAIN', 'GRAINGER', or 'UNDERGRAD'."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Verify the branch values and correct them if necessary.""}",True,True,False,DATA_ISSUE,3.54
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,one-shot,T6,CONTRACT_UPDATED,340,69,1.9,36.3,"{""explanation"": ""The deduction codes are not allowed, only 'FED', 'STATE', 'MEDICARE', and 'SOCSEC' are valid."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Verify the deduction codes against the allowed values and correct the rows.""}",True,True,False,DATA_ISSUE,3.54
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,one-shot,T7,CONTRACT_UPDATED,329,60,1.65,36.4,"{""explanation"": ""The term codes are not in the allowed format, which should be 'FA', 'SP', or 'SU'."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the course catalog for the correct term codes.""}",True,True,False,DATA_ISSUE,3.54
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,one-shot,T8,DATA_ISSUE,344,54,1.48,36.6,"{""explanation"": ""There are duplicate order_id values in the work order table."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the data entry process to ensure that order_id values are unique.""}",True,True,True,DATA_ISSUE,3.54
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,few-shot,T1,DATA_ISSUE,592,52,1.48,35.2,"{""explanation"": ""Some students have credit hours greater than 24, which is not possible."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the credit hour records and correct any errors.""}",True,True,True,DATA_ISSUE,3.59
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,few-shot,T2,CONTRACT_UPDATED,608,66,1.86,35.5,"{""explanation"": ""Many students are listed as 'AUDIT', which is not a valid status for enrollment."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Verify that 'AUDIT' is a valid status and remove it from the affected rows.""}",True,True,True,CONTRACT_UPDATED,3.59
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,few-shot,T3,DATA_ISSUE,606,49,1.39,35.3,"{""explanation"": ""Some student IDs contain letters instead of numbers."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the student ID format and update the IDs to only contain numbers.""}",True,True,True,DATA_ISSUE,3.59
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,few-shot,T4,DATA_ISSUE,601,54,1.5,35.9,"{""explanation"": ""The temperature readings are all out of range, likely due to incorrect sensor calibration."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the sensor calibration and re-export the affected readings.""}",True,True,True,DATA_ISSUE,3.59
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,few-shot,T5,CONTRACT_UPDATED,608,56,1.54,36.3,"{""explanation"": ""Many circulation records are for the same branch, indicating a potential data entry error."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Verify the branch names and add them to the allowed values.""}",True,True,True,CONTRACT_UPDATED,3.59
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,few-shot,T6,CONTRACT_UPDATED,603,57,1.58,36.1,"{""explanation"": ""Many deduction codes are incorrectly listed as HSA, which is not a valid deduction code."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Verify the deduction codes and update the list if necessary.""}",True,True,True,CONTRACT_UPDATED,3.59
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,few-shot,T7,CONTRACT_UPDATED,592,56,1.58,35.4,"{""explanation"": ""Many term codes are incorrectly labeled as WI, which is not a valid term code."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Verify the term codes and update the labels if necessary.""}",True,True,True,CONTRACT_UPDATED,3.59
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,few-shot,T8,DATA_ISSUE,607,45,1.34,33.5,"{""explanation"": ""There are duplicate order IDs in the work order data."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the order IDs and remove duplicates.""}",True,True,True,DATA_ISSUE,3.59
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,many-shot,T1,DATA_ISSUE,1759,49,1.83,26.8,"{""explanation"": ""Several students are listed with credit hours that are not valid."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the credit hours for those students and correct them.""}",True,True,True,DATA_ISSUE,3.9
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,many-shot,T2,CONTRACT_UPDATED,1775,56,2.01,27.8,"{""explanation"": ""A few students are listed as AUDIT, which is not a valid enrollment status."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the enrollment data and correct the status of those students.""}",True,True,False,DATA_ISSUE,3.9
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,many-shot,T3,DATA_ISSUE,1773,51,1.87,27.2,"{""explanation"": ""A few student IDs are not in the correct format, which could cause issues with matching."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Correct the IDs at the source.""}",True,True,True,DATA_ISSUE,3.9
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,many-shot,T4,DATA_ISSUE,1768,51,1.9,26.8,"{""explanation"": ""A few temperature readings are out of range, likely due to incorrect data entry."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the temperature readings and correct any errors.""}",True,True,True,DATA_ISSUE,3.9
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,many-shot,T5,CONTRACT_UPDATED,1775,56,2.02,27.7,"{""explanation"": ""A few branches are not recognized, which could indicate a new branch was added."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Confirm the new branch and add it to the allowed list.""}",True,True,True,CONTRACT_UPDATED,3.9
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,many-shot,T6,CONTRACT_UPDATED,1770,55,1.97,27.9,"{""explanation"": ""A large number of deductions are tagged HSA, which is not a standard deduction code."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the HSA deductions and confirm they are correct.""}",True,True,False,DATA_ISSUE,3.9
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,many-shot,T7,CONTRACT_UPDATED,1759,54,1.94,27.9,"{""explanation"": ""A few terms are labeled as WI, which is not a valid term code."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the term codes and update the export if necessary.""}",True,True,False,DATA_ISSUE,3.9
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,many-shot,T8,DATA_ISSUE,1774,55,1.96,28.1,"{""explanation"": ""A few order IDs appear more than once, so the same orders were exported twice."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Remove the duplicate rows and check why the export repeated them.""}",True,True,True,DATA_ISSUE,3.9
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T1,DATA_ISSUE,157,82,2.02,40.5,"```json
+{
+  ""explanation"": ""The rule specifies that credit_hours must be between 0 and 24, but the sample values [31, 99, -2] do not fall within this range."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the contract for any updated rules that might have changed the credit_hours range.""
+}
+```",True,True,False,CONTRACT_UPDATED,3.05
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T2,CONTRACT_UPDATED,169,56,1.34,41.8,"```json
+{
+  ""explanation"": ""The rule allows only 'ENROLLED' values for monthly enrollment export."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Update the rule to reflect the current contract terms.""
+}
+```",True,True,True,CONTRACT_UPDATED,3.05
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T3,DATA_ISSUE,162,84,2.01,41.7,"```json
+{
+  ""explanation"": ""The rule 'REGEX '^[0-9]{8}$' expects student IDs to be 8 digits long, but the sample values provided are not valid as they contain non-digit characters."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the contract for any updates that might require new student ID formats.""
+}
+```",True,True,False,CONTRACT_UPDATED,3.05
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T4,DATA_ISSUE,164,91,2.22,41.1,"```json
+{
+  ""explanation"": ""The sensor readings for Lab 3 are all negative numbers, which do not fall within the specified range of -10 to 50."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Update the rule to include a minimum of 0 and a maximum of 50, as the current range is not suitable for the sensor readings in Lab 3.""
+}
+```",True,True,False,CONTRACT_UPDATED,3.05
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T5,CONTRACT_UPDATED,168,102,2.44,41.8,"```json
+{
+  ""explanation"": ""The rule allows 'MAIN', 'GRAINGER', and 'UNDERGRAD' for branch names. However, the sample values provided ('FUNK_ACES', 'FUNK_ACES', 'FUNK_ACES') do not match any of the allowed values."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the contract for any updated rules that might have changed the allowed values for branch names.""
+}
+```",True,True,True,CONTRACT_UPDATED,3.05
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T6,CONTRACT_UPDATED,168,74,1.77,41.8,"```json
+{
+  ""explanation"": ""The rule allows deductions for FEDERAL, STATE, MEDICARE, and SOCSEC. The sample values provided do not match any of these allowed values."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the contract for any updated rules regarding deduction codes.""
+}
+```",True,True,True,CONTRACT_UPDATED,3.05
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T7,CONTRACT_UPDATED,156,66,1.58,41.7,"```json
+{
+  ""explanation"": ""The rule allows only 'FA', 'SP', and 'SU' for term codes in the Course Catalog Snapshot."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Update the rule to reflect the current term code allowed values.""
+}
+```",True,True,True,CONTRACT_UPDATED,3.05
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T8,DATA_ISSUE,161,77,1.85,41.5,"```json
+{
+  ""explanation"": ""The rule UNIQUE was applied to Facilities Work Orders, but there were duplicate order IDs in the sample data."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Review the contract update for the last few months to ensure the rule is still applicable and in line with the current data structure.""
+}
+```",True,True,False,CONTRACT_UPDATED,3.05
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,one-shot,T1,DATA_ISSUE,272,67,1.64,41.0,"{""explanation"": ""The rule specifies that credit hours must be between 0 and 24, but the sample values show negative hours, which is not possible."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Review the contract to ensure the range is correctly defined and update the rule accordingly.""}",True,True,False,CONTRACT_UPDATED,3.06
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,one-shot,T2,CONTRACT_UPDATED,284,65,1.57,41.3,"{""explanation"": ""All status entries are correct, as 'ENROLLED', 'DROPPED', and 'WITHDRAWN' are valid allowed values."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Review the contract terms to ensure they align with the allowed values.""}",True,True,True,CONTRACT_UPDATED,3.06
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,one-shot,T3,DATA_ISSUE,277,66,1.58,41.8,"{""explanation"": ""The rule requires an 8-digit student ID, but the sample values include non-numeric characters and variations that do not match the rule's pattern."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Update the rule to enforce an 8-digit numeric student ID.""}",True,True,False,CONTRACT_UPDATED,3.06
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,one-shot,T4,DATA_ISSUE,279,60,1.46,41.0,"{""explanation"": ""The sample values of -9999 are not within the acceptable range of -10 to 50, indicating a data quality issue."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Verify the sensor readings and adjust the rule if necessary.""}",True,True,True,DATA_ISSUE,3.06
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,one-shot,T5,CONTRACT_UPDATED,283,76,1.92,39.7,"{""explanation"": ""The library log contains entries for 'FUNK_ACES', which is not one of the allowed values ('MAIN', 'GRAINGER', 'UNDERGRAD') for a library branch."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Update the rule to include 'FUNK_ACES' as an allowed value.""}",True,True,True,CONTRACT_UPDATED,3.06
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,one-shot,T6,CONTRACT_UPDATED,283,59,1.42,41.4,"{""explanation"": ""The sample values provided do not match any of the allowed values in the rule, indicating a DATA_ISSUE."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Review the contract and update the allowed values to match the current deductions.""}",True,True,True,CONTRACT_UPDATED,3.06
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,one-shot,T7,CONTRACT_UPDATED,271,66,1.6,41.3,"{""explanation"": ""The term code 'WI' appears twice in the sample, which violates the allowed values list for the rule 'ALLOWED_VALUES'."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Review the contract terms and update the allowed values list to exclude 'WI'.""}",True,True,True,CONTRACT_UPDATED,3.06
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,one-shot,T8,DATA_ISSUE,276,53,1.28,41.4,"{""explanation"": ""The rule requires unique order IDs, but there are duplicate order IDs in the sample."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Review the contract and update the rule to enforce unique order IDs.""}",True,True,False,CONTRACT_UPDATED,3.06
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,few-shot,T1,DATA_ISSUE,503,54,1.42,38.1,"{""explanation"": ""Many credit hours are listed as negative or non-existent, which is not possible in a real-world credit hours context."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Update the credit hours to valid numbers.""}",True,True,False,CONTRACT_UPDATED,3.08
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,few-shot,T2,CONTRACT_UPDATED,515,47,1.16,40.4,"{""explanation"": ""All status entries are correct and match the allowed values."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Review the contract to ensure the status field matches the allowed values.""}",True,True,True,CONTRACT_UPDATED,3.08
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,few-shot,T3,DATA_ISSUE,508,56,1.39,40.4,"{""explanation"": ""The student IDs contain non-numeric characters, which violates the rule for student IDs as defined by the regex pattern."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Update the rule to allow only numeric student IDs.""}",True,True,False,CONTRACT_UPDATED,3.08
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,few-shot,T4,DATA_ISSUE,510,63,1.52,41.5,"{""explanation"": ""Temperature readings are all negative and below the minimum threshold, indicating a potential issue with the sensor or data entry."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Review the contract and update the temperature range to ensure it includes at least the minimum value.""}",True,True,False,CONTRACT_UPDATED,3.08
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,few-shot,T5,CONTRACT_UPDATED,514,64,1.57,40.7,"{""explanation"": ""Many branches are listed with incorrect values, specifically 'FUNK_ACES' instead of 'GRAINGER', 'UNDERGRAD', or 'MAIN'."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Update the branch data to match the allowed values.""}",True,True,True,CONTRACT_UPDATED,3.08
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,few-shot,T6,CONTRACT_UPDATED,514,47,1.15,40.7,"{""explanation"": ""Many deduction codes are incorrect or misspelled, leading to failure."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Update the payroll deductions table with the correct codes.""}",True,True,True,CONTRACT_UPDATED,3.08
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,few-shot,T7,CONTRACT_UPDATED,502,59,1.44,41.0,"{""explanation"": ""The term code 'WI' appears twice, which is not allowed in the allowed values list."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Update the rule to remove duplicates and ensure only one 'WI' term is allowed.""}",True,True,True,CONTRACT_UPDATED,3.08
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,few-shot,T8,DATA_ISSUE,507,47,1.21,38.7,"{""explanation"": ""Duplicate order IDs are present in the data, which violates the UNIQUE constraint."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Update the contract to enforce unique order IDs.""}",True,True,False,CONTRACT_UPDATED,3.08
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,many-shot,T1,DATA_ISSUE,1547,52,1.51,34.3,"{""explanation"": ""Some credit hours are listed as negative, which is not possible for actual courses."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Verify the credit hours are correctly recorded and adjust the negative value.""}",True,True,True,DATA_ISSUE,3.28
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,many-shot,T2,CONTRACT_UPDATED,1559,56,1.59,35.3,"{""explanation"": ""All status entries are 'ENROLLED', indicating successful enrollments."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Verify the status of all entries and ensure they are correctly recorded as 'ENROLLED'.""}",True,True,False,DATA_ISSUE,3.28
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,many-shot,T3,DATA_ISSUE,1552,57,1.62,35.3,"{""explanation"": ""Student IDs are not properly formatted as 8-digit numbers, which is required by the rule."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Ensure student IDs are correctly formatted as 8-digit numbers in the export.""}",True,True,True,DATA_ISSUE,3.28
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,many-shot,T4,DATA_ISSUE,1554,55,1.68,32.7,"{""explanation"": ""The readings are consistently negative and far below the acceptable range, indicating a potential issue with the sensor."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the sensor for issues and ensure it's functioning correctly.""}",True,True,True,DATA_ISSUE,3.28
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,many-shot,T5,CONTRACT_UPDATED,1558,46,1.41,32.6,"{""explanation"": ""Branch names are incorrectly listed as text instead of the allowed values."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Correct the branch names to match the allowed values.""}",True,True,False,DATA_ISSUE,3.28
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,many-shot,T6,CONTRACT_UPDATED,1558,47,1.42,33.1,"{""explanation"": ""Some deduction codes are incorrectly spelled or formatted as text instead of numbers."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Correct the deduction codes to ensure they are valid.""}",True,True,False,DATA_ISSUE,3.28
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,many-shot,T7,CONTRACT_UPDATED,1546,60,1.71,35.1,"{""explanation"": ""Terms like WI appear as text instead of the allowed values 'FA', 'SP', or 'SU', indicating a data entry error."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Correct the term codes to match the allowed values.""}",True,True,False,DATA_ISSUE,3.28
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,many-shot,T8,DATA_ISSUE,1551,47,1.4,33.5,"{""explanation"": ""Duplicate order IDs are present, indicating the same order was listed multiple times."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Identify and correct the duplicate order entries.""}",True,True,True,DATA_ISSUE,3.28
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T1,DATA_ISSUE,171,132,3.81,34.6,"{
+  ""explanation"": ""The monthly enrollment export column 'credit_hours' has failed data quality checks due to a range error in the rule 'RANGE'. The rule specifies that the minimum value should be 0 and the maximum value should be 24, but the sample values provided ('31', '99', '-2') fall outside this range."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the rule definition and ensure that it includes a valid range for the credit_hours column. If the range is not specified, update the rule to include the correct minimum and maximum values.""
+}",True,True,True,DATA_ISSUE,3.76
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T2,CONTRACT_UPDATED,179,111,3.2,34.7,"{
+  ""explanation"": ""The monthly enrollment export has failed due to four rows where the status column contains 'AUDIT'. The allowed values for this column are 'ENROLLED', 'DROPPED', 'WITHDRAWN', but in this case, the values 'AUDIT' were found."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the data quality checks for the monthly enrollment export and ensure that the allowed values for the status column are correctly defined and up-to-date.""
+}",True,True,False,DATA_ISSUE,3.76
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T3,DATA_ISSUE,185,125,3.57,35.0,"{
+  ""explanation"": ""One of the monthly enrollment export rows failed due to a DATA_ISSUE error. The regular expression pattern /^[0-9]{8}$/ did not match any valid student IDs in the sample values ['1234567', '12345678A', 'ABC00012']."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the regular expression pattern '/^[0-9]{8}$/' against all rows in the dataset to ensure it matches the expected format for student IDs.""
+}",True,True,True,DATA_ISSUE,3.76
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T4,DATA_ISSUE,182,134,3.81,35.2,"{
+  ""explanation"": ""The sensor readings in Lab 3 have failed due to a DATA_ISSUE issue. The rule specified a range of -10 to 50 degrees Celsius, but the sample values provided (-9999, -9999, -9999) do not fall within this range."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the data quality check results for each row in the dataset and ensure that the temperature_c column falls within the specified range. If any rows fail the check, update the contract to reflect the new minimum and maximum temperatures.""
+}",True,True,True,DATA_ISSUE,3.76
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T5,CONTRACT_UPDATED,180,133,3.79,35.1,"{
+  ""explanation"": ""The library circulation log has failed data quality checks due to three instances where the value 'FUNK_ACES' appears in the branch column, which is allowed only in the values 'MAIN', 'GRAINGER', or 'UNDERGRAD'. This indicates that the incoming data may be incorrect."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the incoming data for any discrepancies or errors in the branch column and ensure that it only contains valid values ('MAIN', 'GRAINGER', or 'UNDERGRAD'). If necessary, update the contract rules to include this new allowed value.""
+}",True,True,False,DATA_ISSUE,3.76
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T6,CONTRACT_UPDATED,180,152,4.3,35.3,"{
+  ""explanation"": ""The payroll deductions export dataset has failed data quality checks due to 512 rows having an invalid deduction code in the column 'deduction_code'. The allowed values for this column are ['FED', 'STATE', 'MEDICARE', 'SOCSEC'], but the sample values provided ('HSA', 'HSA', 'HSA') do not fall within this list."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the input data for any missing or incorrect values in the 'deduction_code' column, ensure that it contains only valid deduction codes from the allowed values list, and re-run the data quality check to validate the integrity of the dataset.""
+}",True,True,False,DATA_ISSUE,3.76
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T7,CONTRACT_UPDATED,167,113,3.19,35.4,"{
+  ""explanation"": ""The course catalog snapshot has failed data quality checks due to a DATA_ISSUE in the column 'term_code'. The allowed values for this column are ['FA', 'SP', 'SU'], but the sample values provided ('WI', 'WI', 'WI') do not match any of these allowed values."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the allowed values for the 'term_code' column in the course catalog snapshot and ensure that they match the expected values.""
+}",True,True,False,DATA_ISSUE,3.76
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T8,DATA_ISSUE,184,76,2.21,34.4,"{
+  ""explanation"": ""One of the sample values 'WO-10233' is not unique in the Facilities Work Orders table, violating the UNIQUE constraint."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check if there are any duplicate orders in the table and update the rule to allow duplicates if necessary.""
+}",True,True,True,DATA_ISSUE,3.76
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,one-shot,T1,DATA_ISSUE,289,78,2.3,33.9,"{""explanation"": ""Some enrollment rows have a credit_hours value that falls outside the valid range of 0 to 24, which cannot happen for a real enrollment."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Update the contract rules to include a minimum credit_hours value of 0 and a maximum credit_hours value of 24.""}",True,True,False,CONTRACT_UPDATED,3.78
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,one-shot,T2,CONTRACT_UPDATED,297,67,1.91,35.1,"{""explanation"": ""There were four rows where the enrollment status was not allowed according to the rule 'ALLOWED_VALUES', which means that the enrollment could not be processed."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Review the contract rules and ensure that they match the expected enrollment statuses.""}",True,True,True,CONTRACT_UPDATED,3.78
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,one-shot,T3,DATA_ISSUE,303,61,1.74,35.1,"{""explanation"": ""Some enrollment rows contain invalid characters such as spaces or special symbols, which are not allowed in a regular expression pattern."", ""likely_cause"": ""REGEX_ERROR"", ""suggested_action"": ""Check the regular expression pattern against a valid one and update it if necessary.""}",True,False,False,REGEX_ERROR,3.78
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,one-shot,T4,DATA_ISSUE,300,71,2.07,34.4,"{""explanation"": ""Some sensor readings have a temperature value that falls outside the valid range (-10 to 50°C), which cannot happen for a real measurement."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Check the sensor readings against the lab's established temperature range and update the rule if necessary.""}",True,True,False,CONTRACT_UPDATED,3.78
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,one-shot,T5,CONTRACT_UPDATED,298,73,2.08,35.2,"{""explanation"": ""There are three rows that contain duplicate branches ('FUNK_ACES', 'FUNK_ACES', and 'FUNK_ACES'), which violates the allowed values list for the branch column."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Update the allowed values list in the contract to remove duplicates.""}",True,True,True,CONTRACT_UPDATED,3.78
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,one-shot,T6,CONTRACT_UPDATED,298,57,1.63,35.1,"{""explanation"": ""Some payroll deductions codes do not match the allowed values specified in the rule ('ALLOWED_VALUES')."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Review the rule definition and ensure that it includes all valid deduction codes.""}",True,True,True,CONTRACT_UPDATED,3.78
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,one-shot,T7,CONTRACT_UPDATED,285,59,1.68,35.0,"{""explanation"": ""Some course codes contain invalid values ('WI', 'WI', 'WI'), which violates the allowed values list."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Update the allowed values list in the contract to include valid course codes.""}",True,True,True,CONTRACT_UPDATED,3.78
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,one-shot,T8,DATA_ISSUE,302,84,2.39,35.1,"{""explanation"": ""There are duplicate order IDs in the facilities work orders dataset, which violates the uniqueness constraint defined by the rule 'UNIQUE'. The suggested action would be to remove any duplicates from the dataset before running the data quality check."", ""likely_cause"": ""UNIQUE"", ""suggested_action"": ""Remove duplicate order IDs from the facilities work orders dataset using a data cleaning tool or script.""}",True,False,False,UNIQUE,3.78
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,few-shot,T1,DATA_ISSUE,522,51,1.55,33.0,"{""explanation"": ""Some credit hours are negative, which is not possible for a valid enrollment."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the enrollment records and ensure that all credit hours are positive.""}",True,True,True,DATA_ISSUE,3.83
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,few-shot,T2,CONTRACT_UPDATED,530,54,1.61,33.6,"{""explanation"": ""Some enrollment statuses are misspelled or contain invalid characters, making them incorrect according to the rule."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Review the enrollment records and update the status column accordingly.""}",True,True,True,CONTRACT_UPDATED,3.83
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,few-shot,T3,DATA_ISSUE,536,50,1.48,33.7,"{""explanation"": ""Some student IDs contain non-digit characters, which violates the regex pattern."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Remove any non-digit characters from the student IDs before exporting them.""}",True,True,True,DATA_ISSUE,3.83
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,few-shot,T4,DATA_ISSUE,533,50,1.48,33.9,"{""explanation"": ""Some temperature readings are negative infinity, which is not possible for a physical sensor."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Check the sensor logger and re-export the affected readings.""}",True,True,True,DATA_ISSUE,3.83
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,few-shot,T5,CONTRACT_UPDATED,531,59,1.76,33.5,"{""explanation"": ""Several branches have 'FUNK_ACES' as their name, which may be a typo or misspelling."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Update the library's naming conventions to ensure consistency across all branches.""}",True,True,True,CONTRACT_UPDATED,3.83
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,few-shot,T6,CONTRACT_UPDATED,531,56,1.65,33.9,"{""explanation"": ""Some deductions codes are misspelled or not recognized as valid codes."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Review the payroll deductions code list and ensure all codes are spelled correctly and recognized by the rule.""}",True,True,False,DATA_ISSUE,3.83
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,few-shot,T7,CONTRACT_UPDATED,518,55,1.6,34.3,"{""explanation"": ""Some course codes are misspelled or not recognized as valid terms."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Update the course catalog to ensure all course codes are spelled correctly and recognized by the rule.""}",True,True,True,CONTRACT_UPDATED,3.83
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,few-shot,T8,DATA_ISSUE,535,53,1.59,33.4,"{""explanation"": ""There are duplicate order IDs in the facilities work orders dataset, causing uniqueness issues."", ""likely_cause"": ""UNIQUE"", ""suggested_action"": ""Remove any duplicate order IDs from the dataset before running the data quality check.""}",True,False,False,UNIQUE,3.83
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,many-shot,T1,DATA_ISSUE,1584,52,1.81,28.7,"{""explanation"": ""Some credit hours are negative, which is not possible for a full-time student."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Adjust the minimum credit hours to 0 or remove negative values.""}",True,True,True,DATA_ISSUE,4.08
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,many-shot,T2,CONTRACT_UPDATED,1592,51,1.73,29.4,"{""explanation"": ""Some enrollments are labeled AUDIT, which could be due to a recent audit process."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Confirm audit status and adjust the enrollment labels accordingly.""}",True,True,True,CONTRACT_UPDATED,4.08
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,many-shot,T3,DATA_ISSUE,1598,44,1.55,28.5,"{""explanation"": ""Some student IDs contain non-digit characters, which may be invalid."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Replace any invalid characters with valid digits.""}",True,True,True,DATA_ISSUE,4.08
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,many-shot,T4,DATA_ISSUE,1595,56,1.89,29.6,"{""explanation"": ""A few temperatures are outside the valid range (-10°C to 50°C), indicating a malfunctioning sensor."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Contact the sensor manufacturer and investigate the issue.""}",True,True,True,DATA_ISSUE,4.08
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,many-shot,T5,CONTRACT_UPDATED,1593,55,1.89,29.1,"{""explanation"": ""Several branches have been renamed, making it difficult to match the original branch name."", ""likely_cause"": ""CONTRACT_UPDATED"", ""suggested_action"": ""Update the branch names in the library log and verify they match the new ones.""}",True,True,True,CONTRACT_UPDATED,4.08
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,many-shot,T6,CONTRACT_UPDATED,1593,49,1.8,27.2,"{""explanation"": ""Some deductions codes are misspelled or contain invalid characters, making them incorrect."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Correct the misspelled or invalid deductions codes.""}",True,True,False,DATA_ISSUE,4.08
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,many-shot,T7,CONTRACT_UPDATED,1580,49,1.75,28.0,"{""explanation"": ""A few course codes are misspelled or inconsistent with the catalog's terms."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Correct the spelling or inconsistencies in the course codes.""}",True,True,False,DATA_ISSUE,4.08
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,many-shot,T8,DATA_ISSUE,1597,49,1.7,28.8,"{""explanation"": ""Several order IDs are duplicates, so the same order was exported twice."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Remove the duplicate rows and check why the export repeated them.""}",True,True,True,DATA_ISSUE,4.08

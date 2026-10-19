@@ -1,0 +1,824 @@
+model,model_id,category,method,case,label,prompt_tokens,new_tokens,seconds,tokens_per_s,output,valid_json,schema_ok,correct,predicted,peak_mem_gb,params_b
+SmolLM2-135M-Instruct,HuggingFaceTB/SmolLM2-135M-Instruct,Ultra-light,zero-shot,T1,DATA_ISSUE,204,160,14.93,10.7,"{""explanation"": ""The data is invalid due to a data entry error. The rule is out of date. The data is invalid due to a data entry error. The data is invalid due to a data entry error. The data is invalid due to a data entry error. The data is invalid due to a data entry error. The data is invalid due to a data entry error. The data is invalid due to a data entry error. The data is invalid due to a data entry error. The data is invalid due to a data entry error. The data is invalid due to a data entry error. The data is invalid due to a data entry error. The data is invalid due to a data entry error. The data is invalid due to a data entry error. The data is invalid due",False,False,False,,0.29,0.13
+SmolLM2-135M-Instruct,HuggingFaceTB/SmolLM2-135M-Instruct,Ultra-light,zero-shot,T2,CONTRACT_UPDATED,220,160,13.17,12.1,"{""explanation"": ""The data is invalid due to a data inconsistency. The rule is out of date. The data is not eligible for enrollment. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid. The data is invalid",False,False,False,,0.29,0.13
+SmolLM2-135M-Instruct,HuggingFaceTB/SmolLM2-135M-Instruct,Ultra-light,zero-shot,T3,DATA_ISSUE,218,160,11.13,14.4,"{""explanation"": ""The data is invalid due to a data inconsistency. The rule is out of date. The student ID is incorrect. The data is not valid. The student ID is incorrect. The data is invalid. The student ID is incorrect. The data is invalid. The student ID is incorrect. The data is invalid. The student ID is incorrect. The data is invalid. The student ID is incorrect. The data is invalid. The student ID is incorrect. The data is invalid. The student ID is incorrect. The data is invalid. The student ID is incorrect. The data is invalid. The student ID is incorrect. The data is invalid. The student ID is incorrect. The data is invalid. The student ID is incorrect. The data is invalid. The student ID is",False,False,False,,0.29,0.13
+SmolLM2-135M-Instruct,HuggingFaceTB/SmolLM2-135M-Instruct,Ultra-light,zero-shot,T4,DATA_ISSUE,213,133,5.3,25.1,"Here is the JSON object with the provided data:
+
+```json
+{
+  ""explanation"": ""Data is out of date. The temperature readings are out of range. The rule is out of date. The data is invalid.""
+}
+```
+
+This is the exact JSON object with the provided data:
+
+```json
+{
+  ""explanation"": ""Data is out of date. The temperature readings are out of range. The rule is out of date. The data is invalid.""
+}
+```
+
+Please provide the actual data for the dataset, and I'll be happy to help you with the data quality check.",False,False,False,,0.29,0.13
+SmolLM2-135M-Instruct,HuggingFaceTB/SmolLM2-135M-Instruct,Ultra-light,zero-shot,T5,CONTRACT_UPDATED,220,149,5.91,25.2,"Here is the JSON object with the provided data:
+
+```json
+{
+  ""explanation"": ""The data is not correct. Please check the data for errors and ensure it is up-to-date.""
+}
+```
+
+This is the JSON object with the provided data:
+
+```json
+{
+  ""explanation"": ""The data is not correct. Please check the data for errors and ensure it is up-to-date.""
+}
+```
+
+This is the JSON object with the provided data:
+
+```json
+{
+  ""explanation"": ""The data is not correct. Please check the data for errors and ensure it is up-to-date.""
+}
+```",False,False,False,,0.29,0.13
+SmolLM2-135M-Instruct,HuggingFaceTB/SmolLM2-135M-Instruct,Ultra-light,zero-shot,T6,CONTRACT_UPDATED,215,80,3.26,24.6,"DataPact:
+
+Dataset: Payroll Deductions Export
+Column: deduction_code
+Rule: ALLOWED_VALUES [""FED"", ""STATE"", ""MEDICARE"", ""SOCSEC""]
+Rows failed: 512 of 3,402 rows
+Sample values: [""HSA"", ""HSA"", ""HSA""]",False,False,False,,0.29,0.13
+SmolLM2-135M-Instruct,HuggingFaceTB/SmolLM2-135M-Instruct,Ultra-light,zero-shot,T7,CONTRACT_UPDATED,204,92,3.67,25.1,"{""explanation"": ""A failure means either the incoming data is wrong (DATA_ISSUE) or the data is legitimate and the rule is out of date (CONTRACT_UPDATED)."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""ALLOWED_VALUES [""FA"", ""SP"", ""SU""]"", ""suggested_action"": ""CONTRACT_UPDATED""}",False,False,False,,0.29,0.13
+SmolLM2-135M-Instruct,HuggingFaceTB/SmolLM2-135M-Instruct,Ultra-light,zero-shot,T8,DATA_ISSUE,219,78,3.09,25.2,"Dataset: Facilities Work Orders
+Column: order_id
+Rule: UNIQUE
+Rows failed: 14 of 2,210 rows
+Sample values: [""WO-10233"", ""WO-10233"", ""WO-10871"", ""WO-10871""]",False,False,False,,0.29,0.13
+SmolLM-360M-Instruct,HuggingFaceTB/SmolLM-360M-Instruct,Ultra-light,zero-shot,T1,DATA_ISSUE,183,160,6.84,23.4,"Here's how you can implement this:
+
+```python
+def data_quality_check(data):
+    data_dict = data.to_dict()
+    data_dict[""explanation""] = ""Data is incorrect""
+    data_dict[""likely_cause""] = ""DATA_ISSUE""
+    data_dict[""suggested_action""] = ""Update data range""
+    return data_dict
+
+def validate_data_quality(data):
+    data_dict = data.to_dict()
+    data_dict[""explanation""] = ""Data is legitimate""
+    data_dict[""likely_cause""] = ""CONTRACT_UPDATED""
+    data_dict[""suggested_action""] = ""Update data range""
+    return data_dict",False,False,False,,0.75,0.36
+SmolLM-360M-Instruct,HuggingFaceTB/SmolLM-360M-Instruct,Ultra-light,zero-shot,T2,CONTRACT_UPDATED,199,150,6.34,23.6,"Here's how you can implement this:
+
+```python
+import json
+
+def validate_data_quality(data_dict):
+    data_dict[""explanation""] = ""Data quality check failed. Either the incoming data is wrong (DATA_ISSUE) or the data is legitimate and the rule is out of date (CONTRACT_UPDATED).""
+    data_dict[""likely_cause""] = ""DATA_ISSUE"" or ""CONTRACT_UPDATED""
+    data_dict[""suggested_action""] = ""ALLOWED_VALUES ["" + ""ENROLLED"", ""DROPPED"", ""WITHDRAWN""]""
+
+    return data_dict
+```",False,False,False,,0.75,0.36
+SmolLM-360M-Instruct,HuggingFaceTB/SmolLM-360M-Instruct,Ultra-light,zero-shot,T3,DATA_ISSUE,197,160,6.71,23.8,"Here's how you can implement this:
+
+```python
+import json
+
+def validate_data_quality(data):
+    data_dict = json.loads(data)
+    data_dict[""student_id""] = data_dict[""student_id""].replace(""^[0-9]{8}$"", """").replace(""^[0-9]{8}$"", """").replace(""^[0-9]{8}$"", """").replace(""^[0-9]{8}$"", """").replace(""^[0-9]{8}$"", """").replace(""^[0-9]{8}$"", """").replace(""^[0-9]{8}$"", """").replace(""^[0-9]{8}$"", """").replace",False,False,False,,0.75,0.36
+SmolLM-360M-Instruct,HuggingFaceTB/SmolLM-360M-Instruct,Ultra-light,zero-shot,T4,DATA_ISSUE,192,143,6.06,23.6,"Here's how you can implement this:
+
+```python
+def data_quality_check(data):
+    failed_rows = []
+    for row in data:
+        if row[""temperature_c""] < -10 or row[""temperature_c""] > 50:
+            failed_rows.append(row)
+    return failed_rows
+
+def data_quality_check_json(data):
+    failed_rows = data_quality_check(data)
+    return {
+        ""explanation"": ""Data is invalid"",
+        ""likely_cause"": ""DATA_ISSUE"",
+        ""suggested_action"": ""RANGE_VALIDATION""
+    }
+```",True,True,True,DATA_ISSUE,0.75,0.36
+SmolLM-360M-Instruct,HuggingFaceTB/SmolLM-360M-Instruct,Ultra-light,zero-shot,T5,CONTRACT_UPDATED,199,143,6.07,23.6,"Here's how you can implement this:
+
+```python
+def data_quality_check(data):
+    failed_rows = []
+    for row in data:
+        if row[""branch""] not in [""MAIN"", ""GRAINGER"", ""UNDERGRAD""]:
+            failed_rows.append(row)
+    return failed_rows
+
+def data_quality_check_json(data):
+    failed_rows = data_quality_check(data)
+    return {
+        ""explanation"": ""Data is incorrect"",
+        ""likely_cause"": ""DATA_ISSUE"",
+        ""suggested_action"": ""ALLOWED_VALUES"",
+    }
+```",False,False,False,,0.75,0.36
+SmolLM-360M-Instruct,HuggingFaceTB/SmolLM-360M-Instruct,Ultra-light,zero-shot,T6,CONTRACT_UPDATED,194,160,6.78,23.6,"Here's how you can implement this:
+
+```python
+def data_quality_check(data):
+    data_dict = data.to_dict()
+    data_dict[""explanation""] = ""Data is incorrect""
+    data_dict[""likely_cause""] = ""DATA_ISSUE""
+    data_dict[""suggested_action""] = ""ALLOWED_VALUES""
+    data_dict[""rows""] = [
+        {
+            ""column"": ""deduction_code"",
+            ""rule"": ""ALLOWED_VALUES"",
+            ""rows"": [
+                {
+                    ""column"": ""deduction_code"",
+                    ""rule"": ""ALLOWED_VALUES"",
+                    ""rows"": [
+                        {
+                            ""column"": ""deduction_",False,False,False,,0.75,0.36
+SmolLM-360M-Instruct,HuggingFaceTB/SmolLM-360M-Instruct,Ultra-light,zero-shot,T7,CONTRACT_UPDATED,183,150,6.46,23.2,"Here's how you can implement this:
+
+```python
+def data_quality_check(data):
+    data_dict = data.to_dict()
+    data_dict[""explanation""] = ""Data quality check failed. Either the incoming data is wrong (DATA_ISSUE) or the data is legitimate and the rule is out of date (CONTRACT_UPDATED).""
+    data_dict[""likely_cause""] = ""DATA_ISSUE"" or ""CONTRACT_UPDATED""
+    data_dict[""suggested_action""] = ""ALLOWED_VALUES ["" + "" "".join(data_dict[""data_values""]) + ""]""
+
+    return data_dict
+```",False,False,False,,0.75,0.36
+SmolLM-360M-Instruct,HuggingFaceTB/SmolLM-360M-Instruct,Ultra-light,zero-shot,T8,DATA_ISSUE,198,160,6.8,23.5,"Here's how you can implement this:
+
+```python
+def data_quality_check(data):
+    failed_rows = []
+    for row in data:
+        if row[""order_id""] not in failed_rows:
+            failed_rows.append(row[""order_id""])
+        if row[""data""] != row[""data_is_issue""]:
+            failed_rows.append(row[""data""])
+    return failed_rows
+
+def data_quality_check_json(data):
+    failed_rows = []
+    for row in data:
+        if row[""order_id""] not in failed_rows:
+            failed_rows.append(row[""order_id""])
+        if row[""data""] != row[""data_is_issue""]:",False,False,False,,0.75,0.36
+SmolLM2-360M-Instruct,HuggingFaceTB/SmolLM2-360M-Instruct,Ultra-light,zero-shot,T1,DATA_ISSUE,204,22,1.76,12.5,"""explanation"": ""The credit hours for the student are out of range. The rule is outdated.""",False,False,False,,0.76,0.36
+SmolLM2-360M-Instruct,HuggingFaceTB/SmolLM2-360M-Instruct,Ultra-light,zero-shot,T2,CONTRACT_UPDATED,220,20,0.89,22.5,"""explanation"": ""The data is not allowed to be enrolled. The rule is outdated.""",False,False,False,,0.76,0.36
+SmolLM2-360M-Instruct,HuggingFaceTB/SmolLM2-360M-Instruct,Ultra-light,zero-shot,T3,DATA_ISSUE,218,37,1.56,23.6,"""explanation"": ""The data is not valid. The student ID is not in the correct format. The rule is out of date. Please update the data to ensure accuracy.""",False,False,False,,0.76,0.36
+SmolLM2-360M-Instruct,HuggingFaceTB/SmolLM2-360M-Instruct,Ultra-light,zero-shot,T4,DATA_ISSUE,213,30,1.29,23.3,"""explanation"": ""The sensor readings for temperature are out of range. The rule is outdated. Please update the rule to ensure accurate data.""",False,False,False,,0.76,0.36
+SmolLM2-360M-Instruct,HuggingFaceTB/SmolLM2-360M-Instruct,Ultra-light,zero-shot,T5,CONTRACT_UPDATED,220,31,1.33,23.3,"""explanation"": ""The data is not valid. The branch value is not allowed. Please update the branch value to one of the allowed values.""",False,False,False,,0.76,0.36
+SmolLM2-360M-Instruct,HuggingFaceTB/SmolLM2-360M-Instruct,Ultra-light,zero-shot,T6,CONTRACT_UPDATED,215,24,1.03,23.2,"""explanation"": ""The deduction code is not allowed. Please update the value to one of the allowed values.""",False,False,False,,0.76,0.36
+SmolLM2-360M-Instruct,HuggingFaceTB/SmolLM2-360M-Instruct,Ultra-light,zero-shot,T7,CONTRACT_UPDATED,204,30,1.26,23.8,"""explanation"": ""Course Catalog Snapshot: term_code is not allowed. Please update the term code to one of the allowed values.""",False,False,False,,0.76,0.36
+SmolLM2-360M-Instruct,HuggingFaceTB/SmolLM2-360M-Instruct,Ultra-light,zero-shot,T8,DATA_ISSUE,219,49,2.09,23.5,"""explanation"": ""Order #10233 is a duplicate, as it has the same order_id as order #10871. The rule is out of date, as the order_id has changed.""",False,False,False,,0.76,0.36
+Qwen2-0.5B-Instruct,Qwen/Qwen2-0.5B-Instruct,Light,zero-shot,T1,DATA_ISSUE,171,67,2.29,29.3,"{
+  ""explanation"": ""The incoming data contains an issue where the range of credit hours is not correctly set to 0 to 24."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Adjust the range of credit hours to be between 0 and 24.""
+}",True,True,True,DATA_ISSUE,1.01,0.49
+Qwen2-0.5B-Instruct,Qwen/Qwen2-0.5B-Instruct,Light,zero-shot,T2,CONTRACT_UPDATED,179,100,3.36,29.7,"{
+  ""explanation"": ""The dataset contains invalid data, specifically 'status' column which has multiple possible values ('ENROLLED', 'DROPPED', 'WITHDRAWN'). This violates the rule that only 'ENROLLED', 'DROPPED', and 'WITHDRAWN' should be allowed."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the data quality check rules to ensure they are up-to-date.""
+}",True,True,False,DATA_ISSUE,1.01,0.49
+Qwen2-0.5B-Instruct,Qwen/Qwen2-0.5B-Instruct,Light,zero-shot,T3,DATA_ISSUE,185,56,1.88,29.7,"{
+  ""explanation"": ""The incoming data contains invalid characters in the student ID field."",
+  ""likely_cause"": ""Invalid character(s) in student ID field"",
+  ""suggested_action"": ""Replace all invalid characters with spaces to ensure correct data entry.""
+}",True,False,False,INVALID CHARACTER(S) IN STUDENT ID FIELD,1.01,0.49
+Qwen2-0.5B-Instruct,Qwen/Qwen2-0.5B-Instruct,Light,zero-shot,T4,DATA_ISSUE,182,79,2.7,29.2,"{
+  ""explanation"": ""The incoming data contains invalid values in the 'temperature_c' column. The range of valid temperatures is set to (-10, 50), but the dataset contains negative values."",
+  ""likely_cause"": ""INVALID_VALUE_IN_RANGE"",
+  ""suggested_action"": ""Adjust the range of valid temperatures in the 'temperature_c' column.""
+}",True,False,False,INVALID_VALUE_IN_RANGE,1.01,0.49
+Qwen2-0.5B-Instruct,Qwen/Qwen2-0.5B-Instruct,Light,zero-shot,T5,CONTRACT_UPDATED,180,98,3.34,29.3,"{
+  ""explanation"": ""The dataset contains incorrect values for the 'branch' column, which should be allowed only in the 'MAIN', 'GRAINGER', and 'UNDERGRAD' categories."",
+  ""likely_cause"": ""Incorrect values in the 'branch' column"",
+  ""suggested_action"": ""Correct the values in the 'branch' column to ensure it is allowed only in the 'MAIN', 'GRAINGER', and 'UNDERGRAD' categories.""
+}",True,False,False,INCORRECT VALUES IN THE 'BRANCH' COLUMN,1.01,0.49
+Qwen2-0.5B-Instruct,Qwen/Qwen2-0.5B-Instruct,Light,zero-shot,T6,CONTRACT_UPDATED,180,106,3.55,29.9,"{
+  ""explanation"": ""The dataset contains invalid data in the 'deduction_code' column. The allowed values for this column are ['FED', 'STATE', 'MEDICARE', 'SOCSEC']. There were 512 rows that failed to meet the rule."",
+  ""likely_cause"": ""Invalid data in the 'deduction_code' column"",
+  ""suggested_action"": ""Review the data quality check for the 'deduction_code' column and ensure it meets the allowed values.""
+}",True,False,False,INVALID DATA IN THE 'DEDUCTION_CODE' COLUMN,1.01,0.49
+Qwen2-0.5B-Instruct,Qwen/Qwen2-0.5B-Instruct,Light,zero-shot,T7,CONTRACT_UPDATED,167,75,2.49,30.1,"{
+  ""explanation"": ""The incoming data contains an issue where some courses have been marked as 'FA' instead of 'SU'. This indicates that there may be a mistake in the course code value."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the course code values to ensure they match the expected format.""
+}",True,True,False,DATA_ISSUE,1.01,0.49
+Qwen2-0.5B-Instruct,Qwen/Qwen2-0.5B-Instruct,Light,zero-shot,T8,DATA_ISSUE,184,50,1.74,28.7,"{
+  ""explanation"": ""The incoming data is incorrect as it contains duplicate order IDs."",
+  ""likely_cause"": ""Duplicate order IDs in the data"",
+  ""suggested_action"": ""Remove duplicate order IDs from the data.""
+}",True,False,False,DUPLICATE ORDER IDS IN THE DATA,1.01,0.49
+Qwen2.5-0.5B-Instruct,Qwen/Qwen2.5-0.5B-Instruct,Light,zero-shot,T1,DATA_ISSUE,181,71,2.42,29.4,"{
+  ""explanation"": ""The dataset contains invalid data in the 'credit_hours' column, which falls outside the expected range of 0 to 24."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the data quality rules and ensure that all entries within the specified range are valid.""
+}",True,True,True,DATA_ISSUE,1.02,0.49
+Qwen2.5-0.5B-Instruct,Qwen/Qwen2.5-0.5B-Instruct,Light,zero-shot,T2,CONTRACT_UPDATED,189,96,3.25,29.6,"{
+  ""explanation"": ""The dataset contains 4,812 rows where the 'status' column has only four distinct values ('ENROLLED', 'DROPPED', 'WITHDRAWN') which do not match any allowed values in the 'ALLOWED_VALUES' list."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the rules to ensure that the 'status' column matches the allowed values.""
+}",True,True,False,DATA_ISSUE,1.02,0.49
+Qwen2.5-0.5B-Instruct,Qwen/Qwen2.5-0.5B-Instruct,Light,zero-shot,T3,DATA_ISSUE,195,56,1.88,29.8,"{
+  ""explanation"": ""The dataset contains invalid student IDs that do not match the expected format."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the data quality rules to ensure that only valid student IDs are imported.""
+}",True,True,True,DATA_ISSUE,1.02,0.49
+Qwen2.5-0.5B-Instruct,Qwen/Qwen2.5-0.5B-Instruct,Light,zero-shot,T4,DATA_ISSUE,192,66,2.25,29.3,"{
+  ""explanation"": ""The dataset contains invalid temperature readings (-9999), which violates the rule that the range should be between -10 and 50."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Remove all invalid temperature readings from the dataset.""
+}",True,True,True,DATA_ISSUE,1.02,0.49
+Qwen2.5-0.5B-Instruct,Qwen/Qwen2.5-0.5B-Instruct,Light,zero-shot,T5,CONTRACT_UPDATED,190,53,1.78,29.7,"{
+  ""explanation"": ""The dataset contains incorrect values in the 'branch' column."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the data quality rules to ensure that only valid values are accepted.""
+}",True,True,False,DATA_ISSUE,1.02,0.49
+Qwen2.5-0.5B-Instruct,Qwen/Qwen2.5-0.5B-Instruct,Light,zero-shot,T6,CONTRACT_UPDATED,190,72,2.43,29.6,"{
+  ""explanation"": ""The dataset contains incorrect values in the 'deduction_code' column."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the data to ensure that all allowed values ('FED', 'STATE', 'MEDICARE', 'SOCSEC') are present and correctly formatted.""
+}",True,True,False,DATA_ISSUE,1.02,0.49
+Qwen2.5-0.5B-Instruct,Qwen/Qwen2.5-0.5B-Instruct,Light,zero-shot,T7,CONTRACT_UPDATED,177,64,2.19,29.2,"{
+  ""explanation"": ""The dataset contains incorrect values in the 'term_code' column."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the data to ensure that all allowed values ('FA', 'SP', 'SU') are present and correctly formatted.""
+}",True,True,False,DATA_ISSUE,1.02,0.49
+Qwen2.5-0.5B-Instruct,Qwen/Qwen2.5-0.5B-Instruct,Light,zero-shot,T8,DATA_ISSUE,194,44,1.5,29.3,"{
+  ""explanation"": ""The dataset contains duplicate order IDs."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Remove duplicates from the 'order_id' column.""
+}",True,True,True,DATA_ISSUE,1.02,0.49
+h2o-danube3-500m-chat,h2oai/h2o-danube3-500m-chat,Light,zero-shot,T1,DATA_ISSUE,196,160,3.54,45.2,"To ensure the data quality in DataPact, you can use the following JSON object:
+
+```json
+{
+  ""explanation"": ""DataPact is a platform that helps organizations manage and analyze data. It provides tools for data quality, data governance, and data analytics. The platform includes features such as data validation, data cleansing, and data transformation. It also offers data quality checks to ensure data accuracy and integrity. DataPact is designed to help organizations improve data quality and make data-driven decisions. The platform is built on a foundation of best practices and industry standards. It is regularly updated with new features and improvements to ensure the highest level of data quality and security. DataPact is a comprehensive solution for managing and analyzing data, and",False,False,False,,1.06,0.51
+h2o-danube3-500m-chat,h2oai/h2o-danube3-500m-chat,Light,zero-shot,T2,CONTRACT_UPDATED,208,160,3.47,46.1,"You review failed data-quality checks for DataPact. A failure means either the incoming data is wrong (DATA_ISSUE) or the data is legitimate and the rule is out of date (CONTRACT_UPDATED).
+
+To address this issue, you can use the following JSON object to represent the failed data-quality checks:
+
+```json
+{
+  ""explanation"": ""DataPact failed to validate the incoming data. The rule is out of date. The data is legitimate and the rule is correct. The rule is not valid. The rule is not valid. The rule is not valid. The rule is not valid. The rule is not valid. The rule is not valid. The rule is not valid. The rule is not",False,False,False,,1.06,0.51
+h2o-danube3-500m-chat,h2oai/h2o-danube3-500m-chat,Light,zero-shot,T3,DATA_ISSUE,209,160,3.52,45.4,"You review failed data-quality checks for DataPact. A failure means either the incoming data is wrong (DATA_ISSUE) or the data is legitimate and the rule is out of date (CONTRACT_UPDATED).
+
+To review failed data-quality checks for DataPact, you can use the following steps:
+
+1. **Review the DataPact Rule**:
+   - Identify the rule that failed.
+   - Examine the rule to understand its logic and any potential issues.
+
+2. **Review the Data**:
+   - Examine the data to ensure it meets the requirements of the rule.
+   - Check for any missing or incorrect data.
+
+3. **Check the Rule**:
+   - Verify that the",False,False,False,,1.06,0.51
+h2o-danube3-500m-chat,h2oai/h2o-danube3-500m-chat,Light,zero-shot,T4,DATA_ISSUE,204,160,3.47,46.1,"You review failed data-quality checks for DataPact. A failure means either the incoming data is wrong (DATA_ISSUE) or the data is legitimate and the rule is out of date (CONTRACT_UPDATED).
+
+To review failed data-quality checks for DataPact, you can use the following steps:
+
+1. **Review the DataPact Rule**:
+   - Identify the rule that failed.
+   - Examine the data to determine if the rule is out of date.
+
+2. **Review the Data**:
+   - Examine the data to ensure it meets the requirements of the rule.
+   - Check for any inconsistencies or errors in the data.
+
+3. **Analyze the Data**:",False,False,False,,1.06,0.51
+h2o-danube3-500m-chat,h2oai/h2o-danube3-500m-chat,Light,zero-shot,T5,CONTRACT_UPDATED,208,160,3.53,45.3,"You review failed data-quality checks for DataPact. A failure means either the incoming data is wrong (DATA_ISSUE) or the data is legitimate and the rule is out of date (CONTRACT_UPDATED).
+
+To review failed data-quality checks for DataPact, you can use the following steps:
+
+1. **Review the DataPact Rule**:
+   - Identify the rule that failed.
+   - Examine the rule to understand its logic and any potential issues.
+
+2. **Review the Data**:
+   - Examine the data to ensure it meets the criteria of the rule.
+   - Check for any missing values, out-of-range values, or inconsistent data types.
+
+3.",False,False,False,,1.06,0.51
+h2o-danube3-500m-chat,h2oai/h2o-danube3-500m-chat,Light,zero-shot,T6,CONTRACT_UPDATED,205,160,3.56,45.0,"You review failed data-quality checks for DataPact. A failure means either the incoming data is wrong (DATA_ISSUE) or the data is legitimate and the rule is out of date (CONTRACT_UPDATED).
+
+To review failed data-quality checks for DataPact, you can use the following steps:
+
+1. **Review the DataPact Rule**:
+   - Identify the rule that failed.
+   - Examine the data to determine if the rule is out of date.
+
+2. **Check the Data**:
+   - Examine the data to ensure it meets the rules.
+   - Verify that the data is correct and consistent.
+
+3. **Review the Explanation**:
+   - If the",False,False,False,,1.06,0.51
+h2o-danube3-500m-chat,h2oai/h2o-danube3-500m-chat,Light,zero-shot,T7,CONTRACT_UPDATED,191,160,3.53,45.4,"To ensure the data quality in DataPact, you need to review the failed data-quality checks and provide the necessary explanations, likely causes, and suggested actions for each failure. Here's a step-by-step guide to help you with this task:
+
+### Step 1: Review the Failed Data-Quality Checks
+
+1. **Explanation**: The failure means either the incoming data is wrong (DATA_ISSUE) or the data is legitimate and the rule is out of date (CONTRACT_UPDATED).
+2. **Likely Causes**:
+   - **DATA_ISSUE**: This could be due to incorrect data types, missing values, or invalid data.
+   - **CONTRACT",False,False,False,,1.06,0.51
+h2o-danube3-500m-chat,h2oai/h2o-danube3-500m-chat,Light,zero-shot,T8,DATA_ISSUE,206,160,3.5,45.7,"You review failed data-quality checks for DataPact. A failure means either the incoming data is wrong (DATA_ISSUE) or the data is legitimate and the rule is out of date (CONTRACT_UPDATED).
+
+To review failed data-quality checks for DataPact, you can use the following steps:
+
+1. **Review the DataPact Rule**:
+   - Identify the rule that failed.
+   - Examine the data to determine if the rule is out of date.
+
+2. **Review the Data**:
+   - Examine the data to ensure it meets the requirements of the rule.
+   - Check for any inconsistencies or errors in the data.
+
+3. **Review the Explanation",False,False,False,,1.06,0.51
+TinyLlama-1.1B-Chat-v1.0,TinyLlama/TinyLlama-1.1B-Chat-v1.0,Small,zero-shot,T1,DATA_ISSUE,200,160,4.88,32.8,"Here is the JSON object for the review of failed data-quality checks for the Monthly Enrollment Export dataset:
+
+```
+{
+  ""explanation"": ""The credit_hours column contains values outside the expected range of 0 to 24. This may indicate data quality issues or a contract update. The likely cause is DATA_ISSUE, while the suggested action is to update the contract."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Update the contract""
+}
+```
+
+The JSON object includes the following keys:
+
+- ""explanation"": A plain-English explanation of the issue with the data.
+- ""likely_cause",True,True,True,DATA_ISSUE,2.24,1.1
+TinyLlama-1.1B-Chat-v1.0,TinyLlama/TinyLlama-1.1B-Chat-v1.0,Small,zero-shot,T2,CONTRACT_UPDATED,215,160,4.8,33.4,"Here is the JSON object that meets the requirements for the review failed data-quality checks for DataPact:
+
+```json
+{
+  ""explanation"": ""Sample values: ['AUDIT', 'AUDIT', 'AUDIT', 'AUDIT']"",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Sample action: Review the data and update the rule if necessary.""
+}
+```
+
+The JSON object contains the following keys:
+
+- `explanation`: A plain-English sentence explaining the reason for the failure.
+- `likely_cause`: The specific reason for the failure, such as ""DATA_ISSUE"" or ""CONTRA",True,True,False,DATA_ISSUE,2.24,1.1
+TinyLlama-1.1B-Chat-v1.0,TinyLlama/TinyLlama-1.1B-Chat-v1.0,Small,zero-shot,T3,DATA_ISSUE,213,160,4.71,34.0,"Here is the JSON object that meets the requirements for the review failed data-quality check for the Monthly Enrollment Export dataset:
+
+```json
+{
+  ""explanation"": ""The incoming data is not in the expected format. The regular expression used in the rule does not match the expected pattern. The likely cause is DATA_ISSUE."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the incoming data for errors and update the rule accordingly.""
+}
+```
+
+The JSON object includes the following keys:
+
+- `explanation`: A plain-English sentence explaining the issue with the incoming data.
+- `likely_cause`: The likely cause",True,True,True,DATA_ISSUE,2.24,1.1
+TinyLlama-1.1B-Chat-v1.0,TinyLlama/TinyLlama-1.1B-Chat-v1.0,Small,zero-shot,T4,DATA_ISSUE,207,160,4.64,34.5,"Here is the JSON object that meets the requirements for the review failed data-quality check for DataPact:
+
+```json
+{
+  ""explanation"": ""Sample values: [-9999, -9999, -9999]"",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Sample values should be between -10 and 50""
+}
+```
+
+Note that the JSON object includes the explanation, likely cause, and suggested action for the review failed data-quality check. The explanation should be a short, plain-English sentence that explains the issue and the suggested action. The likely cause should be a specific reason for the failure, such as",True,True,True,DATA_ISSUE,2.24,1.1
+TinyLlama-1.1B-Chat-v1.0,TinyLlama/TinyLlama-1.1B-Chat-v1.0,Small,zero-shot,T5,CONTRACT_UPDATED,215,160,4.75,33.7,"Here is the JSON object that represents a failed data-quality check for the Library Circulation Log dataset:
+
+```
+{
+  ""explanation"": ""Allowed values for the 'branch' column must be 'MAIN', 'GRAINGER', or 'UNDERGRAD'."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Allowed values for the 'branch' column must be 'MAIN', 'GRAINGER', or 'UNDERGRAD'. Please update the data to match the allowed values.""
+}
+```
+
+This JSON object contains the following keys:
+
+- `explanation`: A plain-English explanation of the data-quality check failure.",True,True,False,DATA_ISSUE,2.24,1.1
+TinyLlama-1.1B-Chat-v1.0,TinyLlama/TinyLlama-1.1B-Chat-v1.0,Small,zero-shot,T6,CONTRACT_UPDATED,213,160,4.72,33.9,"Here is the JSON object that meets the requirements for the review failed data-quality checks for DataPact:
+
+```json
+{
+  ""explanation"": ""Sample values: ['HSA', 'HSA', 'HSA']"",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Sample values should be 'FED', 'STATE', 'MEDICARE', or 'SOCSEC'.""
+}
+```
+
+The JSON object contains the following keys:
+
+- `explanation`: A plain-English sentence explaining the reason for the failure.
+- `likely_cause`: The type of data-quality check failure, either ""DATA_ISS",True,True,False,DATA_ISSUE,2.24,1.1
+TinyLlama-1.1B-Chat-v1.0,TinyLlama/TinyLlama-1.1B-Chat-v1.0,Small,zero-shot,T7,CONTRACT_UPDATED,195,160,4.78,33.5,"Here is the JSON object that meets the requirements for a failed data-quality check for the Course Catalog Snapshot dataset:
+
+```json
+{
+  ""explanation"": ""Sample values: ['WI', 'WI', 'WI']"",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Sample values should be ['FA', 'SP', 'SU']""
+}
+```
+
+The JSON object contains the following keys:
+
+- `explanation`: A plain-English sentence explaining the cause of the failure.
+- `likely_cause`: The specific rule that was violated, in this case, `ALLOWED_VALUES`.
+- `suggested_",True,True,False,DATA_ISSUE,2.24,1.1
+TinyLlama-1.1B-Chat-v1.0,TinyLlama/TinyLlama-1.1B-Chat-v1.0,Small,zero-shot,T8,DATA_ISSUE,214,122,3.63,33.6,"Here is the JSON object that meets the requirements for the review failed data-quality checks for DataPact:
+
+```json
+{
+  ""explanation"": ""The order_id column contains duplicate values, which is a DATA_ISSUE. The likely cause is that the order_id column is not unique. The suggested action is to remove duplicates from the order_id column."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Remove duplicates from the order_id column""
+}
+```",True,True,True,DATA_ISSUE,2.24,1.1
+granite-3.1-1b-a400m-instruct,ibm-granite/granite-3.1-1b-a400m-instruct,Small,zero-shot,T1,DATA_ISSUE,222,96,4.32,22.2,"{
+  ""explanation"": ""The rule RANGE for credit_hours is set to a minimum of 0 and a maximum of 24, but the sample values [31, 99, -2] fall outside this range."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Update the rule RANGE to [0, 24] to ensure all sample values fall within the valid range.""
+}",True,True,False,CONTRACT_UPDATED,2.72,1.33
+granite-3.1-1b-a400m-instruct,ibm-granite/granite-3.1-1b-a400m-instruct,Small,zero-shot,T2,CONTRACT_UPDATED,224,70,2.93,23.9,"{
+  ""explanation"": ""The 'AUDIT' status was incorrectly classified as 'ENROLLED' and 'DROPPED'."",
+  ""likely_cause"": ""The rule 'ALLOWED_VALUES' is outdated."",
+  ""suggested_action"": ""Update the rule to 'ENROLLED' and 'DROPPED'.""
+}",True,False,False,THE RULE 'ALLOWED_VALUES' IS OUTDATED.,2.72,1.33
+granite-3.1-1b-a400m-instruct,ibm-granite/granite-3.1-1b-a400m-instruct,Small,zero-shot,T3,DATA_ISSUE,235,99,4.17,23.8,"{
+  ""explanation"": ""The rule REGEX ""^[0-9]{8}$"" failed for 'student_id' values '1234567', '12345678A', and 'ABC00012'."",
+  ""likely_cause"": ""The data might be corrupted or inconsistent."",
+  ""suggested_action"": ""Re-evaluate the data and ensure it adheres to the expected format.""
+}",False,False,False,,2.72,1.33
+granite-3.1-1b-a400m-instruct,ibm-granite/granite-3.1-1b-a400m-instruct,Small,zero-shot,T4,DATA_ISSUE,231,74,3.14,23.6,"{
+  ""explanation"": ""The rule RANGE failed for 6 rows, indicating the temperature values are outside the specified range (-10 to 50)."",
+  ""likely_cause"": ""The rule RANGE is outdated or incorrectly configured."",
+  ""suggested_action"": ""Update the rule RANGE to reflect the correct temperature range.""
+}",True,False,False,THE RULE RANGE IS OUTDATED OR INCORRECTLY CONFIGURED.,2.72,1.33
+granite-3.1-1b-a400m-instruct,ibm-granite/granite-3.1-1b-a400m-instruct,Small,zero-shot,T5,CONTRACT_UPDATED,231,105,4.34,24.2,"{
+  ""explanation"": ""The rule ALLOWED_VALUES is set to [""MAIN"", ""GRAINGER"", ""UNDERGRAD""], but the sample values [""FUNK_ACES""] do not match any of these values."",
+  ""likely_cause"": ""The rule is outdated, as ALLOWED_VALUES is set to [""MAIN"", ""GRAINGER"", ""UNDERGRAD""]."",
+  ""suggested_action"": ""Update the ALLOWED_VALUES rule to match the current allowed values.""
+}",False,False,False,,2.72,1.33
+granite-3.1-1b-a400m-instruct,ibm-granite/granite-3.1-1b-a400m-instruct,Small,zero-shot,T6,CONTRACT_UPDATED,232,92,3.9,23.6,"{
+  ""explanation"": ""The 'HSA' values in the 'deduction_code' column are not recognized as 'FED', 'STATE', 'MEDICARE', or 'SOCSEC', indicating a DATA_ISSUE."",
+  ""likely_cause"": ""The rule 'ALLOWED_VALUES' is outdated, allowing invalid deduction codes."",
+  ""suggested_action"": ""Update the rule to include valid deduction codes.""
+}",True,False,False,"THE RULE 'ALLOWED_VALUES' IS OUTDATED, ALLOWING INVALID DEDUCTION CODES.",2.72,1.33
+granite-3.1-1b-a400m-instruct,ibm-granite/granite-3.1-1b-a400m-instruct,Small,zero-shot,T7,CONTRACT_UPDATED,216,112,4.73,23.7,"{
+  ""explanation"": ""The 'term_code' column contains 'WI' in 85 out of 2,100 rows, which is outside the allowed values ('FA', 'SP', 'SU')."",
+  ""likely_cause"": ""The rule 'ALLOWED_VALUES' is outdated, allowing 'WI' for 'FA', 'SP', and 'SU'."",
+  ""suggested_action"": ""Update the rule 'ALLOWED_VALUES' to 'FA', 'SP', and 'SU' only.""
+}",True,False,False,"THE RULE 'ALLOWED_VALUES' IS OUTDATED, ALLOWING 'WI' FOR 'FA', 'SP', AND 'SU'.",2.72,1.33
+granite-3.1-1b-a400m-instruct,ibm-granite/granite-3.1-1b-a400m-instruct,Small,zero-shot,T8,DATA_ISSUE,232,81,3.37,24.1,"{
+  ""explanation"": ""The rule 'UNIQUE' failed for 'order_id' in 'WO-10233' and 'WO-10871'."",
+  ""likely_cause"": ""The data in these rows is not unique, indicating potential data issues."",
+  ""suggested_action"": ""Investigate and correct data discrepancies.""
+}",True,False,False,"THE DATA IN THESE ROWS IS NOT UNIQUE, INDICATING POTENTIAL DATA ISSUES.",2.72,1.33
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T1,DATA_ISSUE,157,82,1.99,41.2,"```json
+{
+  ""explanation"": ""The rule specifies that credit_hours must be between 0 and 24, but the sample values [31, 99, -2] do not fall within this range."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the contract for any updated rules that might have changed the credit_hours range.""
+}
+```",True,True,False,CONTRACT_UPDATED,3.03,1.48
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T2,CONTRACT_UPDATED,169,56,1.38,40.7,"```json
+{
+  ""explanation"": ""The rule allows only 'ENROLLED' values for monthly enrollment export."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Update the rule to reflect the current contract terms.""
+}
+```",True,True,True,CONTRACT_UPDATED,3.03,1.48
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T3,DATA_ISSUE,162,84,2.02,41.6,"```json
+{
+  ""explanation"": ""The rule 'REGEX '^[0-9]{8}$' expects student IDs to be 8 digits long, but the sample values provided are not valid as they contain non-digit characters."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the contract for any updates that might require new student ID formats.""
+}
+```",True,True,False,CONTRACT_UPDATED,3.03,1.48
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T4,DATA_ISSUE,164,91,2.23,40.9,"```json
+{
+  ""explanation"": ""The sensor readings for Lab 3 are all negative numbers, which do not fall within the specified range of -10 to 50."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Update the rule to include a minimum of 0 and a maximum of 50, as the current range is not suitable for the sensor readings in Lab 3.""
+}
+```",True,True,False,CONTRACT_UPDATED,3.03,1.48
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T5,CONTRACT_UPDATED,168,102,2.4,42.5,"```json
+{
+  ""explanation"": ""The rule allows 'MAIN', 'GRAINGER', and 'UNDERGRAD' for branch names. However, the sample values provided ('FUNK_ACES', 'FUNK_ACES', 'FUNK_ACES') do not match any of the allowed values."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the contract for any updated rules that might have changed the allowed values for branch names.""
+}
+```",True,True,True,CONTRACT_UPDATED,3.03,1.48
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T6,CONTRACT_UPDATED,168,74,1.78,41.5,"```json
+{
+  ""explanation"": ""The rule allows deductions for FEDERAL, STATE, MEDICARE, and SOCSEC. The sample values provided do not match any of these allowed values."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the contract for any updated rules regarding deduction codes.""
+}
+```",True,True,True,CONTRACT_UPDATED,3.03,1.48
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T7,CONTRACT_UPDATED,156,66,1.58,41.8,"```json
+{
+  ""explanation"": ""The rule allows only 'FA', 'SP', and 'SU' for term codes in the Course Catalog Snapshot."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Update the rule to reflect the current term code allowed values.""
+}
+```",True,True,True,CONTRACT_UPDATED,3.03,1.48
+OLMo-2-0425-1B-Instruct,allenai/OLMo-2-0425-1B-Instruct,Small,zero-shot,T8,DATA_ISSUE,161,77,1.84,41.8,"```json
+{
+  ""explanation"": ""The rule UNIQUE was applied to Facilities Work Orders, but there were duplicate order IDs in the sample data."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Review the contract update for the last few months to ensure the rule is still applicable and in line with the current data structure.""
+}
+```",True,True,False,CONTRACT_UPDATED,3.03,1.48
+Qwen2.5-1.5B-Instruct,Qwen/Qwen2.5-1.5B-Instruct,Medium,zero-shot,T1,DATA_ISSUE,181,74,3.0,24.6,"```json
+{
+  ""explanation"": ""The sample values in the 'credit_hours' column indicate that some records have incorrect data beyond the specified range."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the dataset to ensure all credit hours fall within the valid range of 0 to 24.""
+}
+```",True,True,True,DATA_ISSUE,3.12,1.54
+Qwen2.5-1.5B-Instruct,Qwen/Qwen2.5-1.5B-Instruct,Medium,zero-shot,T2,CONTRACT_UPDATED,189,91,3.6,25.3,"```json
+{
+  ""explanation"": ""The sample values 'AUDIT' in the 'status' column do not match the allowed values ['ENROLLED', 'DROPPED', 'WITHDRAWN'], indicating an issue with the incoming data."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the dataset to ensure that all records have valid statuses according to the specified rules.""
+}
+```",True,True,False,DATA_ISSUE,3.12,1.54
+Qwen2.5-1.5B-Instruct,Qwen/Qwen2.5-1.5B-Instruct,Medium,zero-shot,T3,DATA_ISSUE,195,66,2.65,24.9,"```json
+{
+  ""explanation"": ""The sample values contain non-digit characters, indicating that the incoming data might be incorrect."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Verify the format of the 'student_id' column to ensure it only contains eight digits.""
+}
+```",True,True,True,DATA_ISSUE,3.12,1.54
+Qwen2.5-1.5B-Instruct,Qwen/Qwen2.5-1.5B-Instruct,Medium,zero-shot,T4,DATA_ISSUE,192,72,2.88,25.0,"```json
+{
+  ""explanation"": ""The sample values (-9999, -9999, -9999) indicate that some sensor readings are incorrect."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the raw sensor data to identify any anomalies or errors.""
+}
+```",True,True,True,DATA_ISSUE,3.12,1.54
+Qwen2.5-1.5B-Instruct,Qwen/Qwen2.5-1.5B-Instruct,Medium,zero-shot,T5,CONTRACT_UPDATED,190,91,3.69,24.6,"```json
+{
+  ""explanation"": ""The sample values in the 'branch' column do not match the allowed values ('MAIN', 'GRAINGER', 'UNDERGRAD'). This indicates that the incoming data might be incorrect."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Verify the data quality and ensure all entries in the 'branch' column conform to the specified list of allowed values.""
+}
+```",True,True,False,DATA_ISSUE,3.12,1.54
+Qwen2.5-1.5B-Instruct,Qwen/Qwen2.5-1.5B-Instruct,Medium,zero-shot,T6,CONTRACT_UPDATED,190,91,3.67,24.8,"```json
+{
+  ""explanation"": ""The sample values 'HSA', 'HSA', 'HSA' do not match the allowed values ['FED', 'STATE', 'MEDICARE', 'SOCSEC'], indicating that the incoming data might be incorrect."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the payroll deductions to ensure all codes conform to the specified list.""
+}
+```",True,True,False,DATA_ISSUE,3.12,1.54
+Qwen2.5-1.5B-Instruct,Qwen/Qwen2.5-1.5B-Instruct,Medium,zero-shot,T7,CONTRACT_UPDATED,177,82,3.24,25.3,"```json
+{
+  ""explanation"": ""The sample values 'WI' do not match the allowed values ['FA', 'SP', 'SU'], indicating that the incoming data might be incorrect."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the dataset to ensure all terms in the `term_code` column conform to the specified allowed values.""
+}
+```",True,True,False,DATA_ISSUE,3.12,1.54
+Qwen2.5-1.5B-Instruct,Qwen/Qwen2.5-1.5B-Instruct,Medium,zero-shot,T8,DATA_ISSUE,194,80,3.18,25.2,"```json
+{
+  ""explanation"": ""The sample values indicate that multiple orders have the same ID ('WO-10233' and 'WO-10871'), which violates the UNIQUE constraint."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Update the unique constraint to ensure each order has a distinct identifier.""
+}
+```",True,True,True,DATA_ISSUE,3.12,1.54
+stablelm-2-zephyr-1_6b,stabilityai/stablelm-2-zephyr-1_6b,Medium,zero-shot,T1,DATA_ISSUE,164,152,3.51,43.3,"{
+  ""explanation"": ""Out of the 4,812 monthly enrollment records, 47 failed the credit_hours rule due to a DATA_ISSUE. The likely cause is that the minimum value (0) in the range specified (0-24) is less than the actual credit_hours value (31) for some records, resulting in incorrect data. The suggested action is to update the rule to ensure the minimum value is at least 0 and the maximum value is at most 24."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Update the credit_hours range to include a minimum value of at least 0 and a maximum value of at most 24.""
+}",True,True,True,DATA_ISSUE,3.38,1.64
+stablelm-2-zephyr-1_6b,stabilityai/stablelm-2-zephyr-1_6b,Medium,zero-shot,T2,CONTRACT_UPDATED,172,131,2.96,44.3,"{
+  ""explanation"": ""The 'status' column in the monthly enrollment export contains values outside of the allowed range of 'ENROLLED', 'DROPPED', and 'WITHDRAWN'. Specifically, the values 'AUDIT' and 'AUDIT' are both present, which indicates that these values may not accurately represent the status of the enrolled records."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""To resolve this issue, ensure that only the allowed values ('ENROLLED', 'DROPPED', 'WITHDRAWN') are present in the 'status' column.""
+}",True,True,False,DATA_ISSUE,3.38,1.64
+stablelm-2-zephyr-1_6b,stabilityai/stablelm-2-zephyr-1_6b,Medium,zero-shot,T3,DATA_ISSUE,178,113,2.51,45.0,"{
+  ""explanation"": ""Out of the 4,812 rows in the monthly enrollment export, 12 records failed the rule 'student_id should be a 10-digit number starting with a 0 or 1', likely due to incorrect or incomplete data. The likely cause is a DATA ISSUES, and the suggested action is to update the rule to allow for valid student IDs."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Update the rule to allow for valid student IDs.""
+}",True,True,True,DATA_ISSUE,3.38,1.64
+stablelm-2-zephyr-1_6b,stabilityai/stablelm-2-zephyr-1_6b,Medium,zero-shot,T4,DATA_ISSUE,175,103,2.29,45.0,"{
+  ""explanation"": ""The 'temperature_c' values [-9999, -9999, -9999] fall outside the specified range of [-10, 50] as per the rule. This indicates a likely cause of a DATA_ISSUE."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""To resolve this issue, update the rule to reflect the correct range of -10 to 50.""
+}",True,True,True,DATA_ISSUE,3.38,1.64
+stablelm-2-zephyr-1_6b,stabilityai/stablelm-2-zephyr-1_6b,Medium,zero-shot,T5,CONTRACT_UPDATED,173,135,3.11,43.5,"{
+  ""explanation"": ""The 'branch' column in the Library Circulation Log contains values outside of the allowed values ['MAIN', 'GRAINGER', 'UNDERGRAD'] (DATA_ISSUE)."",
+  ""likely_cause"": ""The values 'FUNK_ACES', 'FUNK_ACES', and 'FUNK_ACES' are not within the allowed values for the 'branch' column in the library circulation log. This indicates a data issue."",
+  ""suggested_action"": ""Update the rule to only allow values ['MAIN', 'GRAINGER', 'UNDERGRAD'] for the 'branch' column in the library circulation log.""
+}",True,False,False,"THE VALUES 'FUNK_ACES', 'FUNK_ACES', AND 'FUNK_ACES' ARE NOT WITHIN THE ALLOWED VALUES FOR THE 'BRANCH' COLUMN IN THE LIBRARY CIRCULATION LOG. THIS INDICATES A DATA ISSUE.",3.38,1.64
+stablelm-2-zephyr-1_6b,stabilityai/stablelm-2-zephyr-1_6b,Medium,zero-shot,T6,CONTRACT_UPDATED,173,109,2.52,43.2,"{
+  ""explanation"": ""The deduction_code field in the Payroll Deductions Export does not adhere to the allowed values of ['FED', 'STATE', 'MEDICARE', 'SOCSEC'] for the rule. The suggested action is to update the rule to reflect the correct allowed values."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review and update the rule to include the allowed values: ['FED', 'STATE', 'MEDICARE', 'SOCSEC']""
+}",True,True,False,DATA_ISSUE,3.38,1.64
+stablelm-2-zephyr-1_6b,stabilityai/stablelm-2-zephyr-1_6b,Medium,zero-shot,T7,CONTRACT_UPDATED,160,85,1.91,44.5,"{
+  ""explanation"": ""85 out of 2,100 rows in the course catalog snapshot had term_code values that are not in the allowed_values list ['FA', 'SP', 'SU'], leading to a DATA_ISSUE."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review and update the rule to ensure it accurately reflects the allowed values.""
+}",True,True,False,DATA_ISSUE,3.38,1.64
+stablelm-2-zephyr-1_6b,stabilityai/stablelm-2-zephyr-1_6b,Medium,zero-shot,T8,DATA_ISSUE,177,124,2.84,43.7,"{
+  ""explanation"": ""The 'order_id' column in the Facilities Work Orders dataset failed the UNIQUE rule, as it contains duplicate values ('WO-10233' and 'WO-10233') and a non-unique value ('WO-10871')."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""To fix this issue, ensure that the 'order_id' values are unique and properly identify each work order. Consider updating the rule to enforce uniqueness or consider removing the rule if the data is legitimate.""
+}",True,True,True,DATA_ISSUE,3.38,1.64
+Falcon3-1B-Instruct,tiiuae/Falcon3-1B-Instruct,Medium,zero-shot,T1,DATA_ISSUE,183,81,2.27,35.7,"```json
+{
+  ""explanation"": ""The data for credit_hours is out of range, with values outside the expected 0 to 24 range.""
+  ""likely_cause"": ""CONTRACT_UPDATED""
+  ""suggested_action"": ""Check the contract to ensure the credit_hours data is correctly set to the expected range.""
+}
+```",False,False,False,,3.38,1.67
+Falcon3-1B-Instruct,tiiuae/Falcon3-1B-Instruct,Medium,zero-shot,T2,CONTRACT_UPDATED,188,75,2.07,36.2,"```json
+{
+  ""explanation"": ""The 'status' column failed data-quality checks, indicating potential issues with the data.""
+  ""likely_cause"": ""CONTRACT_UPDATED""
+  ""suggested_action"": ""Review the 'CONTRACT_UPDATED' status for any discrepancies or outdated entries.""
+}
+```",False,False,False,,3.38,1.67
+Falcon3-1B-Instruct,tiiuae/Falcon3-1B-Instruct,Medium,zero-shot,T3,DATA_ISSUE,197,85,2.45,34.7,"```json
+{
+  ""explanation"": ""The rule '^[0-9]{8}$' failed for 12 out of 4,812 rows, indicating potential data entry errors.""
+  ""likely_cause"": ""DATA_ISSUE""
+  ""suggested_action"": ""Check the data for any inconsistencies or errors before applying the rule.""
+}
+```",False,False,False,,3.38,1.67
+Falcon3-1B-Instruct,tiiuae/Falcon3-1B-Instruct,Medium,zero-shot,T4,DATA_ISSUE,196,69,1.88,36.7,"```json
+{
+  ""explanation"": ""The temperature_c column contains invalid values, likely due to a DATA_ISSUE.""
+  ""likely_cause"": ""DATA_ISSUE""
+  ""suggested_action"": ""Check and correct the invalid temperature readings to ensure data integrity.""
+}
+```",False,False,False,,3.38,1.67
+Falcon3-1B-Instruct,tiiuae/Falcon3-1B-Instruct,Medium,zero-shot,T5,CONTRACT_UPDATED,192,70,1.94,36.0,"```json
+{
+  ""explanation"": ""The ALLOWED_VALUES rule is out of date, causing the failure.""
+  ""likely_cause"": ""CONTRACT_UPDATED""
+  ""suggested_action"": ""Check the CONTRACT_UPDATED status of the rule to ensure it's current.""
+}
+```",False,False,False,,3.38,1.67
+Falcon3-1B-Instruct,tiiuae/Falcon3-1B-Instruct,Medium,zero-shot,T6,CONTRACT_UPDATED,192,68,1.91,35.5,"```json
+{
+  ""explanation"": ""The ALLOWED_VALUES rule is out of date, causing the failure.""
+  ""likely_cause"": ""CONTRACT_UPDATED""
+  ""suggested_action"": ""Update the ALLOWED_VALUES rule to reflect the current data types.""
+}
+```",False,False,False,,3.38,1.67
+Falcon3-1B-Instruct,tiiuae/Falcon3-1B-Instruct,Medium,zero-shot,T7,CONTRACT_UPDATED,182,67,1.86,36.0,"```json
+{
+  ""explanation"": ""The ALLOWED_VALUES rule is out of date, causing the failure.""
+  ""likely_cause"": ""CONTRACT_UPDATED""
+  ""suggested_action"": ""Update the ALLOWED_VALUES rule to reflect the current data.""
+}
+```",False,False,False,,3.38,1.67
+Falcon3-1B-Instruct,tiiuae/Falcon3-1B-Instruct,Medium,zero-shot,T8,DATA_ISSUE,195,78,2.19,35.7,"```json
+{
+  ""explanation"": ""The UNIQUE rule failed for 14 out of 2,210 rows, indicating duplicate order_ids.""
+  ""likely_cause"": ""DATA_ISSUE""
+  ""suggested_action"": ""Check for duplicate order_ids in the dataset and ensure they are unique.""
+}
+```",False,False,False,,3.38,1.67
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T1,DATA_ISSUE,204,67,2.1,31.9,"{
+  ""explanation"": ""The incoming data contains values outside the expected range of 0 to 24."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the data for any invalid or out-of-range values and correct them if necessary.""
+}",True,True,True,DATA_ISSUE,3.5,1.71
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T2,CONTRACT_UPDATED,220,66,1.82,36.3,"{
+  ""explanation"": ""The rule is out of date as the column 'status' contains values that are not allowed by the rule."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the updated rule and ensure it matches the current data.""
+}",True,True,True,CONTRACT_UPDATED,3.5,1.71
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T3,DATA_ISSUE,218,64,1.76,36.4,"{
+  ""explanation"": ""The incoming data contains student IDs with extra characters or non-numeric characters."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the data for any extra characters or non-numeric characters and correct them before proceeding.""
+}",True,True,True,DATA_ISSUE,3.5,1.71
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T4,DATA_ISSUE,213,69,1.99,34.7,"{
+  ""explanation"": ""The data is likely to be incorrect due to invalid values (-9999) in the 'temperature_c' column."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the data for invalid values and correct them if necessary.""
+}",True,True,True,DATA_ISSUE,3.5,1.71
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T5,CONTRACT_UPDATED,220,123,3.35,36.7,"{
+  ""explanation"": ""The rule is out of date as the allowed values for the 'branch' column are now 'MAIN', 'GRAINGER', and 'UNDERGRAD' instead of 'MAIN', 'GRAINGER', 'UNDERGRAD', 'FUNK_ACES', 'FUNK_ACES', 'FUNK_ACES'."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the updated rule and update the column to match the new allowed values.""
+}",True,True,True,CONTRACT_UPDATED,3.5,1.71
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T6,CONTRACT_UPDATED,215,54,1.49,36.2,"{
+  ""explanation"": ""The data is legitimate and the rule is out of date."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the updated rule for the latest allowed values.""
+}",True,True,True,CONTRACT_UPDATED,3.5,1.71
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T7,CONTRACT_UPDATED,204,63,1.67,37.7,"{
+  ""explanation"": ""The incoming data contains invalid term codes ('WI', 'WI', 'WI')."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the data for any errors and correct them before proceeding.""
+}",True,True,False,DATA_ISSUE,3.5,1.71
+SmolLM2-1.7B-Instruct,HuggingFaceTB/SmolLM2-1.7B-Instruct,Large,zero-shot,T8,DATA_ISSUE,219,62,1.72,36.0,"{
+  ""explanation"": ""The order_id column contains duplicate values, violating the UNIQUE rule."",
+  ""likely_cause"": ""CONTRACT_UPDATED"",
+  ""suggested_action"": ""Check the contract for any updates or changes to the data validation rules.""
+}",True,True,False,CONTRACT_UPDATED,3.5,1.71
+h2o-danube2-1.8b-chat,h2oai/h2o-danube2-1.8b-chat,Large,zero-shot,T1,DATA_ISSUE,196,85,2.9,29.3,"{
+    ""explanation"": ""The incoming data appears to be incorrect as it contains negative values for 'credit\_hours' (\[-2\]), which should not be present in this column."",
+    ""likely_cause"": ""DATA_ISSUE"",
+    ""suggested_action"": ""Verify that the negative value is an error and update the rule accordingly.""
+}",False,False,False,,3.72,1.83
+h2o-danube2-1.8b-chat,h2oai/h2o-danube2-1.8b-chat,Large,zero-shot,T2,CONTRACT_UPDATED,208,72,2.46,29.3,"{
+    ""explanation"": ""The incoming data is incorrect because it contains 'AUDIT' in the 'status' column."",
+    ""likely_cause"": ""DATA_ISSUE"",
+    ""suggested_action"": ""Update the rule to include 'AUDIT' as an allowed value.""
+}",True,True,False,DATA_ISSUE,3.72,1.83
+h2o-danube2-1.8b-chat,h2oai/h2o-danube2-1.8b-chat,Large,zero-shot,T3,DATA_ISSUE,209,84,2.82,29.7,"{
+    ""explanation"": ""The incoming data is incorrect because it contains non-numeric characters in the 'student_id' column."",
+    ""likely_cause"": ""DATA_ISSUE"",
+    ""suggested_action"": ""Verify that the incoming data conforms to the specified format by checking if all 'student_id' values are indeed numeric.""
+}",True,True,True,DATA_ISSUE,3.72,1.83
+h2o-danube2-1.8b-chat,h2oai/h2o-danube2-1.8b-chat,Large,zero-shot,T4,DATA_ISSUE,204,87,2.92,29.8,"{
+    ""explanation"": ""The temperature readings in this dataset are outside the specified range (-10 to 50 degrees Celsius), indicating a DATA_ISSUE."",
+    ""likely_cause"": ""DATA_ISSUE"",
+    ""suggested_action"": ""Review the incoming data for any errors or inconsistencies that may be causing the issue.""
+}",True,True,True,DATA_ISSUE,3.72,1.83
+h2o-danube2-1.8b-chat,h2oai/h2o-danube2-1.8b-chat,Large,zero-shot,T5,CONTRACT_UPDATED,208,82,2.8,29.3,"{
+    ""explanation"": ""The library circulation log has an issue where the branch value 'FUNK_ACES' appears in multiple rows."",
+    ""likely_cause"": ""DATA_ISSUE"",
+    ""suggested_action"": ""Review the logs to ensure that only one instance of 'FUNK_ACES' per branch is allowed.""
+}",True,True,False,DATA_ISSUE,3.72,1.83
+h2o-danube2-1.8b-chat,h2oai/h2o-danube2-1.8b-chat,Large,zero-shot,T6,CONTRACT_UPDATED,205,103,3.43,30.0,"{
+    ""explanation"": ""The DATA_ISSUE explanation suggests that the incoming data contains incorrect values for the deduction\_code column. The suggested action would be to verify the correctness of the incoming data."",
+    ""likely_cause"": ""DATA_ISSUE"",
+    ""suggested_action"": ""Verify the correctness of the incoming data by cross-referencing it against known valid values in the ALLOWED_VALUES list.""
+}",False,False,False,,3.72,1.83
+h2o-danube2-1.8b-chat,h2oai/h2o-danube2-1.8b-chat,Large,zero-shot,T7,CONTRACT_UPDATED,191,90,2.99,30.1,"{
+    ""explanation"": ""The DATA_ISSUE explanation suggests that the incoming data is incorrect because it contains an invalid term code ('WI') which should not be allowed in this dataset."",
+    ""likely_cause"": ""DATA_ISSUE"",
+    ""suggested_action"": ""Verify the term codes in the incoming data against the allowed values list and update the rule if necessary.""
+}",True,True,False,DATA_ISSUE,3.72,1.83
+h2o-danube2-1.8b-chat,h2oai/h2o-danube2-1.8b-chat,Large,zero-shot,T8,DATA_ISSUE,206,129,4.36,29.6,"{
+    ""explanation"": ""The incoming data for 'order\_id' in Facilities Work Orders violates the UNIQUE rule as it contains duplicate values ('WO-10233', 'WO-10233', and 'WO-10871'). This suggests that there might be an issue with the data quality check for this column."",
+    ""likely_cause"": ""DATA_ISSUE"",
+    ""suggested_action"": ""Verify the data source and ensure that the input data is unique before applying the UNIQUE rule.""
+}",False,False,False,,3.72,1.83
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T1,DATA_ISSUE,171,132,3.89,33.9,"{
+  ""explanation"": ""The monthly enrollment export column 'credit_hours' has failed data quality checks due to a range error in the rule 'RANGE'. The rule specifies that the minimum value should be 0 and the maximum value should be 24, but the sample values provided ('31', '99', '-2') fall outside this range."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the rule definition and ensure that it includes a valid range for the credit_hours column. If the range is not specified, update the rule to include the correct minimum and maximum values.""
+}",True,True,True,DATA_ISSUE,3.76,1.84
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T2,CONTRACT_UPDATED,179,111,3.18,34.9,"{
+  ""explanation"": ""The monthly enrollment export has failed due to four rows where the status column contains 'AUDIT'. The allowed values for this column are 'ENROLLED', 'DROPPED', 'WITHDRAWN', but in this case, the values 'AUDIT' were found."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the data quality checks for the monthly enrollment export and ensure that the allowed values for the status column are correctly defined and up-to-date.""
+}",True,True,False,DATA_ISSUE,3.76,1.84
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T3,DATA_ISSUE,185,125,3.55,35.2,"{
+  ""explanation"": ""One of the monthly enrollment export rows failed due to a DATA_ISSUE error. The regular expression pattern /^[0-9]{8}$/ did not match any valid student IDs in the sample values ['1234567', '12345678A', 'ABC00012']."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the regular expression pattern '/^[0-9]{8}$/' against all rows in the dataset to ensure it matches the expected format for student IDs.""
+}",True,True,True,DATA_ISSUE,3.76,1.84
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T4,DATA_ISSUE,182,134,3.85,34.8,"{
+  ""explanation"": ""The sensor readings in Lab 3 have failed due to a DATA_ISSUE issue. The rule specified a range of -10 to 50 degrees Celsius, but the sample values provided (-9999, -9999, -9999) do not fall within this range."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the data quality check results for each row in the dataset and ensure that the temperature_c column falls within the specified range. If any rows fail the check, update the contract to reflect the new minimum and maximum temperatures.""
+}",True,True,True,DATA_ISSUE,3.76,1.84
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T5,CONTRACT_UPDATED,180,133,3.69,36.1,"{
+  ""explanation"": ""The library circulation log has failed data quality checks due to three instances where the value 'FUNK_ACES' appears in the branch column, which is allowed only in the values 'MAIN', 'GRAINGER', or 'UNDERGRAD'. This indicates that the incoming data may be incorrect."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the incoming data for any discrepancies or errors in the branch column and ensure that it only contains valid values ('MAIN', 'GRAINGER', or 'UNDERGRAD'). If necessary, update the contract rules to include this new allowed value.""
+}",True,True,False,DATA_ISSUE,3.76,1.84
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T6,CONTRACT_UPDATED,180,152,4.27,35.6,"{
+  ""explanation"": ""The payroll deductions export dataset has failed data quality checks due to 512 rows having an invalid deduction code in the column 'deduction_code'. The allowed values for this column are ['FED', 'STATE', 'MEDICARE', 'SOCSEC'], but the sample values provided ('HSA', 'HSA', 'HSA') do not fall within this list."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the input data for any missing or incorrect values in the 'deduction_code' column, ensure that it contains only valid deduction codes from the allowed values list, and re-run the data quality check to validate the integrity of the dataset.""
+}",True,True,False,DATA_ISSUE,3.76,1.84
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T7,CONTRACT_UPDATED,167,113,3.27,34.6,"{
+  ""explanation"": ""The course catalog snapshot has failed data quality checks due to a DATA_ISSUE in the column 'term_code'. The allowed values for this column are ['FA', 'SP', 'SU'], but the sample values provided ('WI', 'WI', 'WI') do not match any of these allowed values."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check the allowed values for the 'term_code' column in the course catalog snapshot and ensure that they match the expected values.""
+}",True,True,False,DATA_ISSUE,3.76,1.84
+Qwen1.5-1.8B-Chat,Qwen/Qwen1.5-1.8B-Chat,Large,zero-shot,T8,DATA_ISSUE,184,76,2.16,35.2,"{
+  ""explanation"": ""One of the sample values 'WO-10233' is not unique in the Facilities Work Orders table, violating the UNIQUE constraint."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Check if there are any duplicate orders in the table and update the rule to allow duplicates if necessary.""
+}",True,True,True,DATA_ISSUE,3.76,1.84
