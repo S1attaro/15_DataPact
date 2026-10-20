@@ -64,11 +64,6 @@ ALLOWED_HOSTS = [
 # key already lives in .env rather than in code (A2 Section 1B).
 API_KEY = os.getenv('API_KEY', '')
 
-# A6: external AI API (Groq). Blank key means the feature answers 503 and the
-# rest of the site keeps working. The model can be swapped without code changes.
-GROQ_API_KEY = os.getenv('GROQ_API_KEY', '').strip()
-GROQ_MODEL = os.getenv('GROQ_MODEL', 'openai/gpt-oss-20b').strip()
-
 
 # Application definition
 
@@ -258,6 +253,15 @@ AI_LOCAL_ENABLED = os.getenv('AI_LOCAL_ENABLED', 'true').strip().lower() in ('1'
 AI_LOCAL_MODEL_ID = os.getenv('AI_LOCAL_MODEL_ID', '').strip() or 'HuggingFaceTB/SmolLM2-1.7B-Instruct'
 AI_LOCAL_DEVICE = os.getenv('AI_LOCAL_DEVICE', '').strip().lower() or 'auto'
 AI_MAX_NEW_TOKENS = 160
+
+# A6 Part 2.3: the external-API explanation (data_quality/ai/groq_client.py).
+# The key lives only in .env; with it blank the Groq button answers "not
+# available" and nothing is sent. Values from the file are sent only when they
+# are known status codes (groq_client.SAFE_CODES) or NOT_NULL blanks; answers
+# are cached for an hour.
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '').strip()
+GROQ_MODEL = os.getenv('GROQ_MODEL', '').strip() or 'openai/gpt-oss-20b'
+GROQ_TIMEOUT_SECONDS = 20
 
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '').strip()
 GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '').strip()

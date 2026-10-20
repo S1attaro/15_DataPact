@@ -8,7 +8,10 @@ Context (supplied by ai_views.violation_explain):
     attempted    True after a POST
     result       an Explanation, or None when the reply failed the checks
     cause_label  human label for result.likely_cause
-    unavailable  True when the local model could not be used (status 503)
+    unavailable  True when the chosen engine could not be used (status 503)
+    engine       "local" or "groq" after a POST; engine_label names it
+The two buttons post engine=local (SmolLM2 on this machine, Part 2.2) or
+engine=groq (Groq's API, Part 2.3; sample values are sent only if they are known status codes).
 Sample values and violation.message are deliberately not shown: the existing
 lookup keeps them off GET pages (the message can quote values from the file),
 and this page follows suit. Everything the model wrote is escaped
@@ -24,7 +27,7 @@ by Django's autoescaping; nothing here uses |safe.
 {% endblock %}
 {% block page_title %}Explain this violation{% endblock %}
 {% block page_subtitle %}
-    <p class="page__subtitle">A local language model suggests why this check failed and what to do next.</p>
+    <p class="page__subtitle">A language model suggests why this check failed and what to do next: the local model, or Groq's API.</p>
 {% endblock %}
 {% block content %}
     <div class="panel">
@@ -39,66 +42,26 @@ by Django's autoescaping; nothing here uses |safe.
             </dl>
             <form method="post" action="{% url 'data_quality:violation-explain' violation.pk %}">
                 {% csrf_token %}
-                <button type="submit" class="btn btn--primary">Explain with AI</button>
+                <button type="submit" name="engine" value="local" class="btn btn--primary">Explain with AI</button>
+                <button type="submit" name="engine" value="groq" class="btn btn--ghost">Explain with Groq (external API)</button>
             </form>
+            <p class="card__note">Groq receives the dataset, column, rule (as written in the contract) and row counts. Values from the file are sent only when they are known status codes such as AUDIT or PENDING (at most 3), or are blank for a not-null rule. Numbers, names, emails, IDs and other text from the file are never sent.</p>
         </div>
     </div>
-
-    {# A6 Part 2.3: the same question sent to the Groq API instead (Connor). #}
-    {# Works where the local model is off, e.g. on PythonAnywhere.           #}
-    <div class="panel">
-        <div class="panel__head"><h2 class="panel__title">Or ask the cloud AI (Groq)</h2></div>
-        <div class="panel__body">
-            <button type="button" class="btn js-groq" data-url="{% url 'data_quality:violation-explain-groq' violation.pk %}">Explain with Groq (cloud)</button>
-            <div class="js-groq-result" aria-live="polite"></div>
-        </div>
-    </div>
-    <script>
-    // Asks /api/violations/<id>/explain/ and shows the answer under the button.
-    // textContent (not innerHTML) so nothing the AI writes can run as HTML.
-    (function () {
-        var button = document.querySelector(".js-groq");
-        var box = document.querySelector(".js-groq-result");
-        var labels = {DATA_ISSUE: "Data issue", CONTRACT_UPDATED: "Contract out of date"};
-        button.addEventListener("click", function () {
-            button.disabled = true;
-            box.textContent = "Asking Groq...";
-            fetch(button.dataset.url, {credentials: "same-origin"})
-                .then(function (response) { return response.json(); })
-                .then(function (data) {
-                    button.disabled = false;
-                    if (data.error) { box.textContent = data.error; return; }
-                    box.textContent = "";
-                    var list = document.createElement("dl");
-                    list.className = "facts";
-                    [["Explanation", data.explanation],
-                     ["Likely cause", labels[data.likely_cause]],
-                     ["Suggested action", data.suggested_action]].forEach(function (row) {
-                        var dt = document.createElement("dt");
-                        var dd = document.createElement("dd");
-                        dt.textContent = row[0];
-                        dd.textContent = row[1];
-                        list.appendChild(dt);
-                        list.appendChild(dd);
-                    });
-                    box.appendChild(list);
-                })
-                .catch(function () {
-                    button.disabled = false;
-                    box.textContent = "Could not reach the AI service.";
-                });
-        });
-    })();
-    </script>
 
     {% if attempted %}
         <div class="panel">
             <div class="panel__head"><h2 class="panel__title">AI suggestion</h2></div>
             <div class="panel__body">
                 {% if unavailable %}
-                    <p>The local AI model is not available right now. The violation details above are unchanged; please try again later.</p>
+                    {% if engine == "groq" %}
+                        <p>The Groq API is not available right now (it may not be configured, or it is busy). The violation details above are unchanged; please try again later or use the local model.</p>
+                    {% else %}
+                        <p>The local AI model is not available right now. The violation details above are unchanged; please try again later.</p>
+                    {% endif %}
                 {% elif result %}
                     <dl class="facts">
+                        <dt>Answered by</dt><dd>{{ engine_label }}</dd>
                         <dt>Explanation</dt><dd>{{ result.explanation }}</dd>
                         <dt>Likely cause</dt><dd>{{ cause_label }}</dd>
                         <dt>Suggested action</dt><dd>{{ result.suggested_action }}</dd>

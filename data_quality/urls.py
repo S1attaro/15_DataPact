@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import ai_views, auth_views, groq_views, views
+from . import ai_views, auth_views, views
 
 app_name = "data_quality"
 
@@ -67,13 +67,6 @@ urlpatterns = [
         "violations/<int:pk>/explain/",
         ai_views.violation_explain,
         name="violation-explain",
-    ),
-
-    # --- A6 Part 2.3: explain a violation with the Groq API (Connor) ---
-    path(
-        "api/violations/<int:pk>/explain/",
-        groq_views.explain_violation_api,
-        name="violation-explain-groq",
     ),
 
     # --- A4 Part 3: reports and exports (Hriday) ---
