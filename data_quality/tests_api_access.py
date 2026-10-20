@@ -213,6 +213,7 @@ ROUTE_ARGS = {
     "dataset-detail": [1],
     "vega-chart-spec": [1],
     "violation-explain": [1],
+    "violation-explain-groq": [1],
 }
 
 

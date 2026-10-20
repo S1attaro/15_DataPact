@@ -1,0 +1,145 @@
+model,model_id,category,method,case,label,prompt_tokens,new_tokens,seconds,tokens_per_s,output,valid_json,schema_ok,correct,predicted,peak_mem_gb,params_b
+Qwen2.5-3B-Instruct,Qwen/Qwen2.5-3B-Instruct,Medium (3B-7B),zero-shot,T1,DATA_ISSUE,181,83,3.41,24.3,"{
+  ""explanation"": ""The dataset contains invalid values such as 31 and -2 in the 'credit_hours' column, which exceed the allowed range of 0 to 24, indicating that the incoming data is wrong."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review and correct the data to ensure it falls within the specified range.""
+}",True,True,True,DATA_ISSUE,6.31,3.09
+Qwen2.5-3B-Instruct,Qwen/Qwen2.5-3B-Instruct,Medium (3B-7B),zero-shot,T2,CONTRACT_UPDATED,189,81,2.03,39.9,"{
+  ""explanation"": ""The incoming data contains invalid status values that do not match the allowed values defined in the rule, indicating a DATA_ISSUE."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review and correct the status values to ensure they align with 'ENROLLED', 'DROPPED', or 'WITHDRAWN'.""
+}",True,True,False,DATA_ISSUE,6.31,3.09
+Qwen2.5-3B-Instruct,Qwen/Qwen2.5-3B-Instruct,Medium (3B-7B),zero-shot,T3,DATA_ISSUE,195,71,1.78,40.0,"{
+  ""explanation"": ""The dataset contains invalid student IDs that do not match the expected format, indicating a DATA_ISSUE."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review and correct the student IDs to ensure they conform to the '^[0-9]{8}$' regex pattern.""
+}",True,True,True,DATA_ISSUE,6.31,3.09
+Qwen2.5-3B-Instruct,Qwen/Qwen2.5-3B-Instruct,Medium (3B-7B),zero-shot,T4,DATA_ISSUE,192,69,1.74,39.7,"{
+  ""explanation"": ""The sensor readings in the 'temperature_c' column contain invalid values (-9999), which indicate that the incoming data is wrong."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review and correct the data to ensure it falls within the specified range.""
+}",True,True,True,DATA_ISSUE,6.31,3.09
+Qwen2.5-3B-Instruct,Qwen/Qwen2.5-3B-Instruct,Medium (3B-7B),zero-shot,T5,CONTRACT_UPDATED,190,65,1.64,39.6,"{
+  ""explanation"": ""The 'branch' column contains invalid values such as 'FUNK_ACES', which are not allowed according to the rule."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Investigate and correct the data in the 'branch' column.""
+}",True,True,False,DATA_ISSUE,6.31,3.09
+Qwen2.5-3B-Instruct,Qwen/Qwen2.5-3B-Instruct,Medium (3B-7B),zero-shot,T6,CONTRACT_UPDATED,190,92,2.33,39.5,"{
+  ""explanation"": ""The payroll deductions export dataset contains incorrect values in the 'deduction_code' column, which should only include 'FED', 'STATE', 'MEDICARE', or 'SOCSEC'. The sample values provided further confirm this issue."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review and correct the 'deduction_code' values to ensure they match the allowed values.""
+}",True,True,False,DATA_ISSUE,6.31,3.09
+Qwen2.5-3B-Instruct,Qwen/Qwen2.5-3B-Instruct,Medium (3B-7B),zero-shot,T7,CONTRACT_UPDATED,177,78,1.97,39.5,"{
+  ""explanation"": ""The incoming data in the 'term_code' column contains values that are not allowed ('WI') which indicates a DATA_ISSUE."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review and correct the 'term_code' values to ensure they only contain 'FA', 'SP', or 'SU'.""
+}",True,True,False,DATA_ISSUE,6.31,3.09
+Qwen2.5-3B-Instruct,Qwen/Qwen2.5-3B-Instruct,Medium (3B-7B),zero-shot,T8,DATA_ISSUE,194,57,1.44,39.5,"{
+  ""explanation"": ""The 'order_id' column contains duplicate values, indicating that the incoming data is wrong."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Investigate and correct the duplicate 'order_id' values.""
+}",True,True,True,DATA_ISSUE,6.31,3.09
+Falcon3-3B-Instruct,tiiuae/Falcon3-3B-Instruct,Medium (3B-7B),zero-shot,T1,DATA_ISSUE,183,59,1.3,45.3,"{""explanation"": ""The dataset contains values outside the expected range for credit_hours."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Review and clean the data to ensure values fall within 0 to 24 hours.""}",True,True,True,DATA_ISSUE,6.6,3.23
+Falcon3-3B-Instruct,tiiuae/Falcon3-3B-Instruct,Medium (3B-7B),zero-shot,T2,CONTRACT_UPDATED,188,74,1.56,47.6,"{""explanation"": ""The dataset contains invalid values for the 'status' column."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Review and clean the 'status' column to ensure it only contains 'ENROLLED', 'DROPPED', or 'WITHDRAWN'.""}",True,True,False,DATA_ISSUE,6.6,3.23
+Falcon3-3B-Instruct,tiiuae/Falcon3-3B-Instruct,Medium (3B-7B),zero-shot,T3,DATA_ISSUE,197,53,1.12,47.5,"{""explanation"": ""The student_id column contains invalid entries."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Validate and clean the student_id data to ensure it matches the expected format.""}",True,True,True,DATA_ISSUE,6.6,3.23
+Falcon3-3B-Instruct,tiiuae/Falcon3-3B-Instruct,Medium (3B-7B),zero-shot,T4,DATA_ISSUE,196,51,1.08,47.4,"{""explanation"": ""The majority of temperature readings are invalid and fall outside the expected range."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Investigate and clean the invalid temperature data.""}",True,True,True,DATA_ISSUE,6.6,3.23
+Falcon3-3B-Instruct,tiiuae/Falcon3-3B-Instruct,Medium (3B-7B),zero-shot,T5,CONTRACT_UPDATED,192,49,1.03,47.7,"{""explanation"": ""The data for the branch column contains invalid values."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Update ALLOWED_VALUES to include valid branch names.""}",True,True,False,DATA_ISSUE,6.6,3.23
+Falcon3-3B-Instruct,tiiuae/Falcon3-3B-Instruct,Medium (3B-7B),zero-shot,T6,CONTRACT_UPDATED,192,60,1.26,47.5,"{""explanation"": ""512 rows in the Payroll Deductions Export column have invalid deduction codes."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Review and update the deduplication codes to match the ALLOWED_VALUES.""}",True,True,False,DATA_ISSUE,6.6,3.23
+Falcon3-3B-Instruct,tiiuae/Falcon3-3B-Instruct,Medium (3B-7B),zero-shot,T7,CONTRACT_UPDATED,182,55,1.16,47.5,"{""explanation"": ""The incoming data for the term_code column contains invalid values."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Update the ALLOWED_VALUES rule to include the new term codes.""}",True,True,False,DATA_ISSUE,6.6,3.23
+Falcon3-3B-Instruct,tiiuae/Falcon3-3B-Instruct,Medium (3B-7B),zero-shot,T8,DATA_ISSUE,195,60,1.26,47.5,"{""explanation"": ""The 'order_id' column contains duplicate values, violating the UNIQUE rule."", ""likely_cause"": ""DATA_ISSUE"", ""suggested_action"": ""Review and clean the 'order_id' column to remove duplicates.""}",True,True,True,DATA_ISSUE,6.6,3.23
+Phi-3.5-mini-instruct,microsoft/Phi-3.5-mini-instruct,Medium (3B-7B),zero-shot,T1,DATA_ISSUE,188,82,2.34,35.0,"```json
+{
+  ""explanation"": ""The sample values for credit_hours include numbers outside the defined range, indicating incorrect data."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Validate and correct the credit_hours to fall within the 0 to 24 range.""
+}
+```",True,True,True,DATA_ISSUE,7.88,3.82
+Phi-3.5-mini-instruct,microsoft/Phi-3.5-mini-instruct,Medium (3B-7B),zero-shot,T2,CONTRACT_UPDATED,203,80,2.24,35.7,"```json
+{
+  ""explanation"": ""The 'status' column contains 'AUDIT' values, which are not within the allowed values for the rule."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Update the dataset to remove or correct 'AUDIT' values.""
+}
+```",True,True,False,DATA_ISSUE,7.88,3.82
+Phi-3.5-mini-instruct,microsoft/Phi-3.5-mini-instruct,Medium (3B-7B),zero-shot,T3,DATA_ISSUE,201,74,2.07,35.7,"```json
+{
+  ""explanation"": ""The sample values do not match the expected 8-digit numeric pattern."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review and correct the data entries to match the 8-digit numeric pattern.""
+}
+```",True,True,True,DATA_ISSUE,7.88,3.82
+Phi-3.5-mini-instruct,microsoft/Phi-3.5-mini-instruct,Medium (3B-7B),zero-shot,T4,DATA_ISSUE,195,72,2.02,35.7,"```json
+{
+  ""explanation"": ""The temperature readings are erroneous, showing extreme out-of-range values."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Validate sensor calibration and replace faulty sensors.""
+}
+```",True,True,True,DATA_ISSUE,7.88,3.82
+Phi-3.5-mini-instruct,microsoft/Phi-3.5-mini-instruct,Medium (3B-7B),zero-shot,T5,CONTRACT_UPDATED,203,75,2.1,35.7,"```json
+{
+  ""explanation"": ""The 'branch' column contains invalid values not matching the allowed list."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Validate and correct the 'branch' column values to match ALLOWED_VALUES.""
+}
+```",True,True,False,DATA_ISSUE,7.88,3.82
+Phi-3.5-mini-instruct,microsoft/Phi-3.5-mini-instruct,Medium (3B-7B),zero-shot,T6,CONTRACT_UPDATED,201,92,2.57,35.7,"```json
+{
+  ""explanation"": ""The deduction_code column contains values 'HSA' which are not in the list of ALLOWED_VALUES."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Update the dataset to exclude 'HSA' values and ensure compliance with the ALLOWED_VALUES rule.""
+}
+```",True,True,False,DATA_ISSUE,7.88,3.82
+Phi-3.5-mini-instruct,microsoft/Phi-3.5-mini-instruct,Medium (3B-7B),zero-shot,T7,CONTRACT_UPDATED,183,86,2.42,35.5,"```json
+{
+  ""explanation"": ""The term_code values 'WI' are not within the allowed set ['FA', 'SP', 'SU']."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Update the dataset to only include 'FA', 'SP', and 'SU' term_codes.""
+}
+```",True,True,False,DATA_ISSUE,7.88,3.82
+Phi-3.5-mini-instruct,microsoft/Phi-3.5-mini-instruct,Medium (3B-7B),zero-shot,T8,DATA_ISSUE,202,67,1.88,35.7,"```json
+{
+  ""explanation"": ""The order_id column contains duplicate values, violating the UNIQUE rule."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Remove duplicate order IDs from the dataset.""
+}
+```",True,True,True,DATA_ISSUE,7.88,3.82
+Qwen2.5-7B-Instruct,Qwen/Qwen2.5-7B-Instruct,Large (7B+),zero-shot,T1,DATA_ISSUE,181,51,1.56,32.6,"{
+  ""explanation"": ""The sample values include numbers outside the allowed range, indicating potential data entry errors."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review and correct the erroneous data entries.""
+}",True,True,True,DATA_ISSUE,15.39,7.62
+Qwen2.5-7B-Instruct,Qwen/Qwen2.5-7B-Instruct,Large (7B+),zero-shot,T2,CONTRACT_UPDATED,189,55,1.67,32.9,"{
+  ""explanation"": ""The sample values show that 'AUDIT' is appearing instead of allowed statuses."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Investigate the source of the 'AUDIT' values.""
+}",True,True,False,DATA_ISSUE,15.39,7.62
+Qwen2.5-7B-Instruct,Qwen/Qwen2.5-7B-Instruct,Large (7B+),zero-shot,T3,DATA_ISSUE,195,58,1.78,32.7,"{
+  ""explanation"": ""The sample values include non-numeric characters and a shorter length than the defined regex pattern."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Validate the source system to ensure correct student IDs are being generated.""
+}",True,True,True,DATA_ISSUE,15.39,7.62
+Qwen2.5-7B-Instruct,Qwen/Qwen2.5-7B-Instruct,Large (7B+),zero-shot,T4,DATA_ISSUE,192,46,1.41,32.7,"{
+  ""explanation"": ""The temperature readings include invalid values below the minimum range."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Investigate and correct the sensor readings.""
+}",True,True,True,DATA_ISSUE,15.39,7.62
+Qwen2.5-7B-Instruct,Qwen/Qwen2.5-7B-Instruct,Large (7B+),zero-shot,T5,CONTRACT_UPDATED,190,52,1.58,32.9,"{
+  ""explanation"": ""The column 'branch' contains values that do not match any of the allowed values."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review and correct the invalid branch values.""
+}",True,True,False,DATA_ISSUE,15.39,7.62
+Qwen2.5-7B-Instruct,Qwen/Qwen2.5-7B-Instruct,Large (7B+),zero-shot,T6,CONTRACT_UPDATED,190,56,1.71,32.8,"{
+  ""explanation"": ""The sample values include 'HSA', which is not in the allowed list of deduction codes."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the source data for the HSA entries.""
+}",True,True,False,DATA_ISSUE,15.39,7.62
+Qwen2.5-7B-Instruct,Qwen/Qwen2.5-7B-Instruct,Large (7B+),zero-shot,T7,CONTRACT_UPDATED,177,53,1.61,32.9,"{
+  ""explanation"": ""The term codes 'WI' are not within the allowed values specified in the rule."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Review the source system for correct term codes.""
+}",True,True,False,DATA_ISSUE,15.39,7.62
+Qwen2.5-7B-Instruct,Qwen/Qwen2.5-7B-Instruct,Large (7B+),zero-shot,T8,DATA_ISSUE,194,50,1.54,32.6,"{
+  ""explanation"": ""The order_id column has duplicate values, which violates the uniqueness rule."",
+  ""likely_cause"": ""DATA_ISSUE"",
+  ""suggested_action"": ""Investigate the source of duplicate work orders.""
+}",True,True,True,DATA_ISSUE,15.39,7.62
