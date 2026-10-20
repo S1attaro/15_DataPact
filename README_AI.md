@@ -5,6 +5,7 @@ INFO 490 MG, Team 15. Route A (prompt engineering).
 | Part | What | Where |
 | --- | --- | --- |
 | 1 | 15-model benchmark and Route A prompting | `llm-test/ai_prototype.ipynb`, results in `llm-test/results_light/` |
+| 1 (follow-up) | 4 larger models (3.1B to 7.6B), same test | `llm-test/ai_prototype_3b_plus.ipynb`, results in `llm-test/results_3b_plus/` |
 | 2.2 | Local Hugging Face model in a Django view | `data_quality/ai/` (`prompts.py`, `local_model.py`, `explain.py`), `data_quality/ai_views.py` |
 | 2.3 | Second AI feature through an external API (Groq) | `data_quality/ai/groq_client.py`, same view and page |
 | 3 | Production reflection | `docs/notes/notes.txt`, section "A6 - PART 3" |
@@ -25,10 +26,19 @@ There are two buttons:
 
 * **Explain with AI**: `HuggingFaceTB/SmolLM2-1.7B-Instruct`, running in the
   Django process. The benchmark chose it: with the few-shot prompt (3 examples)
-  it was the only model and method with 8/8 valid replies and 8/8 correct causes.
+  it was the only result in the main benchmark (15 models zero-shot, then
+  the top 3 with all four methods) with 8/8 valid replies and 8/8 correct
+  causes. In the later 3B+ run, the 4
+  larger models scored 4-6/8 on that same prompt; only Qwen2.5-7B matched
+  8/8, and only with 12 examples and about 4 times the GPU memory (see
+  `docs/notes/notes.txt`, section 48).
 * **Explain with Groq (external API)**: the same prompt sent to Groq's hosted
-  `openai/gpt-oss-20b`. This needs no GPU, so it also works on a small host
-  where the local model is off.
+  `openai/gpt-oss-20b` (or `GROQ_MODEL`), with fewer sample values (see
+  "What is sent to Groq" below). This needs no GPU, so it also works on a
+  small host where the local model is off.
+
+Both buttons post to the same page (`engine=local` or `engine=groq`), and
+both replies go through the same checks.
 
 To get there: sign in, open **Contract search**, look up a dataset (for example
 "Enrollment") under "Look up violations", and click **Explain**.
@@ -73,9 +83,52 @@ Before it is used:
 * The instructions, the 3 examples and the message layout are copied
   verbatim from the notebook, and a test (`PromptMatchesBenchmarkTests`)
   fails if they drift.
-* **Groq only:** sample values are replaced with
-  `"(not shared with the external API)"`. Only the dataset, column, rule and
-  row counts leave the server.
+
+### What is sent to Groq (`data_quality/ai/groq_client.py`)
+
+The local model sees up to 5 cleaned sample values. Groq sees the same
+prompt with a much stricter `Sample values:` line.
+
+Always sent:
+
+* The fixed instructions and the 3 worked examples from the notebook (made-up
+  data, not ours).
+* The **dataset name**, the **column name** and the **rule as written in the
+  contract**, which includes an ALLOWED_VALUES list, a REGEX pattern or a
+  RANGE's numbers. These come from whoever set up the contract, not from the
+  file. They get the same cleaning as for the local model (newlines become
+  spaces, names cut at 120 characters, the rule at 300) and are otherwise
+  sent as written. A contract that lists names or IDs in its rule would
+  send them.
+* The failed-row count, e.g. `47 of 4,812 rows`.
+
+Values from the file are sent only when all of these hold:
+
+* the rule is `ALLOWED_VALUES` or `TYPE_MATCH`;
+* the value is text (never a number), plain ASCII, and at most 20 characters;
+* ignoring case and surrounding spaces, it is one of these status words
+  (`SAFE_CODES`): ACTIVE, INACTIVE, PENDING, APPROVED, REJECTED, CANCELLED,
+  CANCELED, OPEN, CLOSED, COMPLETE, COMPLETED, ENROLLED, DROPPED, WITHDRAWN,
+  AUDIT, LOW, MEDIUM, HIGH, CRITICAL, URGENT, YES, NO, Y, N, TRUE, FALSE, NA,
+  N/A, NULL, NONE, UNKNOWN, TBD.
+
+A passing value is sent exactly as written (so `" PENDING "` keeps its
+spaces), and at most 3 are sent. For a `NOT_NULL` rule, missing values are
+sent as `null`. Nothing else from the file is sent: no numbers, names, emails,
+NetIDs, IDs, unknown codes or free text, and no `REGEX`, `UNIQUE` or `RANGE`
+samples. The rule's own allowed values do not count as safe, because a
+contract can list NetIDs or IDs. When no value passes, the line reads
+`Sample values: "(not shared with the external API)"`.
+
+With the demo data this means, for example, `["AUDIT", "AUDIT", "AUDIT"]` for
+the new status, `["CRITICAL"]` (but not `"P1"`) for priority, `["n/a"]` for
+a bad credit-hours type, and the placeholder for every RANGE and REGEX
+violation.
+
+The cost of this rule: Groq gets less evidence than the benchmark prompt
+had. A genuinely new code that is not on the list (for example `CDS` or
+`P1`) is withheld, so Groq has to judge from the rule and the row count
+alone.
 
 ### Safety guardrails
 
@@ -110,10 +163,34 @@ Before it is used:
 * Local model: torch and transformers are imported only on the first POST,
   never at start-up. A failed load waits 60 seconds before the next try, and
   any load or generation error gives a friendly 503.
-* Groq: the key comes only from `GROQ_API_KEY` in `.env`. A missing key, a
-  timeout (20 s), no connection, a 429 rate limit, another error status, or a
-  body that is not the expected JSON all give the same friendly 503. No key,
-  URL or error text reaches the page, and the key is never logged.
+* Groq: the key comes only from `GROQ_API_KEY` in `.env` (read in
+  `settings/base.py`) and is sent only in the `Authorization` header. With
+  the key blank, no request is made. A missing key, a timeout (20 s), no
+  connection, a 429 rate limit, any other error status (a 400 included), or a body that is not the
+  expected JSON all give the same friendly 503 ("The Groq API is not
+  available right now"). No key, URL or error text reaches the page. The
+  server log gets only the error type or HTTP status, never the key.
+* The request asks for `temperature` 0, `response_format` `json_object`,
+  `max_completion_tokens` 1024, and `reasoning_effort` "low" for gpt-oss
+  models only. A 429 is not retried; the user can try again later.
+
+**The one-hour cache** (`groq_client.explain_violation`)
+
+* A good Groq answer is kept for one hour, so clicking again or reloading
+  does not spend free-tier tokens. The cache key is a SHA-256 hash of the
+  model name and the full prompt. A different model, or any change to the
+  dataset, column, rule, row count or shared samples, makes a new key.
+* Failures and replies that fail the checks are not cached, so the next
+  click asks Groq again.
+* Limits: it uses Django's default cache (in memory, `LocMemCache`), so each
+  server process has its own copy, a restart empties it, and two workers can
+  each ask Groq once. The key is the prompt, not the user or the
+  violation: every signed-in user gets the same cached answer, and so does
+  a different violation whose prompt is identical (same dataset, column,
+  rule, counts and shared samples). Any signed-in user can already open
+  any violation, so this shows them nothing new. With the key removed, the page
+  answers 503 even if an answer is cached. Nothing is written to the
+  database, and the local model's answers are not cached.
 * Model weights are never committed: `.gitignore` covers `*.bin`,
   `*.safetensors` and `*.pt`. `.env` is ignored too.
 
@@ -137,11 +214,11 @@ python manage.py runserver
 
 | Check | Result |
 | --- | --- |
-| Automated tests (`python manage.py test`) | All pass. The AI tests use a fake local model and fake Groq responses. |
+| Automated tests (`python manage.py test`) | All 294 pass on `tejas/a6-groq-explain` (`ed26903`, 19 Oct 2026). The AI tests use a fake local model and fake Groq responses. The Groq tests cover the allowlist (names, NetIDs, IDs, emails, phone numbers and other numbers are withheld, in `safe_samples` and in the request body), the one-hour expiry, cache misses after a change, and every failure path. |
 | **Real local model through Django** (19 Oct 2026, RTX 3050 Ti Laptop GPU, 4 GB) | Signed in over HTTP, looked up "Enrollment", and clicked Explain with AI on 3 violations. All 3 replies were valid and matched the cause a person had recorded. The first click took 46.0 s (loading the model); the next took 2.7 s and 2.1 s. With the model loaded, `nvidia-smi` showed 3,559 MiB of the GPU's 4,096 MiB in use (0 MiB before the server started). That is the whole GPU's usage, not the benchmark's peak-allocation figure. |
 | Local model failure cases (same machine) | A model ID that does not exist, and `AI_LOCAL_ENABLED=false`: both gave the friendly 503, with the reason in the server log. |
 | Groq with no key (live dev server) | Friendly 503; no request was sent. |
-| **Real Groq call** | **Not done yet**: no key was available when this was written. The request format follows Groq's API reference (19 Oct 2026). Groq's output quality on our 8 test inputs has not been measured. |
+| **Real Groq call** | **Not verified for the current code.** Connor reported a working live call with his own key on the earlier Groq version (PR #30, "about 650 tokens per call", Groq's total for that version's prompt); that version sent up to 5 sample values from a separate endpoint. The current version (allowlist, explain-page button) has only been tested with fake responses. The request format follows Groq's API reference (19 Oct 2026). Groq's output quality on our 8 test inputs has not been measured. |
 
 Example of a real local reply (violation: `credit_hours`, RANGE 0-24, 47 of
 4,812 rows failed):
