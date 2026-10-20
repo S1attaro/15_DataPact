@@ -1841,9 +1841,12 @@ Drafted by Tejas for team review
              inputs, zero-shot) and prompting_results.csv (4 models x 4
              methods x 8 inputs), from Connor's run of
              llm-test/ai_prototype_3b_plus.ipynb on a local AMD Radeon RX
-             7900 XTX (24 GB, ROCm build of PyTorch, Windows). Same inputs,
-             prompts, greedy decoding, 160-token limit and scoring as the
-             main benchmark (the code is identical).
+             7900 XTX (24 GB, ROCm build of PyTorch, Windows). It uses the
+             same 8 inputs, example pool, prompts, decoding settings
+             (16-bit, greedy, 160-token limit) and scoring logic as the main
+             benchmark. Other parts differ: the model list, the results
+             folder, some helper and chart code, and Route A runs on all 4
+             models instead of a top 3.
              Also the real-model Django test in README_AI.md (RTX 3050 Ti
              Laptop GPU, 4 GB).
   Reported   Connor's live Groq call on the earlier Groq version (PR #30):
@@ -1898,8 +1901,12 @@ Zero-shot matrix test, 3 models x 8 inputs = 24 answers per category:
 Sweet spot: the Large category (1.7-1.8B), and specifically
 SmolLM2-1.7B-Instruct.
 
-  - Below 0.5B the models cannot do the task. They loop, drop the braces,
-    or answer 1 in 8.
+  - The Ultra-light models (0.13-0.36B) could not do the task: they
+    looped or dropped the braces, with at most 1 of 8 replies valid.
+    Around 0.5B it was mixed. Qwen2.5-0.5B gave 8/8 valid replies and
+    4/8 correct causes (no better than always giving one answer),
+    Qwen2-0.5B gave 8/8 valid JSON but only 3/8 with the right keys, and
+    h2o-danube3-500m gave 0/8 valid.
   - In the zero-shot test, SmolLM2-1.7B was the only model that really
     told the two causes apart (6/8). Most models at 50% gave the same
     label for all 8 inputs.

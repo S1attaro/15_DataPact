@@ -74,11 +74,17 @@ Before it is used:
 
 * The rule is written the way the notebook's examples write it
   (`format_rule`). Parameters that are not a JSON object count as no parameters.
-* Control characters and newlines in names and rule text become spaces, so a
-  dataset or column name cannot add a fake line such as "Rule: ...".
+* ASCII control characters in names and rule text (`\x00`-`\x1f` and
+  `\x7f`, so newlines, carriage returns and tabs) become spaces, so a dataset
+  or column name cannot add a fake line such as "Rule: ..." with an ordinary
+  newline. A test checks `\n` and `\r\n`. Unicode line breaks (U+0085,
+  U+2028, U+2029) are **not** replaced, so a name containing one could still
+  look like a new line to a model.
 * Lengths are capped: names at 120 characters, rules at 300.
-* At most 5 sample values are used, each cut to 60 characters with control
-  characters removed. Row numbers are dropped. Entries with no value are
+* At most 5 sample values are used, each cut to 60 characters with ASCII
+  control characters removed. They are then written as a JSON list, which
+  escapes any other line break (U+2028 becomes ` `). Row numbers are
+  dropped. Entries with no value are
   skipped, so the model never sees a null that was not recorded.
 * The instructions, the 3 examples and the message layout are copied
   verbatim from the notebook, and a test (`PromptMatchesBenchmarkTests`)
@@ -96,8 +102,9 @@ Always sent:
 * The **dataset name**, the **column name** and the **rule as written in the
   contract**, which includes an ALLOWED_VALUES list, a REGEX pattern or a
   RANGE's numbers. These come from whoever set up the contract, not from the
-  file. They get the same cleaning as for the local model (newlines become
-  spaces, names cut at 120 characters, the rule at 300) and are otherwise
+  file. They get the same cleaning as for the local model (ASCII control
+  characters, newlines included, become spaces; names cut at 120 characters,
+  the rule at 300) and are otherwise
   sent as written. A contract that lists names or IDs in its rule would
   send them.
 * The failed-row count, e.g. `47 of 4,812 rows`.
@@ -135,8 +142,9 @@ alone.
 **Against malicious input**
 
 * Only a signed-in user can open the page (`@login_required`). Only a POST
-  with a valid CSRF token runs a model, and a GET never does. The `engine`
-  field must be `local` or `groq`; anything else gets a 400.
+  with a valid CSRF token runs a model, and a GET never does. The POST's
+  `engine` field picks the model: `local` or `groq`. A POST with no `engine`
+  field uses the local model; any other value gets a 400 and runs nothing.
 * The page is HTML, not a JSON API, so the project still has exactly one
   public API endpoint.
 * The cleaning above keeps file values on their own `Sample values:` line.
