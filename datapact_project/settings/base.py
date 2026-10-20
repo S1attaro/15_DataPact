@@ -256,7 +256,9 @@ AI_MAX_NEW_TOKENS = 160
 
 # A6 Part 2.3: the external-API explanation (data_quality/ai/groq_client.py).
 # The key lives only in .env; with it blank the Groq button answers "not
-# available" and nothing is sent. Sample values are never sent to Groq.
+# available" and nothing is sent. Values from the file are sent only when they
+# are known status codes (groq_client.SAFE_CODES) or NOT_NULL blanks; answers
+# are cached for an hour.
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '').strip()
 GROQ_MODEL = os.getenv('GROQ_MODEL', '').strip() or 'openai/gpt-oss-20b'
 GROQ_TIMEOUT_SECONDS = 20

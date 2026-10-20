@@ -9,8 +9,8 @@ JSON API, so the project still has exactly one public API endpoint.
 
 The model's answer is advice. Nothing here writes to the database: the recorded
 resolution stays whatever a person set (see Violation's docstring). Sample
-values go to the local model; Groq gets at most 3 short, safe ones (see
-groq_client.safe_samples). They are never shown on the page, put in a URL, or
+values go to the local model; Groq gets at most 3, and only known status
+codes or NOT_NULL blanks (see groq_client.safe_samples). They are never shown on the page, put in a URL, or
 logged.
 """
 
