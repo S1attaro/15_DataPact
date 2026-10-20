@@ -2,6 +2,13 @@
 
 DataPact is a Django app that checks recurring data files against rules you define. You set the rules once, such as column types, allowed values, and null constraints. DataPact then checks every new file against them and points to the exact row and value that broke a rule, with a plain-English explanation.
 
+Since A6, a signed-in user can also ask an AI model to explain a violation: whether the data is probably wrong or the contract is probably out of date, and what to do next. There are two engines on the same page:
+
+* **Local model:** `HuggingFaceTB/SmolLM2-1.7B-Instruct`, run in the Django process with the Hugging Face `transformers` library. It is the model our 15-model benchmark chose. The weights download on first use (about 3.4 GB). It is on by default in development and off by default in production.
+* **Groq (optional):** the same prompt sent to Groq's hosted `openai/gpt-oss-20b`. It needs a `GROQ_API_KEY` in `.env`; without one, clicking the button shows that Groq is not available, and nothing is sent. Groq gets the dataset name, column, contract rule and row counts; from the file itself it gets only values on a short list of known status codes (such as AUDIT), or blanks for a NOT_NULL rule. Good answers are cached for an hour.
+
+The answer is advice only and never changes the database. Details, privacy rules and what was verified are in [`README_AI.md`](README_AI.md).
+
 INFO 490, Team 15, Fall 2026.
 
 ## Team
@@ -10,22 +17,42 @@ Hriday Agarwal, Ashok Chacko, Tejas Jaggi, Connor Slattery
 
 ## Where the project is
 
-The repo holds the project through A4: the A1 data model, the A2 settings
-split and views, the A3 ORM/forms/navigation/visualisation work, and the A4
-APIs, charts, exports and deployment preparation. 132 tests pass.
+The repo holds the project through A6: the A1 data model, the A2 settings
+split and views, the A3 ORM/forms/navigation/visualisation work, the A4
+APIs, charts, exports and deployment preparation, the A5 sign-in and access
+control, and the A6 text-intelligence features. All 294 tests pass on `main`
+(19 Oct 2026, after the A6 merges).
 
 | A4 part | What | Status |
 | --- | --- | --- |
 | 1 | Internal chart APIs and two Vega-Lite charts (Tejas) | Done |
 | 2 | External keyless API, Open Library (Connor) | Done |
 | 3 | Reports page, CSV and JSON exports (Hriday) | Done |
-| 4.1 | Static files, requirements, `.gitignore` (Ashok) | Done |
-| 4.2 | Code cleanup and deployment readiness (Ashok) | Done |
-| 4.3 | Pull the repository on PythonAnywhere | **Not yet done** |
-| 4.4 | Configure the PythonAnywhere web tab | **Not yet done** |
+| 4.1 | Static files, requirements, `.gitignore` (Ashok) | Done (in the repo) |
+| 4.2 | Code cleanup and deployment readiness (Ashok) | Done (in the repo) |
+| 4.3 | Pull the repository on PythonAnywhere | Server step; the repo points to an A5-era deployment (see below), current state not verified |
+| 4.4 | Configure the PythonAnywhere web tab | Server step; the repo points to an A5-era deployment (see below), current state not verified |
 
-Parts 4.3 and 4.4 are the remaining A4 step. The project has not been
-deployed yet, so there is no live URL to link here.
+**Deployment.** Parts 4.1 and 4.2 are code and configuration, and they are
+in this repo. Parts 4.3 and 4.4 happen on PythonAnywhere, not in Git, so the
+repo cannot prove them. What the repo does show: A5 demos 2 and 3
+(`docs/demos/`) call `tjaggi.pythonanywhere.com`, demo 4 is meant to be
+opened on that site, and the Google sign-in setup lists its callback URL, so
+a deployment existed during A5. We
+have not checked which commit that site runs now. **None of the A6 changes
+have been verified on PythonAnywhere.** There the local model is off by
+design (the host's disk is too small for it). The Groq button needs
+`GROQ_API_KEY` in the server's `.env`, and the server must be able to reach
+`api.groq.com` (a free PythonAnywhere account can only reach allowlisted
+sites); neither has been tested from the server.
+
+| A6 part | What | Where | Status |
+| --- | --- | --- | --- |
+| 1 | 15-model benchmark (5 size categories x 3 models, 8 fixed inputs) and Route A prompting (Hriday); 3B+ follow-up with 4 larger models (Connor) | [`llm-test/ai_prototype.ipynb`](llm-test/ai_prototype.ipynb), [`llm-test/ai_prototype_3b_plus.ipynb`](llm-test/ai_prototype_3b_plus.ipynb), [`llm-test/README.md`](llm-test/README.md) | Done, with results in `llm-test/results_light/` and `llm-test/results_3b_plus/` |
+| 2.1 | System description: data input, preprocessing, safety guardrails | [`README_AI.md`](README_AI.md) | Done |
+| 2.2 | Local Hugging Face model in a Django view (Tejas) | `data_quality/ai/`, `data_quality/ai_views.py` | Done; tested with the real model on a local GPU |
+| 2.3 | Second AI feature through an external API: Groq (Tejas; cache and sample filter first added by Connor) | `data_quality/ai/groq_client.py` | Done; tested with fake API responses only. A real Groq call on the current code has not been verified. |
+| 3 | Production reflection: size vs quality, cost and scaling, hybrid, own server | [`docs/notes/notes.txt`](docs/notes/notes.txt), section "A6 - PART 3" | Done |
 
 ## Setup
 
@@ -52,6 +79,8 @@ If PowerShell blocks the script, run `Set-ExecutionPolicy -Scope Process Bypass`
 ```
 pip install -r requirements.txt
 ```
+
+This includes `torch`, `transformers` and `accelerate` for the A6 local model. PyPI's `torch` is CPU-only on Windows; `requirements.txt` has the one-line command for the NVIDIA (CUDA) build. A server that cannot fit these (such as PythonAnywhere) uses `requirements-deploy.txt` instead, and the local model stays off there. See [`README_AI.md`](README_AI.md).
 
 4. Make your own `.env` file.
 
@@ -241,10 +270,9 @@ Each list has an empty state written as `{% for %} ... {% empty %}`, not as a
 separate `{% if %}` check. `data_quality/tests.py` asserts on the empty-state
 wording, so reword one and fix its test in the same commit.
 
-The CSS is inline in `base.html` rather than in `static/` on purpose:
-`runserver` stops serving static files once `DEBUG = False`, so an external
-stylesheet would load in dev and 404 in prod. Inline CSS looks the same in both
-modes with no `collectstatic` step.
+Until A3 the CSS was inline in `base.html`, because `runserver` stops serving
+static files once `DEBUG = False`. It now lives in `static/` and WhiteNoise
+serves it in production; see "Static files and UI" below.
 
 ## Static files and UI
 
@@ -283,13 +311,13 @@ A full request/response transcript of both modes is in
 python manage.py test data_quality
 ```
 
-157 tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, the Reports page and CSV/JSON exports, the A4 chart APIs, Vega-Lite specification endpoints and charts page, and Google sign-in. Run them before you open a pull request.
+294 tests on `main` (19 Oct 2026): the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, the Reports page and CSV/JSON exports, the A4 chart APIs, Vega-Lite specification endpoints and charts page, Google sign-in, the A5 access control, and the A6 explain page (local model and Groq). The A6 tests use a fake local model and fake Groq responses, so they need no GPU, no key and no network. Run them before you open a pull request.
 
 ## Google sign-in (Hriday)
 
 "Continue with Google" is handled by [django-allauth](https://docs.allauth.org/). It sits next to the username/password login, not instead of it, and `/admin/` still takes a username and password.
 
-How it works: the button is a `POST` form (allauth will not start the flow from a plain link, and the form carries a CSRF token). It sends the browser to Google, Google sends it back to `/accounts/google/login/callback/`, and allauth creates the `User` from the Google profile on first sign-in and logs them in. Only the `profile` and `email` scopes are requested and no Google token is stored. After signing in or out the user lands on the home page. If the Google account's email matches an existing user (the seeded demo users have `@illinois.edu` addresses), Google signs into that user instead of creating a second one; allauth only does this when Google reports the email as verified.
+How it works: the button is a `POST` form (allauth will not start the flow from a plain link, and the form carries a CSRF token). It sends the browser to Google, Google sends it back to `/accounts/google/login/callback/`, and allauth creates the `User` from the Google profile on first sign-in and logs them in. Only the `profile` and `email` scopes are requested and no Google token is stored. After signing in or out the user lands on the home page. A Google sign-in is **not** matched to an existing user by email address (`SOCIALACCOUNT_EMAIL_AUTHENTICATION = False` in `settings/base.py`, changed in the A5.1 integration): the seeded demo users are staff accounts (two of them superusers) with real `@illinois.edu` addresses, so matching by email would hand those accounts to anyone who controls the address. A new Google user gets their own ordinary account; one whose email collides with an existing user is sent to allauth's signup page instead. The reasoning is in the comment above that setting.
 
 The button lives in one reusable partial, `data_quality/templates/data_quality/includes/_google_button.html`. Put it on a page with:
 
@@ -497,24 +525,28 @@ Screenshots: `docs/screenshots/a4/a4_p1_charts_page.png`,
 ```
 15_DataPact/
   README.md
+  README_AI.md          A6 AI features: workflow, guardrails, what was verified
   manage.py
-  requirements.txt
+  requirements.txt      everything, including torch/transformers for the local model
+  requirements-deploy.txt  the same pins without torch/transformers/accelerate
   .env.example          placeholder values, safe to commit
   .gitignore
   db.sqlite3            demo database
   datapact_project/     root URLs, wsgi, asgi
     settings/           base.py (shared), development.py, production.py
   data_quality/         models, views, urls, charts, vega, forms, tests
+    ai/                 A6: prompts, local model, Groq client
     static/
-      data_quality/     datapact.css, datapact-logo.svg
+      data_quality/     css/datapact.css, img/datapact-logo.svg
     templates/
       data_quality/     base.html, page templates, includes/ partials
   staticfiles/          collectstatic output (generated, git-ignored)
+  llm-test/             A6 Part 1 notebooks and their result CSVs/charts
   docs/
     notes/              notes.txt, with weekly updates from each teammate
     wireframes/v1/      wireframes PDF
     branching_strategy/ how we use branches and pull requests
-    screenshots/        A2, A3, and A4 browser screenshots
+    screenshots/        A2, A3, A4 and A5 browser screenshots
 ```
 
 ## Git workflow
