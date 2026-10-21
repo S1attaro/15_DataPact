@@ -59,7 +59,8 @@ here instead of a generic ListView.
                 {% empty %}
                     <tr class="is-emptyrow">
                         <td colspan="4">
-                            {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register Dataset" only %}
+                            {% url 'data_quality:dataset-manage' as register_url %}
+                            {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register Dataset" action_url=register_url only %}
                         </td>
                     </tr>
                 {% endfor %}

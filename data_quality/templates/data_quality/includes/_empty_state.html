@@ -9,17 +9,23 @@ written once here and included wherever a {% empty %} branch fires.
 Include it like this (the "only" keeps the partial from seeing the rest of
 the page's context, so it can never depend on something by accident):
 
-    {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register Dataset" only %}
+    {% url 'data_quality:dataset-manage' as register_url %}
+    {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register Dataset" action_url=register_url only %}
 
   headline      required - the one-line fact
   message       required - what to do next
   action_label  optional - text for the call-to-action button
+  action_url    optional - where that button goes. Without it the button is
+                a disabled "planned" label, so only actions the site can
+                really do are clickable (UX Stage 1: Register Dataset).
 {% endcomment %}
 <div class="empty-state">
     <div class="empty-state__mark" aria-hidden="true"></div>
     <p class="empty-state__headline">{{ headline }}</p>
     <p class="empty-state__message">{{ message }}</p>
-    {% if action_label %}
+    {% if action_label and action_url %}
+        <a class="btn btn--primary" href="{{ action_url }}">{{ action_label }}</a>
+    {% elif action_label %}
         <span class="btn btn--primary btn--disabled"
               title="Planned for a later assignment">{{ action_label }}</span>
     {% endif %}

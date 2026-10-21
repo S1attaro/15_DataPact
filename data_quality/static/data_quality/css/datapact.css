@@ -131,6 +131,11 @@ body {
     color: var(--ink);
 }
 .btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* Keyboard focus (the browser's :focus-visible rule), same ring as the Home page links. */
+.btn--primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* On the dark top bar (signed-out "Sign up") the accent ring is too faint;
+   use the bar's own highlight colour instead. */
+.topbar .btn--primary:focus-visible { outline-color: #8fb0ff; }
 .btn--disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* ---- panels and tables ---------------------------------------- */
@@ -181,6 +186,11 @@ body {
 .datatable tbody tr:hover { background: #fafbfd; }
 .datatable a { color: var(--accent); text-decoration: none; font-weight: 600; }
 .datatable a:hover { text-decoration: underline; }
+/* A button-style link in a table (the empty state's Register Dataset) keeps
+   the button look, like the one in the page header; the two rules above
+   would make it accent on accent and underline it on hover. */
+.datatable a.btn--primary { color: #fff; }
+.datatable a.btn--primary:hover { text-decoration: none; }
 .datatable .num { text-align: right; font-variant-numeric: tabular-nums; }
 .datatable .muted { color: var(--ink-faint); }
 
