@@ -40,8 +40,12 @@ Optional context:
 {% endblock %}
 
 {% block page_actions %}
-    <span class="btn btn--primary btn--disabled"
-          title="Registering datasets is planned for a later assignment">+ Register Dataset</span>
+    {% comment %}
+        UX Stage 1: registering works on the Manage page (Section 5,
+        DatasetManageView), so this is a real link to it instead of the old
+        disabled "planned for a later assignment" label.
+    {% endcomment %}
+    <a class="btn btn--primary" href="{% url 'data_quality:dataset-manage' %}">+ Register Dataset</a>
 {% endblock %}
 
 {% block content %}

@@ -401,6 +401,40 @@ class DatasetRenderViewTests(SignedInClientMixin, TestCase):
         self.assertNotContains(response, "Generic CBV - ListView (DatasetListView)")
 
 
+class DatasetRegisterActionTests(SignedInClientMixin, TestCase):
+    """
+    UX Stage 1: the "+ Register Dataset" button in the Datasets page header
+    opens the Manage page, where registering already works, instead of being a
+    disabled "planned" label. Both routes that render dataset_list.html are
+    checked. Only the header is inspected: the nav links to Manage anyway.
+    """
+
+    ROUTES = ("data_quality:dataset-list", "data_quality:dataset-render")
+
+    def page_actions(self, route):
+        html = self.client.get(reverse(route)).content.decode()
+        start = html.index('<div class="page__actions">')
+        return html[start:html.index("</div>", start)]
+
+    def test_header_register_button_links_to_the_manage_page(self):
+        manage_url = reverse("data_quality:dataset-manage")
+        for route in self.ROUTES:
+            with self.subTest(route=route):
+                actions = self.page_actions(route)
+                self.assertIn(f'href="{manage_url}"', actions)
+                self.assertIn("+ Register Dataset", actions)
+                self.assertNotIn("btn--disabled", actions)
+
+    def test_the_link_opens_the_register_form(self):
+        actions = self.page_actions("data_quality:dataset-list")
+        link = re.search(r'href="([^"]+)"', actions)
+        self.assertIsNotNone(link, "the header register action is not a link")
+        response = self.client.get(link.group(1))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "data_quality/dataset_manage.html")
+        self.assertContains(response, "Register a new dataset")
+
+
 class SettingsSplitTests(TestCase):
     """Split settings and .env handling (Section 1A/1B)."""
 
