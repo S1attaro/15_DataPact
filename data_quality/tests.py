@@ -991,6 +991,26 @@ class HomePageTests(TestCase):
         self.assertEqual(response.context["dataset_count"], 0)
 
 
+class HomePageCopyTests(TestCase):
+    """
+    UX Stage 0: "How DataPact works" must describe only what the site does.
+    It is shown to signed-out visitors too, so these check the public page.
+    """
+
+    def test_no_trend_over_time_is_promised(self):
+        # Quality History and both Vega charts group runs by outcome or by
+        # rows; none of them has a time axis (charts.py, vega.py).
+        response = self.client.get("/")
+        self.assertNotContains(response, "over time")
+
+    def test_violation_outcome_is_a_recorded_human_decision(self):
+        # A violation's resolution (data issue / contract updated) is set by a
+        # person in the admin; no page offers a "review" action.
+        response = self.client.get("/")
+        self.assertNotContains(response, "a person reviews")
+        self.assertContains(response, "data issue")
+
+
 class NavigationTests(SignedInClientMixin, TestCase):
     """Site navigation is reversed, not hard-coded (Section 1)."""
 

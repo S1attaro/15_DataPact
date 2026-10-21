@@ -19,7 +19,8 @@
     10. Forms            (new in A3)
     11. Flash messages   (new in A3)
     12. Footer
-    13. Small screens
+    13. Home page        (UX Stage 0)
+    14. Small screens
    ========================================================================= */
 
 /* ---- design tokens ------------------------------------------- */
@@ -464,6 +465,56 @@ button.btn--primary:hover { background: #2448b0; border-color: #2448b0; }
     color: var(--ink-faint);
 }
 
+/* ---- home page (UX Stage 0) ------------------------------------ */
+/* "How DataPact works": the four steps in their real order, as one panel
+   split by the panel's own 1px line rather than four separate cards, so it
+   reads as a single sequence. Four columns on a desktop, two on a tablet,
+   one on a phone; the dividers follow the columns at each width. */
+.workflow {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.workflow__step { padding: 1.1rem; border-left: 1px solid var(--line); }
+.workflow__step:first-child { border-left: none; }
+.workflow__name { margin: 0 0 0.4rem; font-size: 1rem; line-height: 1.3; }
+.workflow__text { margin: 0; color: var(--ink-soft); font-size: 0.9rem; }
+.workflow__links {
+    list-style: none;
+    margin: 0.85rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.3rem;
+    font-size: 0.9rem;
+}
+.workflow__links a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.workflow__links a:hover { text-decoration: underline; }
+.workflow__links a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+/* A quiet closing line inside a panel, under its content. */
+.panel__note {
+    margin: 0;
+    padding: 0.85rem 1.1rem;
+    border-top: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+}
+
+@media (max-width: 860px) {
+    .workflow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .workflow__step:nth-child(odd) { border-left: none; }
+    .workflow__step:nth-child(n + 3) { border-top: 1px solid var(--line); }
+}
+
+@media (max-width: 520px) {
+    .workflow { grid-template-columns: minmax(0, 1fr); }
+    .workflow__step { border-left: none; }
+    .workflow__step:nth-child(n + 2) { border-top: 1px solid var(--line); }
+}
+
+/* ---- small screens --------------------------------------------- */
 /* Between a phone and a full desktop the bar runs out of room: nine nav
    items plus the account area. Let it wrap onto a second line rather than
    squeezing the log-out button off the edge. */
