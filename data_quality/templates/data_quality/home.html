@@ -2,6 +2,7 @@
 {% comment %}
 =============================================================================
 Home page - A3 Section 1 (URL linking & navigation), Tejas Jaggi
+UX Stage 0: explains the product to a first-time visitor (Tejas Jaggi)
 
 Context expected (supplied by the home() function-based view):
     dataset_count         how many datasets are registered
@@ -11,48 +12,127 @@ Context expected (supplied by the home() function-based view):
 Every link on this page is built with {% templatetag openblock %} url {% templatetag closeblock %}, so renaming a route
 in urls.py moves the links with it instead of leaving dead ends here.
 
-The styling below is scoped to this page on purpose. Section 3 (Ashok) owns
-the site-wide stylesheet in base.html; this only adds a card grid that base
-does not have, and it does so with base's own colour variables so the two
-stay in step.
+"How DataPact works" is shown to everyone, because the people who most need
+it are visitors who have not signed in yet. Its links are not: every one of
+them points at a @login_required view, so they render only for a signed-in
+user (A5.1 Part 1.5, Ashok), the same rule the nav follows. The descriptions
+say only what the site really does: runs and violations are recorded, not
+started from here, and there is no upload or rule editor yet.
+
+Styling lives in datapact.css ("Home page" section), not in this file.
 =============================================================================
 {% endcomment %}
 
 {% block title %}DataPact - Know when your data breaks, and why{% endblock %}
 
-{% block extra_head %}
-    <style>
-        .cardgrid {
-            display: grid;
-            gap: 1rem;
-            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-        }
-        .card {
-            display: block;
-            padding: 1.1rem 1.25rem;
-            background: var(--surface);
-            border: 1px solid var(--line);
-            border-radius: var(--radius);
-            text-decoration: none;
-            color: inherit;
-        }
-        .card:hover,
-        .card:focus-visible { border-color: var(--accent); }
-        .card__title { font-weight: 700; color: var(--accent); }
-        .card__note { margin: 0.35rem 0 0; color: var(--ink-soft); font-size: 0.9rem; }
-    </style>
-{% endblock %}
-
-{% block page_title %}DataPact{% endblock %}
+{% block page_title %}Know whether your data meets expectations{% endblock %}
 
 {% block page_subtitle %}
     <p class="page__subtitle">
-        Define what a recurring dataset is supposed to contain, check every new
-        file against that contract, and keep the evidence.
+        DataPact keeps a contract of rules for each recurring dataset, records
+        how each delivered file did against it, and helps you investigate the
+        checks that failed.
     </p>
 {% endblock %}
 
+{% block page_actions %}
+    {% if user.is_authenticated %}
+        <a class="btn btn--primary" href="{% url 'data_quality:dataset-list' %}">Explore datasets</a>
+    {% endif %}
+{% endblock %}
+
 {% block content %}
+    <section class="panel" aria-labelledby="how-it-works">
+        <div class="panel__head"><h2 class="panel__title" id="how-it-works">How DataPact works</h2></div>
+        <ol class="workflow" role="list">
+            <li class="workflow__step">
+                <h3 class="workflow__name">Datasets</h3>
+                <p class="workflow__text">
+                    A dataset is a file that arrives again and again, such as a
+                    monthly enrollment export. Each one has an owner and a source team.
+                </p>
+                {% if user.is_authenticated %}
+                    <ul class="workflow__links" role="list">
+                        <li><a href="{% url 'data_quality:dataset-list' %}">Browse datasets</a></li>
+                        <li><a href="{% url 'data_quality:dataset-manage' %}">Register a dataset</a></li>
+                    </ul>
+                {% endif %}
+            </li>
+            <li class="workflow__step">
+                <h3 class="workflow__name">Contracts</h3>
+                <p class="workflow__text">
+                    A contract lists the rules every file of a dataset must follow:
+                    types, ranges, allowed values, formats, no blanks, no duplicates.
+                    Contracts are versioned as expectations change.
+                </p>
+                {% if user.is_authenticated %}
+                    <ul class="workflow__links" role="list">
+                        <li><a href="{% url 'data_quality:contract-search' %}">Search contracts</a></li>
+                        <li><a href="{% url 'data_quality:dataset-cbv-base' %}">See which version is active</a></li>
+                    </ul>
+                {% endif %}
+            </li>
+            <li class="workflow__step">
+                <h3 class="workflow__name">Validation runs and violations</h3>
+                <p class="workflow__text">
+                    Each time a file is checked against a contract, the result is
+                    recorded as a validation run. Every rule it broke becomes a
+                    violation, and a person records whether it was a data issue or
+                    a contract that needs updating. You can ask an AI model for a
+                    suggested explanation.
+                </p>
+                {% if user.is_authenticated %}
+                    <ul class="workflow__links" role="list">
+                        <li><a href="{% url 'data_quality:contract-search' %}">Look up violations</a></li>
+                    </ul>
+                {% endif %}
+            </li>
+            <li class="workflow__step">
+                <h3 class="workflow__name">Insights and reports</h3>
+                <p class="workflow__text">
+                    See how validation runs have turned out, and export every run
+                    as CSV or JSON.
+                </p>
+                {% if user.is_authenticated %}
+                    {% url 'data_quality:charts' as charts_url %}
+                    <ul class="workflow__links" role="list">
+                        <li><a href="{% url 'data_quality:quality-history' %}">Quality History</a></li>
+                        {% if charts_url %}<li><a href="{{ charts_url }}">Charts</a></li>{% endif %}
+                        <li><a href="{% url 'data_quality:reports' %}">Reports</a></li>
+                    </ul>
+                {% endif %}
+            </li>
+        </ol>
+        <p class="panel__note">
+            This site shows results that have already been recorded. Uploading new
+            files and editing contract rules are not available here yet.
+        </p>
+    </section>
+
+    {% if not user.is_authenticated %}
+        {% comment %}
+            Straight after the explanation, so a visitor's next step (sign in)
+            is not pushed below the counts.
+        {% endcomment %}
+        <div class="panel">
+            <div class="panel__head"><h2 class="panel__title">Get started</h2></div>
+            <div class="panel__body">
+                <p class="prose">
+                    The registry, contract search, quality history and reports are
+                    available to signed-in users.
+                    <a href="{% url 'data_quality:login' %}">Log in</a>, or
+                    <a href="{% url 'data_quality:signup' %}">create an account</a>
+                    - it takes a moment and needs nothing but a username.
+                </p>
+                <p class="prose">
+                    The run-outcome summary at
+                    <a href="{% url 'data_quality:api-run-outcomes' %}"><code>/api/run-outcomes/</code></a>
+                    is public and needs no account.
+                </p>
+            </div>
+        </div>
+    {% endif %}
+
     <div class="panel">
         <div class="panel__head"><h2 class="panel__title">At a glance</h2></div>
         <div class="panel__body">
@@ -70,57 +150,6 @@ stay in step.
                     <dd>{{ open_violation_count }}</dd>
                 </div>
             </dl>
-        </div>
-    </div>
-
-    <div class="panel" style="margin-top: 1.25rem;">
-        <div class="panel__head"><h2 class="panel__title">Where to go next</h2></div>
-        <div class="panel__body">
-            {% comment %}
-                A5.1 Part 1.5 (Ashok). Every card below points at a
-                @login_required view, so to an anonymous visitor they were five
-                links that all bounce to the login page. The nav hides those
-                same destinations when signed out; this panel is navigation
-                too, so it has to agree with it - otherwise "protected links
-                hidden" is true of the header and false of the page under it.
-            {% endcomment %}
-            {% if user.is_authenticated %}
-            <div class="cardgrid">
-                <a class="card" href="{% url 'data_quality:dataset-list' %}">
-                    <span class="card__title">Datasets</span>
-                    <p class="card__note">Every registered dataset and who owns it.</p>
-                </a>
-                <a class="card" href="{% url 'data_quality:dataset-cbv-base' %}">
-                    <span class="card__title">Overview</span>
-                    <p class="card__note">Contract coverage and the active version per dataset.</p>
-                </a>
-                <a class="card" href="{% url 'data_quality:quality-history' %}">
-                    <span class="card__title">Quality History</span>
-                    <p class="card__note">How validation runs have been turning out.</p>
-                </a>
-                <a class="card" href="{% url 'data_quality:contract-search' %}">
-                    <span class="card__title">Contracts</span>
-                    <p class="card__note">Search contract versions and their violations.</p>
-                </a>
-                <a class="card" href="{% url 'data_quality:dataset-manage' %}">
-                    <span class="card__title">Register a dataset</span>
-                    <p class="card__note">Add a new data feed for DataPact to watch.</p>
-                </a>
-            </div>
-            {% else %}
-            <p class="prose">
-                The registry, contract search, quality history and reports are
-                available to signed-in users.
-                <a href="{% url 'data_quality:login' %}">Log in</a>, or
-                <a href="{% url 'data_quality:signup' %}">create an account</a>
-                - it takes a moment and needs nothing but a username.
-            </p>
-            <p class="prose">
-                The run-outcome summary at
-                <a href="{% url 'data_quality:api-run-outcomes' %}"><code>/api/run-outcomes/</code></a>
-                is public and needs no account.
-            </p>
-            {% endif %}
         </div>
     </div>
 {% endblock %}

@@ -401,6 +401,261 @@ class DatasetRenderViewTests(SignedInClientMixin, TestCase):
         self.assertNotContains(response, "Generic CBV - ListView (DatasetListView)")
 
 
+class DatasetRegisterActionTests(SignedInClientMixin, TestCase):
+    """
+    UX Stage 1: the "+ Register Dataset" button in the Datasets page header
+    opens the Manage page, where registering already works, instead of being a
+    disabled "planned" label. Both routes that render dataset_list.html are
+    checked. Only the header is inspected: the nav links to Manage anyway.
+    """
+
+    ROUTES = ("data_quality:dataset-list", "data_quality:dataset-render")
+
+    def page_actions(self, route):
+        html = self.client.get(reverse(route)).content.decode()
+        start = html.index('<div class="page__actions">')
+        return html[start:html.index("</div>", start)]
+
+    def test_header_register_button_links_to_the_manage_page(self):
+        manage_url = reverse("data_quality:dataset-manage")
+        for route in self.ROUTES:
+            with self.subTest(route=route):
+                actions = self.page_actions(route)
+                self.assertIn(f'href="{manage_url}"', actions)
+                self.assertIn("+ Register Dataset", actions)
+                self.assertNotIn("btn--disabled", actions)
+
+    def test_the_link_opens_the_register_form(self):
+        actions = self.page_actions("data_quality:dataset-list")
+        link = re.search(r'href="([^"]+)"', actions)
+        self.assertIsNotNone(link, "the header register action is not a link")
+        response = self.client.get(link.group(1))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "data_quality/dataset_manage.html")
+        self.assertContains(response, "Register a new dataset")
+
+
+def empty_state_actions(html):
+    """
+    For every shared empty state on the page, the part after its message: the
+    action, if any. A page can show more than one (contract search has two).
+    """
+    actions = []
+    for match in re.finditer(r'class="empty-state__message"', html):
+        start = match.start()
+        actions.append(html[html.index("</p>", start):html.index("</div>", start)])
+    return actions
+
+
+class EmptyStateActionTests(SignedInClientMixin, TestCase):
+    """
+    UX Stage 1: an empty dataset list offers "+ Register Dataset" as a real
+    link to the Manage page, like the page header does. Actions the site
+    cannot do yet (a new contract version) stay a disabled label, and empty
+    states that never had an action still have none.
+    """
+
+    REGISTER_ROUTES = (
+        "data_quality:dataset-list",
+        "data_quality:dataset-render",
+        "data_quality:dataset-cbv-base",
+    )
+
+    def actions_on(self, url):
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "data_quality/includes/_empty_state.html")
+        return empty_state_actions(response.content.decode())
+
+    def action_on(self, url):
+        """The action of a page that shows exactly one empty state."""
+        actions = self.actions_on(url)
+        self.assertEqual(len(actions), 1, f"{url} shows {len(actions)} empty states")
+        return actions[0]
+
+    def test_empty_dataset_lists_link_register_to_the_manage_page(self):
+        manage_url = reverse("data_quality:dataset-manage")
+        for route in self.REGISTER_ROUTES:
+            with self.subTest(route=route):
+                action = self.action_on(reverse(route))
+                self.assertIn(f'href="{manage_url}"', action)
+                self.assertIn("+ Register Dataset", action)
+                self.assertNotIn("btn--disabled", action)
+                self.assertNotIn("Planned for a later assignment", action)
+
+    def test_the_empty_state_link_opens_the_register_form(self):
+        action = self.action_on(reverse("data_quality:dataset-list"))
+        link = re.search(r'href="([^"]+)"', action)
+        self.assertIsNotNone(link, "the empty-state register action is not a link")
+        response = self.client.get(link.group(1))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "data_quality/dataset_manage.html")
+        self.assertContains(response, "Register a new dataset")
+
+    def test_new_contract_version_action_stays_disabled(self):
+        owner = User.objects.create_user("owner1", password="pw")
+        dataset = Dataset.objects.create(
+            name="Weekly Sales Extract", owner=owner, source_team="Finance"
+        )
+        action = self.action_on(reverse("data_quality:dataset-detail", args=[dataset.pk]))
+        self.assertIn("+ New Contract Version", action)
+        self.assertIn("btn--disabled", action)
+        self.assertIn('title="Planned for a later assignment"', action)
+        self.assertNotIn("href=", action)
+
+    def test_empty_states_without_an_action_still_have_none(self):
+        urls = (
+            reverse("data_quality:reports"),
+            reverse("data_quality:dataset-manage") + "?team=Nonexistent",
+            reverse("data_quality:contract-search") + "?q=Nonexistent",
+        )
+        for url in urls:
+            actions = self.actions_on(url)
+            self.assertTrue(actions, f"no empty state found on {url}")
+            for i, action in enumerate(actions):
+                with self.subTest(url=url, empty_state=i):
+                    self.assertNotIn("btn", action)
+                    self.assertNotIn("href=", action)
+
+    def test_both_contract_search_empty_states_are_checked_and_have_no_action(self):
+        # With no contracts and a search that matches nothing, the page shows
+        # two empty states; the second ("no match") must not be skipped.
+        response = self.client.get(reverse("data_quality:contract-search"), {"q": "Nonexistent"})
+        self.assertContains(response, "No contracts exist yet.")
+        self.assertContains(response, "No contracts match that search.")
+        actions = empty_state_actions(response.content.decode())
+        self.assertEqual(len(actions), 2)
+        for i, action in enumerate(actions):
+            with self.subTest(empty_state=i):
+                self.assertNotIn("btn", action)
+                self.assertNotIn("href=", action)
+
+
+class EmptyStatePartialTests(TestCase):
+    """The partial on its own: action_url makes the action a link, nothing else does."""
+
+    PARTIAL = "data_quality/includes/_empty_state.html"
+    TEXT = {"headline": "Nothing here.", "message": "Do something."}
+
+    def test_action_with_a_url_is_a_link(self):
+        html = render_to_string(
+            self.PARTIAL, {**self.TEXT, "action_label": "+ Go", "action_url": "/somewhere/"}
+        )
+        self.assertInHTML('<a class="btn btn--primary" href="/somewhere/">+ Go</a>', html)
+        self.assertNotIn("btn--disabled", html)
+
+    def test_action_without_a_url_stays_a_disabled_label(self):
+        html = render_to_string(self.PARTIAL, {**self.TEXT, "action_label": "+ Go"})
+        self.assertInHTML(
+            '<span class="btn btn--primary btn--disabled" '
+            'title="Planned for a later assignment">+ Go</span>',
+            html,
+        )
+        self.assertNotIn("<a ", html)
+
+    def test_no_label_means_no_action_even_with_a_url(self):
+        html = render_to_string(self.PARTIAL, {**self.TEXT, "action_url": "/somewhere/"})
+        self.assertNotIn("btn", html)
+        self.assertNotIn("/somewhere/", html)
+
+
+def contrast_ratio(hex_a, hex_b):
+    """WCAG 2 contrast ratio of two #rrggbb colours."""
+    def luminance(hex_colour):
+        channels = [int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        r, g, b = [
+            c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels
+        ]
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+    high, low = sorted((luminance(hex_a), luminance(hex_b)), reverse=True)
+    return (high + 0.05) / (low + 0.05)
+
+
+class PrimaryButtonStyleTests(TestCase):
+    """
+    The stylesheet rules behind the "+ Register Dataset" buttons. The test
+    runner has no browser, so these read datapact.css itself; the rendered
+    result was also checked in a browser (see the PR notes).
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        path = Path(finders.find("data_quality/css/datapact.css"))
+        cls.css = path.read_text(encoding="utf-8")
+        cls.tokens = dict(re.findall(r"--([\w-]+):\s*(#[0-9a-fA-F]{6})\b", cls.css))
+
+    def rule(self, selector):
+        # Anchored to the start of a line, so ".btn--primary:focus-visible"
+        # cannot match the tail of ".topbar .btn--primary:focus-visible".
+        match = re.search(r"(?m)^\s*" + re.escape(selector) + r"\s*\{([^}]*)\}", self.css)
+        self.assertIsNotNone(match, f"no {selector} rule")
+        return match.group(1)
+
+    def colour(self, value):
+        """A literal #rrggbb, or a var(--token) from :root."""
+        token = re.fullmatch(r"var\(--([\w-]+)\)", value.strip())
+        return self.tokens[token.group(1)] if token else value.strip()
+
+    def test_a_link_button_inside_a_table_keeps_its_white_label(self):
+        """
+        The empty state sits in a table row, and `.datatable a` (accent text,
+        underline on hover) outranks `.btn--primary` (white text). Without an
+        override the link button is accent text on an accent background: blank.
+        """
+        self.assertRegex(self.rule(".datatable a.btn--primary"), r"(^|;)\s*color:\s*#fff")
+        self.assertRegex(self.rule(".datatable a.btn--primary:hover"), r"text-decoration:\s*none")
+
+    def test_both_register_buttons_hover_the_same_way(self):
+        """
+        The header "+ Register Dataset" link has no hover colour change, so the
+        empty-state one (inside a table) must not get one either. Its hover
+        rule only cancels the table's link underline.
+        """
+        hover = self.rule(".datatable a.btn--primary:hover")
+        self.assertNotRegex(hover, r"background|border")
+
+    def test_primary_buttons_share_the_site_keyboard_focus_ring(self):
+        """
+        Both "+ Register Dataset" buttons (page header and empty state) get
+        the same visible ring when reached with Tab: the accent outline the
+        Home page links already use, not the browser's thin black default.
+        Never `outline: none`, which would hide focus from keyboard users.
+        """
+        ring = self.rule(".btn--primary:focus-visible")
+        self.assertRegex(ring, r"outline:\s*2px solid var\(--accent\)")
+        self.assertRegex(ring, r"outline-offset:\s*2px")
+        self.assertNotRegex(self.css, r"\.btn[\w-]*:focus(-visible)?\s*\{[^}]*outline:\s*none")
+
+    def test_the_focus_ring_is_visible_on_the_page_and_panels(self):
+        # WCAG 1.4.11: a focus indicator needs 3:1 against what is behind it.
+        accent = self.tokens["accent"]
+        for ground in ("canvas", "surface"):
+            with self.subTest(ground=ground):
+                self.assertGreaterEqual(contrast_ratio(accent, self.tokens[ground]), 3)
+
+    def test_the_focus_ring_is_visible_on_the_dark_top_bar(self):
+        """
+        The signed-out "Sign up" button is a primary button in the dark top
+        bar, where the accent ring is only about 2.8:1. The bar gets its own
+        ring colour, still 2px and offset like everywhere else.
+        """
+        ring = self.rule(".topbar .btn--primary:focus-visible")
+        colour = re.search(r"outline-color:\s*([^;]+)", ring)
+        self.assertIsNotNone(colour, "the top-bar ring sets no outline-color")
+        self.assertGreaterEqual(
+            contrast_ratio(self.colour(colour.group(1)), self.tokens["bar"]), 3
+        )
+
+    def test_sign_up_really_is_a_primary_button_inside_the_top_bar(self):
+        # Ties the selector above to the real markup, so a renamed class or a
+        # moved button cannot leave the ring rule matching nothing.
+        html = self.client.get(reverse("data_quality:home")).content.decode()
+        topbar = html[html.index('<header class="topbar">'):html.index("</header>")]
+        self.assertRegex(topbar, r'class="btn btn--primary btn--sm"[^>]*>\s*Sign up\s*<')
+
+
 class SettingsSplitTests(TestCase):
     """Split settings and .env handling (Section 1A/1B)."""
 
@@ -989,6 +1244,26 @@ class HomePageTests(TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["dataset_count"], 0)
+
+
+class HomePageCopyTests(TestCase):
+    """
+    UX Stage 0: "How DataPact works" must describe only what the site does.
+    It is shown to signed-out visitors too, so these check the public page.
+    """
+
+    def test_no_trend_over_time_is_promised(self):
+        # Quality History and both Vega charts group runs by outcome or by
+        # rows; none of them has a time axis (charts.py, vega.py).
+        response = self.client.get("/")
+        self.assertNotContains(response, "over time")
+
+    def test_violation_outcome_is_a_recorded_human_decision(self):
+        # A violation's resolution (data issue / contract updated) is set by a
+        # person in the admin; no page offers a "review" action.
+        response = self.client.get("/")
+        self.assertNotContains(response, "a person reviews")
+        self.assertContains(response, "data issue")
 
 
 class NavigationTests(SignedInClientMixin, TestCase):

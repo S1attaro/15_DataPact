@@ -40,8 +40,12 @@ Optional context:
 {% endblock %}
 
 {% block page_actions %}
-    <span class="btn btn--primary btn--disabled"
-          title="Registering datasets is planned for a later assignment">+ Register Dataset</span>
+    {% comment %}
+        UX Stage 1: registering works on the Manage page (Section 5,
+        DatasetManageView), so this is a real link to it instead of the old
+        disabled "planned for a later assignment" label.
+    {% endcomment %}
+    <a class="btn btn--primary" href="{% url 'data_quality:dataset-manage' %}">+ Register Dataset</a>
 {% endblock %}
 
 {% block content %}
@@ -82,7 +86,8 @@ Optional context:
                     {% endcomment %}
                     <tr class="is-emptyrow">
                         <td colspan="4">
-                            {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register Dataset" only %}
+                            {% url 'data_quality:dataset-manage' as register_url %}
+                            {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register Dataset" action_url=register_url only %}
                         </td>
                     </tr>
                 {% endfor %}
