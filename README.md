@@ -262,6 +262,17 @@ UX Stage 4 (Tejas) gives the dataset page a **Violations** panel (`#violations`)
 
 It leaves out sample values and messages. When the list is empty, it says either that no runs have been recorded yet, or how many runs found nothing, including any that ended in an error.
 
+UX Stage 5 (Tejas) made the site shell in `base.html` easier to use with a keyboard, on a phone and at high zoom:
+
+- **Skip link:** "Skip to main content" is the first Tab stop on every page and jumps to `<main id="main">`.
+- **Navigation:** the nav is labelled ("Main") and marks the current page with `aria-current="page"` as well as the `is-active` colour.
+- **Upload:** the item that is not built yet shows a "Not yet" tag instead of a hover tooltip.
+- **Menu button:** signed in, below 1000px (62.5em) a **Menu** button folds the links and Log out away. A small script after the header adds it; without the script the bar wraps as before. Escape closes the menu and returns focus to the button.
+- **Wrapping:** the top bar wraps instead of pushing the page sideways, and its breakpoints are in em, so they follow the browser's text size as well as its zoom.
+- **Contrast and focus:** `--ink-faint` text and form-field borders now meet WCAG AA contrast, and every keyboard focus gets the 2px ring.
+
+`data_quality/tests_navigation.py` covers these.
+
 `dataset_list.html` is written against a single context variable, `datasets`,
 so it does not depend on which kind of view rendered it. Any view can reuse it:
 
