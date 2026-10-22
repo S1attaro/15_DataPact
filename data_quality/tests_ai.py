@@ -353,7 +353,7 @@ class ViolationExplainViewTests(TestCase):
         self.client.force_login(self.user)
         response = self.client.post(self.url)
         self.assertEqual(response.status_code, 503)
-        self.assertContains(response, "The local AI model is not available", status_code=503)
+        self.assertContains(response, "The local model could not run on this server", status_code=503)
         self.assertNotContains(response, "CUDA out of memory", status_code=503)
 
     def test_a_generation_error_is_also_a_friendly_503(self):

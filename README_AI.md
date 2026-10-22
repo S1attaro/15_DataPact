@@ -22,7 +22,8 @@ is wrong** or **the contract is out of date**. On a violation's page
  "suggested_action": "<one short sentence>"}
 ```
 
-There are two buttons:
+There are two engines, each with its own button when this server has it set
+up:
 
 * **Explain with AI**: `HuggingFaceTB/SmolLM2-1.7B-Instruct`, running in the
   Django process. The benchmark chose it: with the few-shot prompt (3 examples)
@@ -38,7 +39,31 @@ There are two buttons:
   small host where the local model is off.
 
 Both buttons post to the same page (`engine=local` or `engine=groq`), and
-both replies go through the same checks.
+both replies go through the same checks. On the production default (local
+model off, Groq key set) only the Groq button is shown.
+
+What the page says about each engine (UX Stage 2):
+
+* **Before a click**, it shows a button only for an engine this server has
+  set up: the local model switched on (`AI_LOCAL_ENABLED`), or a
+  `GROQ_API_KEY` present. An engine that is not set up is shown as a
+  disabled label with the reason ("The local model is switched off on this
+  server."). This comes from settings alone: looking at the page never loads
+  the model or contacts Groq, so "set up" is not a promise that the engine
+  will answer.
+* **While waiting**, a small script in the page writes what it is waiting
+  for into a `role="status"` line ("Asking Groq… DataPact waits up to 20
+  seconds for an answer.") and ignores a second click. If the visitor stops
+  the request, the buttons unlock again after the longest the server should
+  take (Groq's limit plus 10 seconds; 3 minutes for the local model).
+  Without JavaScript the page works as before.
+* **After a click**, the browser jumps to the answer (`#ai-suggestion`). A
+  failure says which of these happened: the engine is not set up, Groq did
+  not answer in time, Groq could not be reached, Groq's rate limit, or an
+  error. "Try again" is offered only when trying again can help, and the
+  other engine is offered when this server has it set up. A reply that fails
+  the checks is not offered again from the same engine, since the same
+  prompt most likely gets the same reply.
 
 To get there: sign in, open **Contract search**, look up a dataset (for example
 "Enrollment") under "Look up violations", and click **Explain**.
@@ -175,8 +200,11 @@ alone.
   `settings/base.py`) and is sent only in the `Authorization` header. With
   the key blank, no request is made. A missing key, a timeout (20 s), no
   connection, a 429 rate limit, any other error status (a 400 included), or a body that is not the
-  expected JSON all give the same friendly 503 ("The Groq API is not
-  available right now"). No key, URL or error text reaches the page. The
+  expected JSON all give a friendly 503 that names which of these it was
+  (`AIUnavailable.kind`), for example "Groq did not answer within 20
+  seconds." Any other 4xx (a revoked key, a retired model, a bad request)
+  is "turned the request down", with no "try again", since the same request
+  gets the same answer. No key, URL or error text reaches the page. The
   server log gets only the error type or HTTP status, never the key.
 * The request asks for `temperature` 0, `response_format` `json_object`,
   `max_completion_tokens` 1024, and `reasoning_effort` "low" for gpt-oss
@@ -214,7 +242,8 @@ python manage.py runserver
   the weights (about 3.4 GB) into the Hugging Face cache. It needs about 4 GB
   of free GPU memory, or about 7 GB of free RAM on CPU.
 * **Groq:** put a free key from https://console.groq.com/keys in `.env` as
-  `GROQ_API_KEY=...`. Without one, the Groq button says it is not available.
+  `GROQ_API_KEY=...`. Without one, the page shows Groq as not set up and
+  has no Groq button.
 * **Production (PythonAnywhere):** install `requirements-deploy.txt` (no
   torch). The local model is off unless `AI_LOCAL_ENABLED=true`.
 

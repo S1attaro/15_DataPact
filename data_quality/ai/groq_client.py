@@ -22,8 +22,9 @@ Failures and replies that fail the checks are not cached.
 
 Every failure (no key, timeout, no connection, rate limit, an error status, or
 a body that is not the expected JSON) becomes AIUnavailable, which the view
-turns into a friendly 503. The reply text goes through the same parse_reply()
-as the local model's.
+turns into a friendly 503. Its kind ("off", "timeout", "unreachable", "busy",
+"rejected" or "error") lets the page say which of these happened (UX Stage 2). The reply
+text goes through the same parse_reply() as the local model's.
 """
 
 import hashlib
@@ -111,7 +112,7 @@ def explain_violation(violation, shots=prompts.DEFAULT_SHOTS):
     """An Explanation, None if the reply fails the checks, or AIUnavailable."""
     key = settings.GROQ_API_KEY
     if not key:
-        raise AIUnavailable("GROQ_API_KEY is not set")
+        raise AIUnavailable("GROQ_API_KEY is not set", kind="off")
     model = settings.GROQ_MODEL
     messages = build_messages(violation, shots)
     key_for_cache = cache_key(model, messages)
@@ -130,10 +131,18 @@ def explain_violation(violation, shots=prompts.DEFAULT_SHOTS):
     try:
         response = requests.post(API_URL, json=body, headers={"Authorization": f"Bearer {key}"},
                                  timeout=settings.GROQ_TIMEOUT_SECONDS)
+    except requests.Timeout as exc:  # before ConnectionError: ConnectTimeout is both
+        raise AIUnavailable(f"Groq request failed ({type(exc).__name__})", kind="timeout") from None
+    except requests.ConnectionError as exc:
+        raise AIUnavailable(f"Groq request failed ({type(exc).__name__})", kind="unreachable") from None
     except requests.RequestException as exc:
         raise AIUnavailable(f"Groq request failed ({type(exc).__name__})") from None
     if response.status_code == 429:
-        raise AIUnavailable("Groq rate limit reached (HTTP 429)")
+        raise AIUnavailable("Groq rate limit reached (HTTP 429)", kind="busy")
+    if 400 <= response.status_code < 500:
+        # Turned down (a revoked key, a retired model, a bad request): the same
+        # request would get the same answer, so the page offers no retry.
+        raise AIUnavailable(f"Groq returned HTTP {response.status_code}", kind="rejected")
     if response.status_code != 200:
         raise AIUnavailable(f"Groq returned HTTP {response.status_code}")
     try:

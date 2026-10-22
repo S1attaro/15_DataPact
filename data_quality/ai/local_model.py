@@ -24,7 +24,17 @@ LOAD_RETRY_SECONDS = 60
 
 
 class AIUnavailable(Exception):
-    """The local model cannot be used here: switched off, not installed, or failed."""
+    """The local model cannot be used here: switched off, not installed, or failed.
+
+    kind says why, for the page (UX Stage 2), so it never has to show the
+    message itself: "off" (switched off or not set up), "timeout",
+    "unreachable", "busy" (a rate limit), "rejected" (the API turned the
+    request down) or "error" (anything else).
+    """
+
+    def __init__(self, message="", kind="error"):
+        super().__init__(message)
+        self.kind = kind
 
 
 class HuggingFaceGenerator:
@@ -69,7 +79,7 @@ def get_generator():
     """The shared model, loaded on first use. Raises AIUnavailable instead of crashing."""
     global _generator, _failure
     if not settings.AI_LOCAL_ENABLED:
-        raise AIUnavailable("The local model is switched off (AI_LOCAL_ENABLED).")
+        raise AIUnavailable("The local model is switched off (AI_LOCAL_ENABLED).", kind="off")
     if _generator is None:
         with _load_lock:
             if _generator is None:
