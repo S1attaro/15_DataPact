@@ -29,8 +29,13 @@
 :root {
     --ink:        #16202c;
     --ink-soft:   #5a6672;
-    --ink-faint:  #8b959f;
+    /* The quietest text (footer, breadcrumb, fact labels, table notes).
+       Was #8b959f, under 3.1:1; this is 4.6:1 on the page background and
+       5:1 on white, still lighter than --ink-soft (UX Stage 5). */
+    --ink-faint:  #67717c;
     --line:       #e3e7ec;
+    /* A form field's edge: 3:1 against white, so the box itself shows. */
+    --line-strong: #7d8792;
     --surface:    #ffffff;
     --canvas:     #f6f7f9;
     --bar:        #16202c;
@@ -53,16 +58,47 @@ body {
     line-height: 1.5;
 }
 
+/* Keyboard focus (UX Stage 5): every link, button and scrolling panel gets
+   the 2px accent ring the Home links and primary buttons already had,
+   instead of the browser's own, which differs per browser and is thin on
+   the dark top bar. Fields keep their own focus style (section 10). */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* "Skip to main content", the first stop for the keyboard. Kept just above
+   the window until it has focus, then shown over the top bar. */
+.skiplink {
+    position: absolute;
+    top: 0.5rem;
+    left: 1rem;
+    z-index: 10;
+    transform: translateY(-200%);
+    padding: 0.5rem 0.9rem;
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+}
+.skiplink:focus { transform: none; }
+
 /* ---- top navigation ------------------------------------------ */
 .topbar { background: var(--bar); color: #fff; }
 
+/* UX Stage 5: signed in, the brand, nine links and the account area need
+   about 1120px in one row, more than the page's 1000px column, so Log out
+   hung past the column and, between 1041 and 1179px, the page scrolled
+   sideways. The bar's row is now wider than the column, enough for one
+   line on a large screen, and it always wraps instead of overflowing: on a
+   narrower window (or with a long username) the account area moves to a
+   second line. The 0.6rem padding leaves a one-line bar at 56px. */
 .topbar__inner {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 0 1.5rem;
+    padding: 0.6rem 1.5rem;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 2rem;
+    gap: 0.5rem 2rem;
     min-height: 56px;
 }
 
@@ -82,9 +118,12 @@ body {
    stylesheet - it proves the static pipeline handles more than CSS. */
 .brand__logo { width: 22px; height: 22px; display: block; flex: none; }
 
-.mainnav { display: flex; gap: 1.5rem; font-size: 0.9rem; }
+.mainnav { display: flex; flex-wrap: wrap; gap: 0.35rem 1.5rem; font-size: 0.9rem; }
 
-.mainnav a {
+/* The planned item takes the links' padding and border too, so its text
+   sits on the same line as theirs (UX Stage 5; it used to ride 4px high). */
+.mainnav a,
+.mainnav__planned {
     color: #c4ccd6;
     text-decoration: none;
     padding: 0.25rem 0;
@@ -97,10 +136,32 @@ body {
 .mainnav a:hover { color: #fff; }
 .mainnav a.is-active { color: #fff; border-bottom-color: #8fb0ff; }
 
-/* Screens 4-6 of the wireframes are not built yet. They are shown
-   greyed out so the navigation matches the design without pointing
-   at URLs that do not exist. */
-.mainnav__planned { color: #5d6875; cursor: not-allowed; }
+/* Upload (wireframe screen 4) is not built yet. Dimmer than the links but
+   readable (6:1 on the bar; it was 2.9:1), with a dashed "Not yet" tag in
+   the dashed style of the page's unavailable buttons. position: relative
+   holds the tag's screen-reader-only word inside the item. */
+.mainnav__planned { color: #949eaa; cursor: not-allowed; position: relative; }
+.mainnav__tag {
+    margin-left: 0.3rem;
+    padding: 0 0.4rem;
+    border: 1px dashed #949eaa;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #949eaa;
+}
+
+/* The focus ring on the dark bar: the accent blue is under 3:1 there, so
+   use the bar's own highlight (7.7:1), as the "Sign up" button does. */
+.topbar :focus-visible { outline-color: #8fb0ff; }
+.skiplink:focus-visible { outline-color: #8fb0ff; }
+
+/* The folding wrapper around the links and the account area (base.html).
+   Without the narrow-screen menu it is not a box at all, so the bar's
+   flex layout reaches straight through it. */
+.topbar__menu { display: contents; }
 
 /* ---- page frame ---------------------------------------------- */
 .page { max-width: 1000px; margin: 0 auto; padding: 1.75rem 1.5rem 3rem; }
@@ -309,7 +370,7 @@ textarea {
     font: inherit;
     color: var(--ink);
     background: var(--surface);
-    border: 1px solid var(--line);
+    border: 1px solid var(--line-strong);
     border-radius: var(--radius);
     transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
@@ -411,6 +472,10 @@ button.btn--primary:hover { background: #2448b0; border-color: #2448b0; }
     color: #c4ccd6;
 }
 .btn--ghost:hover { border-color: #6b7686; color: #fff; }
+
+/* The narrow-screen "Menu" button (UX Stage 5). Hidden here; the small
+   screens section shows it once base.html's script has set it up. */
+.menutoggle { display: none; }
 
 /* ---- login and signup pages (A5.1) ------------------------------- */
 /* A sign-in form is one short column; the data tables' full width would
@@ -645,16 +710,41 @@ button[aria-disabled="true"] { cursor: progress; }
 .factlist__link a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 
 /* ---- small screens --------------------------------------------- */
-/* Between a phone and a full desktop the bar runs out of room: nine nav
-   items plus the account area. Let it wrap onto a second line rather than
-   squeezing the log-out button off the edge. */
-@media (max-width: 1040px) {
-    .topbar__inner { flex-wrap: wrap; row-gap: 0.5rem; padding-top: 0.6rem; padding-bottom: 0.6rem; }
-    .mainnav { flex-wrap: wrap; row-gap: 0.35rem; }
-    .useraccount { margin-left: auto; }
+/* The top bar's breakpoints are in em (UX Stage 5), so they follow the
+   browser's text size as well as its zoom: at the default 16px they are
+   1000 and 620px. In px, a larger text setting pushed the links off the
+   right edge of a full-size window. (The bar's wrapping onto a second line,
+   which used to start here at 1040px, is now in section 3 for every width.) */
+
+/* Below 1000px the links no longer fit on one line beside the brand, and
+   the wrapped bar grew to a quarter of a phone screen. Signed in, with the
+   script, the links and the account area fold behind the "Menu" button
+   and open as a list under the bar, pushing the page down rather than
+   covering it. Rows are 44px tall, for a thumb. */
+@media (max-width: 62.5em) {
+    .topbar.has-menutoggle .menutoggle { display: inline-block; margin-left: auto; }
+    /* Open: the bar's highlight edge, so the button shows its state too. */
+    .topbar .menutoggle[aria-expanded="true"] { border-color: #8fb0ff; color: #fff; }
+    .topbar.has-menutoggle .topbar__menu { display: none; }
+    .topbar.is-open .topbar__menu { display: block; width: 100%; padding-bottom: 0.25rem; }
+    .topbar.has-menutoggle .mainnav { flex-direction: column; gap: 0; font-size: 0.95rem; }
+    .topbar.has-menutoggle .mainnav > * {
+        display: block;
+        min-height: 44px;
+        padding: 0.6rem 0.75rem;
+        border-bottom: none;
+        border-left: 3px solid transparent;
+    }
+    .topbar.has-menutoggle .mainnav a.is-active { border-left-color: #8fb0ff; }
+    .topbar.has-menutoggle .useraccount {
+        width: 100%;
+        margin: 0.5rem 0 0;
+        padding: 0.75rem 0.75rem 0;
+        border-top: 1px solid #3b4654;
+    }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 38.75em) {
     .topbar__inner { flex-wrap: wrap; gap: 0.75rem; padding: 0.75rem 1rem; }
     .mainnav { gap: 1rem; font-size: 0.85rem; }
     .useraccount { margin-left: 0; width: 100%; }

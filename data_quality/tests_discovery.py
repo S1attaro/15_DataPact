@@ -162,7 +162,10 @@ class LookupFormTests(DiscoveryData):
     def test_an_unknown_resolution_in_the_link_is_ignored(self):
         response = self.client.get(SEARCH, {"resolution": "<script>"})
         self.assertEqual(response.context["violation_resolution"], "")
-        self.assertNotContains(response, "<script>")
+        # Only the page's own content: the site's menu script (UX Stage 5)
+        # sits before <main> on every signed-in page.
+        html = response.content.decode()
+        self.assertNotIn("<script>", html[html.index("<main"):])
 
     def test_the_contract_search_still_ignores_the_resolution(self):
         """`status` filters contracts; `resolution` must not leak into it."""
