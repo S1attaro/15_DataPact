@@ -122,6 +122,13 @@ class ContractSearchView(LoginRequiredMixin, View):
         if status:
             filtered_contracts = filtered_contracts.filter(status__exact=status)
 
+        # UX Stage 3: a link (Home's open-violation count) can choose the
+        # lookup's resolution in advance. It only pre-selects the form; the
+        # lookup itself still runs on POST.
+        violation_resolution = request.GET.get("resolution", "").strip()
+        if violation_resolution not in Violation.Resolution.values:
+            violation_resolution = ""
+
         context = {
             "total_contracts": contracts.count(),
             "status_breakdown": self._status_breakdown(),
@@ -131,7 +138,8 @@ class ContractSearchView(LoginRequiredMixin, View):
             "status_choices": Contract.Status.choices,
             "resolution_choices": Violation.Resolution.choices,
             "violation_query": "",
-            "violation_resolution": "",
+            "violation_resolution": violation_resolution,
+            "violation_resolution_label": dict(Violation.Resolution.choices).get(violation_resolution, ""),
             "violation_results": None,
         }
         return render(request, self.template_name, context)
@@ -141,7 +149,7 @@ class ContractSearchView(LoginRequiredMixin, View):
         violation_resolution = request.POST.get("resolution", "").strip()
 
         violation_results = Violation.objects.select_related(
-            "rule", "rule__contract", "rule__contract__dataset"
+            "rule", "rule__contract", "rule__contract__dataset", "run"
         )
         if violation_query:
             violation_results = violation_results.filter(
@@ -164,6 +172,10 @@ class ContractSearchView(LoginRequiredMixin, View):
             "violation_query": violation_query,
             "violation_resolution": violation_resolution,
             "violation_results": violation_results,
+            # UX Stage 3: the results summary repeats the filter by its
+            # label, and an empty result says whether anything exists at all.
+            "violation_resolution_label": dict(Violation.Resolution.choices).get(violation_resolution, ""),
+            "violations_recorded": Violation.objects.exists(),
         }
         return render(request, self.template_name, context)
 

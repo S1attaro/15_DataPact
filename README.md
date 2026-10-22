@@ -363,6 +363,16 @@ python manage.py migrate
 | Aggregations (total + grouping) | total contract count, plus `values("status").annotate(total=Count("id"))` |
 | Template clarity & `{% empty %}` | empty-state message when a search has no matches |
 
+UX Stage 3 (Tejas) made the violation lookup easier to reach and to read, without changing what it finds:
+
+- The lookup is still a POST. When there are open violations, a signed-in user sees a "Look up open violations" link under Home's count. It opens `?resolution=OPEN#violation-lookup`, which only pre-selects **Open** in the form and says to press the button.
+- The form posts to `#violation-results`, so the page opens on the answer.
+- The results say how many violations matched and for what.
+- Each row links to its dataset and names its validation run (file and date).
+- Each Explain link has a name of its own for screen readers.
+- When nothing has been recorded yet, the results say so.
+- The explain page also names the run.
+
 GET search filtered to one dataset (`?q=Enrollment`):
 
 ![Contract search - GET result filtered by dataset name](docs/screenshots/a3/s2_get_search.png)

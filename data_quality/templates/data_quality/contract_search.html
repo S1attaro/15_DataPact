@@ -102,12 +102,21 @@
         </table>
     </div>
 
-    <div class="panel">
+    {% comment %}
+        UX Stage 3: Home links straight here (#violation-lookup), and the form
+        posts to #violation-results so the page opens on the answer rather
+        than on the contracts above it.
+    {% endcomment %}
+    <section class="panel" id="violation-lookup" aria-labelledby="violation-lookup-title">
         <div class="panel__head">
-            <h2 class="panel__title">Look up violations</h2>
+            <h2 class="panel__title" id="violation-lookup-title">Look up violations</h2>
         </div>
         <div class="panel__body">
-            <form method="post" action="{% url 'data_quality:contract-search' %}">
+            {% if violation_resolution_label and violation_results is None %}
+                {# Arrived from a link that chose the resolution; the lookup has not run. #}
+                <p class="lookup__hint">{{ violation_resolution_label }} is selected. Press Look up violations to see them.</p>
+            {% endif %}
+            <form method="post" action="{% url 'data_quality:contract-search' %}#violation-results">
                 {% csrf_token %}
                 <label for="dataset">Dataset name contains</label>
                 <input type="text" id="dataset" name="dataset" value="{{ violation_query }}" placeholder="e.g. Enrollment">
@@ -123,43 +132,61 @@
                 <button type="submit" class="btn btn--primary">Look up violations</button>
             </form>
         </div>
-    </div>
+    </section>
 
     {% if violation_results is not None %}
-        <div class="panel">
+        {% comment %}
+            tabindex="-1" lets the browser move focus here when the page lands
+            on #violation-results, so a screen reader starts at the answer.
+            Each row names its validation run: the same rule can fail in
+            several files, and without the run those rows read the same. The
+            hidden part of each Explain link gives it a name of its own.
+        {% endcomment %}
+        <section class="panel" id="violation-results" tabindex="-1" aria-labelledby="violation-results-title">
             <div class="panel__head">
-                <h2 class="panel__title">Violation results</h2>
+                <h2 class="panel__title" id="violation-results-title">Violation results</h2>
             </div>
+            {% if violation_results %}
+                <p class="results__summary">
+                    {{ violation_results|length }} violation{{ violation_results|length|pluralize }}{% if violation_query %} in datasets whose name contains “{{ violation_query }}”{% endif %}{% if violation_resolution_label %} with resolution {{ violation_resolution_label }}{% endif %}, most failed rows first.
+                </p>
+            {% endif %}
             <table class="datatable">
                 {% if violation_results %}
                     <thead>
                         <tr>
                             <th scope="col">Dataset</th>
                             <th scope="col">Column / Rule</th>
+                            <th scope="col">Validation run</th>
                             <th scope="col" class="num">Failed rows</th>
                             <th scope="col">Resolution</th>
-                            <th scope="col">AI</th>
+                            <th scope="col">AI explanation</th>
                         </tr>
                     </thead>
                 {% endif %}
                 <tbody>
                     {% for violation in violation_results %}
                         <tr>
-                            <td>{{ violation.rule.contract.dataset.name }}</td>
+                            <td><a href="{{ violation.rule.contract.dataset.get_absolute_url }}">{{ violation.rule.contract.dataset.name }}</a></td>
                             <td>{{ violation.rule.column_name }} - {{ violation.rule.get_rule_type_display }}</td>
+                            <td>{{ violation.run.file_name }}<span class="cell__sub">{{ violation.run.started_at|date:"Y-m-d" }}</span></td>
                             <td class="num">{{ violation.failed_row_count }}</td>
                             <td>{{ violation.get_resolution_display }}</td>
-                            <td><a href="{% url 'data_quality:violation-explain' violation.pk %}">Explain</a></td>
+                            <td><a href="{% url 'data_quality:violation-explain' violation.pk %}">Explain<span class="visually-hidden"> {{ violation.rule.column_name }} {{ violation.rule.get_rule_type_display }} in {{ violation.run.file_name }}, {{ violation.run.started_at|date:"Y-m-d" }}</span></a></td>
                         </tr>
                     {% empty %}
                         <tr class="is-emptyrow">
-                            <td colspan="5">
-                                {% include "data_quality/includes/_empty_state.html" with headline="No violations matched that lookup." message="Try a different dataset name or clear the resolution filter." only %}
+                            <td colspan="6">
+                                {% if violations_recorded %}
+                                    {% include "data_quality/includes/_empty_state.html" with headline="No violations matched that lookup." message="Try a different dataset name or clear the resolution filter." only %}
+                                {% else %}
+                                    {% include "data_quality/includes/_empty_state.html" with headline="No violations have been recorded yet." message="A violation is recorded when a validation run finds a file that breaks one of its contract's rules." only %}
+                                {% endif %}
                             </td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
+        </section>
     {% endif %}
 {% endblock %}
