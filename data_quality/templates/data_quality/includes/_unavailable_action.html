@@ -1,0 +1,18 @@
+{% comment %}
+An action the site cannot do yet - UX Stage 1 (Tejas Jaggi).
+
+The label keeps the button's place, so the planned workflow stays visible,
+and the reason is written out beside it. It used to live only in a hover
+tooltip (title=), which touch and keyboard users never see and screen
+readers do not reliably read. It is a plain span, not a disabled <button>
+or a link, because there is nothing to press.
+
+    {% include "data_quality/includes/_unavailable_action.html" with label="Upload New File" reason="Uploading files is not available yet." only %}
+
+  label   required - the action's name, as it will read once it exists
+  reason  optional - one plain sentence; defaults to "Not available yet."
+{% endcomment %}
+<span class="unavailable">
+    <span class="btn btn--disabled">{{ label }}</span>
+    <span class="unavailable__reason">{{ reason|default:"Not available yet." }}</span>
+</span>

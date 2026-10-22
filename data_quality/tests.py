@@ -403,7 +403,7 @@ class DatasetRenderViewTests(SignedInClientMixin, TestCase):
 
 class DatasetRegisterActionTests(SignedInClientMixin, TestCase):
     """
-    UX Stage 1: the "+ Register Dataset" button in the Datasets page header
+    UX Stage 0: the "+ Register Dataset" button in the Datasets page header
     opens the Manage page, where registering already works, instead of being a
     disabled "planned" label. Both routes that render dataset_list.html are
     checked. Only the header is inspected: the nav links to Manage anyway.
@@ -449,7 +449,7 @@ def empty_state_actions(html):
 
 class EmptyStateActionTests(SignedInClientMixin, TestCase):
     """
-    UX Stage 1: an empty dataset list offers "+ Register Dataset" as a real
+    UX Stage 0: an empty dataset list offers "+ Register Dataset" as a real
     link to the Manage page, like the page header does. Actions the site
     cannot do yet (a new contract version) stay a disabled label, and empty
     states that never had an action still have none.
@@ -500,7 +500,8 @@ class EmptyStateActionTests(SignedInClientMixin, TestCase):
         action = self.action_on(reverse("data_quality:dataset-detail", args=[dataset.pk]))
         self.assertIn("+ New Contract Version", action)
         self.assertIn("btn--disabled", action)
-        self.assertIn('title="Planned for a later assignment"', action)
+        self.assertIn("Creating contract versions is not available yet.", action)
+        self.assertNotIn("title=", action)
         self.assertNotIn("href=", action)
 
     def test_empty_states_without_an_action_still_have_none(self):
@@ -545,10 +546,26 @@ class EmptyStatePartialTests(TestCase):
         self.assertNotIn("btn--disabled", html)
 
     def test_action_without_a_url_stays_a_disabled_label(self):
+        html = render_to_string(
+            self.PARTIAL, {**self.TEXT, "action_label": "+ Go", "action_reason": "Going is not available yet."}
+        )
+        self.assertInHTML(
+            '<span class="unavailable">'
+            '<span class="btn btn--disabled">+ Go</span>'
+            '<span class="unavailable__reason">Going is not available yet.</span>'
+            "</span>",
+            html,
+        )
+        self.assertNotIn("<a ", html)
+        self.assertNotIn("title=", html)
+
+    def test_action_without_a_reason_shows_the_default_reason(self):
         html = render_to_string(self.PARTIAL, {**self.TEXT, "action_label": "+ Go"})
         self.assertInHTML(
-            '<span class="btn btn--primary btn--disabled" '
-            'title="Planned for a later assignment">+ Go</span>',
+            '<span class="unavailable">'
+            '<span class="btn btn--disabled">+ Go</span>'
+            '<span class="unavailable__reason">Not available yet.</span>'
+            "</span>",
             html,
         )
         self.assertNotIn("<a ", html)
@@ -572,11 +589,11 @@ def contrast_ratio(hex_a, hex_b):
     return (high + 0.05) / (low + 0.05)
 
 
-class PrimaryButtonStyleTests(TestCase):
+class StylesheetMixin:
     """
-    The stylesheet rules behind the "+ Register Dataset" buttons. The test
-    runner has no browser, so these read datapact.css itself; the rendered
-    result was also checked in a browser (see the PR notes).
+    Reads datapact.css for the style tests. The test runner has no browser,
+    so these check the stylesheet itself; the rendered result was also
+    checked in a browser (see the PR notes).
     """
 
     @classmethod
@@ -597,6 +614,15 @@ class PrimaryButtonStyleTests(TestCase):
         """A literal #rrggbb, or a var(--token) from :root."""
         token = re.fullmatch(r"var\(--([\w-]+)\)", value.strip())
         return self.tokens[token.group(1)] if token else value.strip()
+
+    def declared_colour(self, selector, prop):
+        value = re.search(rf"(?:^|;)\s*{prop}:\s*([^;]+)", self.rule(selector))
+        self.assertIsNotNone(value, f"{selector} sets no {prop}")
+        return self.colour(value.group(1))
+
+
+class PrimaryButtonStyleTests(StylesheetMixin, TestCase):
+    """The stylesheet rules behind the "+ Register Dataset" buttons."""
 
     def test_a_link_button_inside_a_table_keeps_its_white_label(self):
         """
@@ -654,6 +680,94 @@ class PrimaryButtonStyleTests(TestCase):
         html = self.client.get(reverse("data_quality:home")).content.decode()
         topbar = html[html.index('<header class="topbar">'):html.index("</header>")]
         self.assertRegex(topbar, r'class="btn btn--primary btn--sm"[^>]*>\s*Sign up\s*<')
+
+
+class UnavailableActionTests(SignedInClientMixin, TestCase):
+    """
+    UX Stage 1: an action the site cannot do yet says so in visible text next
+    to it, not only in a hover tooltip (which touch, keyboard and most
+    screen-reader users never get). One shared partial renders all of them.
+    """
+
+    PARTIAL = "data_quality/includes/_unavailable_action.html"
+
+    def unavailable_blocks(self, html):
+        return re.findall(
+            r'<span class="unavailable">\s*'
+            r'<span class="btn btn--disabled">([^<]+)</span>\s*'
+            r'<span class="unavailable__reason">([^<]+)</span>\s*</span>',
+            html,
+        )
+
+    def test_the_partial_shows_its_reason_as_text(self):
+        html = render_to_string(
+            self.PARTIAL, {"label": "Export", "reason": "Exporting is not available yet."}
+        )
+        self.assertEqual(
+            self.unavailable_blocks(html), [("Export", "Exporting is not available yet.")]
+        )
+        self.assertNotIn("title=", html)
+        self.assertNotIn("<a ", html)
+        self.assertNotIn("<button", html)
+
+    def test_the_partial_has_a_plain_default_reason(self):
+        html = render_to_string(self.PARTIAL, {"label": "Export"})
+        self.assertEqual(self.unavailable_blocks(html), [("Export", "Not available yet.")])
+
+    def test_dataset_detail_explains_every_unavailable_action(self):
+        owner = User.objects.create_user("owner1", password="pw")
+        dataset = Dataset.objects.create(
+            name="Weekly Sales Extract", owner=owner, source_team="Finance"
+        )
+        response = self.client.get(reverse("data_quality:dataset-detail", args=[dataset.pk]))
+        html = response.content.decode()
+        self.assertEqual(
+            self.unavailable_blocks(html),
+            [
+                ("Upload New File", "Uploading files is not available yet."),
+                ("View / Edit Rules", "Editing contract rules is not available yet."),
+                ("+ New Contract Version", "Creating contract versions is not available yet."),
+            ],
+        )
+        # Every disabled control on the page goes through the shared partial,
+        # and none of them hides its reason in a tooltip or in course jargon.
+        self.assertEqual(html.count("btn--disabled"), 3)
+        page = html[html.index('<main'):]
+        self.assertNotRegex(page, r'btn--disabled"[^>]*title=')
+        self.assertNotIn("later assignment", page)
+        self.assertNotIn("wireframe screen", page.lower())
+
+    def test_a_dataset_with_contracts_still_shows_its_two_page_actions(self):
+        owner = User.objects.create_user("owner1", password="pw")
+        dataset = Dataset.objects.create(
+            name="Weekly Sales Extract", owner=owner, source_team="Finance"
+        )
+        Contract.objects.create(dataset=dataset, version_number=1, status=Contract.Status.ACTIVE)
+        html = self.client.get(
+            reverse("data_quality:dataset-detail", args=[dataset.pk])
+        ).content.decode()
+        labels = [label for label, _ in self.unavailable_blocks(html)]
+        self.assertEqual(labels, ["Upload New File", "View / Edit Rules"])
+
+
+class UnavailableActionStyleTests(StylesheetMixin, TestCase):
+    """The disabled look stays legible instead of fading the label away."""
+
+    def test_disabled_buttons_are_not_faded_with_opacity(self):
+        self.assertNotIn("opacity", self.rule(".btn--disabled"))
+
+    def test_disabled_label_is_readable_on_its_background(self):
+        # WCAG 1.4.3 asks 4.5:1 for text. Inactive controls are exempt, but the
+        # label still has to be read to know what is not available.
+        label = self.declared_colour(".btn--disabled", "color")
+        ground = self.declared_colour(".btn--disabled", "background")
+        self.assertGreaterEqual(contrast_ratio(label, ground), 4.5)
+
+    def test_the_reason_is_readable_on_the_page_and_on_panels(self):
+        reason = self.declared_colour(".unavailable__reason", "color")
+        for ground in ("canvas", "surface"):
+            with self.subTest(ground=ground):
+                self.assertGreaterEqual(contrast_ratio(reason, self.tokens[ground]), 4.5)
 
 
 class SettingsSplitTests(TestCase):
