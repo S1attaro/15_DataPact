@@ -69,17 +69,17 @@ the image.
             <thead>
                 <tr>
                     <th scope="col">Outcome</th>
-                    <th scope="col">Validation runs</th>
+                    <th scope="col" class="num">Validation runs</th>
                 </tr>
             </thead>
             <tbody>
                 {% for value, label, total in outcomes %}
                     <tr>
                         <th scope="row">{{ label }}</th>
-                        <td>{{ total }}</td>
+                        <td class="num">{{ total }}</td>
                     </tr>
                 {% empty %}
-                    <tr>
+                    <tr class="is-emptyrow">
                         <td colspan="2">
                             {% include "data_quality/includes/_empty_state.html" with headline="No outcomes to report." message="DataPact has not recorded any validation runs yet." only %}
                         </td>

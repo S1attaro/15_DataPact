@@ -61,7 +61,7 @@
                         <td class="num">{{ total }}</td>
                     </tr>
                 {% empty %}
-                    <tr>
+                    <tr class="is-emptyrow">
                         <td colspan="2">
                             {% include "data_quality/includes/_empty_state.html" with headline="No validation runs yet." message="Outcome totals will appear once a file has been checked." only %}
                         </td>
@@ -91,7 +91,7 @@
                         <td class="num">{{ row.total }}</td>
                     </tr>
                 {% empty %}
-                    <tr>
+                    <tr class="is-emptyrow">
                         <td colspan="2">
                             {% include "data_quality/includes/_empty_state.html" with headline="No validation runs yet." message="Per-dataset totals will appear once a file has been checked." only %}
                         </td>
