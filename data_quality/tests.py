@@ -497,7 +497,13 @@ class EmptyStateActionTests(SignedInClientMixin, TestCase):
         dataset = Dataset.objects.create(
             name="Weekly Sales Extract", owner=owner, source_team="Finance"
         )
-        action = self.action_on(reverse("data_quality:dataset-detail", args=[dataset.pk]))
+        # UX Stage 4 added a second empty state to this page (its violations
+        # panel); that one has no action, and the contract one keeps its own.
+        contracts_action, violations_action = self.actions_on(
+            reverse("data_quality:dataset-detail", args=[dataset.pk]))
+        self.assertNotIn("btn", violations_action)
+        self.assertNotIn("href=", violations_action)
+        action = contracts_action
         self.assertIn("+ New Contract Version", action)
         self.assertIn("btn--disabled", action)
         self.assertIn("Creating contract versions is not available yet.", action)

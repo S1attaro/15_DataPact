@@ -243,7 +243,7 @@ header and footer are written once.
 data_quality/templates/data_quality/
   base.html                    site shell: <head>, CSS, top nav, page header, footer
   dataset_list.html            wireframe screen 1, the dataset registry
-  dataset_detail.html          wireframe screen 2, one dataset and its contracts
+  dataset_detail.html          wireframe screen 2, one dataset, its contracts and (UX Stage 4) its violations
   dataset_overview.html        contract coverage per dataset
   includes/
     _empty_state.html          the shared "nothing here yet" block
@@ -252,6 +252,15 @@ data_quality/templates/data_quality/
 
 Blocks a page can fill in: `title`, `extra_head`, `breadcrumbs`, `page_title`,
 `page_subtitle`, `page_actions`, `content`.
+
+UX Stage 4 (Tejas) gives the dataset page a **Violations** panel (`#violations`). It lists every violation recorded against any of the dataset's contract versions, newest run first. Each row shows:
+
+- the run's file, date and contract version;
+- the column and rule;
+- the failed rows and the recorded resolution;
+- an Explain link to the AI explanation page.
+
+It leaves out sample values and messages. When the list is empty, it says either that no runs have been recorded yet, or how many runs found nothing, including any that ended in an error.
 
 `dataset_list.html` is written against a single context variable, `datasets`,
 so it does not depend on which kind of view rendered it. Any view can reuse it:
