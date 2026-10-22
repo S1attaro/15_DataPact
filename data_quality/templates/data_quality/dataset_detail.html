@@ -11,6 +11,11 @@ Context expected (supplied by DatasetDetailView, a generic DetailView):
 The contract-version table has its own {% empty %} branch, because a dataset
 can legitimately exist before anyone has written expectations for it, and
 that is a different situation from "no datasets exist at all".
+
+Planned actions (UX Stage 1): "Upload New File" is wireframe screen 4 and
+"View / Edit Rules" is the contract editor, wireframe screen 3, both planned
+for a later assignment. They render through _unavailable_action.html, which
+says in plain words beside each one that it is not available yet.
 =============================================================================
 {% endcomment %}
 
@@ -29,8 +34,7 @@ that is a different situation from "no datasets exist at all".
 {% endblock %}
 
 {% block page_actions %}
-    <span class="btn btn--disabled"
-          title="Uploading files is planned for a later assignment">Upload New File</span>
+    {% include "data_quality/includes/_unavailable_action.html" with label="Upload New File" reason="Uploading files is not available yet." only %}
 {% endblock %}
 
 {% block content %}
@@ -66,8 +70,7 @@ that is a different situation from "no datasets exist at all".
     <div class="panel">
         <div class="panel__head">
             <h2 class="panel__title">Contract versions</h2>
-            <span class="btn btn--disabled"
-                  title="The contract editor is wireframe screen 3 - not built yet">View / Edit Rules</span>
+            {% include "data_quality/includes/_unavailable_action.html" with label="View / Edit Rules" reason="Editing contract rules is not available yet." only %}
         </div>
         <table class="datatable">
             {% if contracts %}
@@ -93,7 +96,7 @@ that is a different situation from "no datasets exist at all".
                 {% empty %}
                     <tr class="is-emptyrow">
                         <td colspan="4">
-                            {% include "data_quality/includes/_empty_state.html" with headline="No contract versions yet for this dataset." message="Write a contract to record what every incoming file is expected to contain." action_label="+ New Contract Version" only %}
+                            {% include "data_quality/includes/_empty_state.html" with headline="No contract versions yet for this dataset." message="Write a contract to record what every incoming file is expected to contain." action_label="+ New Contract Version" action_reason="Creating contract versions is not available yet." only %}
                         </td>
                     </tr>
                 {% endfor %}

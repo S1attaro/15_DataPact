@@ -17,7 +17,9 @@ the page's context, so it can never depend on something by accident):
   action_label  optional - text for the call-to-action button
   action_url    optional - where that button goes. Without it the button is
                 a disabled "planned" label, so only actions the site can
-                really do are clickable (UX Stage 1: Register Dataset).
+                really do are clickable (UX Stage 0: Register Dataset).
+  action_reason optional - without action_url, the sentence shown under the
+                disabled label saying why (_unavailable_action.html).
 {% endcomment %}
 <div class="empty-state">
     <div class="empty-state__mark" aria-hidden="true"></div>
@@ -26,7 +28,6 @@ the page's context, so it can never depend on something by accident):
     {% if action_label and action_url %}
         <a class="btn btn--primary" href="{{ action_url }}">{{ action_label }}</a>
     {% elif action_label %}
-        <span class="btn btn--primary btn--disabled"
-              title="Planned for a later assignment">{{ action_label }}</span>
+        {% include "data_quality/includes/_unavailable_action.html" with label=action_label reason=action_reason only %}
     {% endif %}
 </div>

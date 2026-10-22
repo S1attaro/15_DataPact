@@ -136,7 +136,19 @@ body {
 /* On the dark top bar (signed-out "Sign up") the accent ring is too faint;
    use the bar's own highlight colour instead. */
 .topbar .btn--primary:focus-visible { outline-color: #8fb0ff; }
-.btn--disabled { opacity: 0.45; cursor: not-allowed; }
+/* An action that is not available yet (_unavailable_action.html). Legible
+   rather than faded, with a dashed edge like the empty-state mark, and its
+   reason written beside it instead of in a hover tooltip. */
+.btn--disabled {
+    background: var(--surface);
+    border-style: dashed;
+    border-color: var(--ink-faint);
+    color: var(--ink-soft);
+    cursor: not-allowed;
+}
+.unavailable { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0.35rem; }
+.unavailable__reason { max-width: 18rem; font-size: 0.82rem; line-height: 1.4; color: var(--ink-soft); }
+.empty-state .unavailable { align-items: center; }
 
 /* ---- panels and tables ---------------------------------------- */
 .panel {
@@ -155,6 +167,7 @@ body {
     padding: 0.85rem 1.1rem;
     border-bottom: 1px solid var(--line);
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
