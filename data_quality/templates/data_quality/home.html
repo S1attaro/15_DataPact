@@ -83,7 +83,7 @@ Styling lives in datapact.css ("Home page" section), not in this file.
                 </p>
                 {% if user.is_authenticated %}
                     <ul class="workflow__links" role="list">
-                        <li><a href="{% url 'data_quality:contract-search' %}">Look up violations</a></li>
+                        <li><a href="{% url 'data_quality:contract-search' %}#violation-lookup">Look up violations</a></li>
                     </ul>
                 {% endif %}
             </li>
@@ -148,6 +148,15 @@ Styling lives in datapact.css ("Home page" section), not in this file.
                 <div>
                     <dt>Open violations</dt>
                     <dd>{{ open_violation_count }}</dd>
+                    {% comment %}
+                        UX Stage 3: from the count to the violations behind it.
+                        The lookup is a POST, so the link opens it with "Open"
+                        chosen rather than running it; signed-in users only,
+                        like every other protected link on this page.
+                    {% endcomment %}
+                    {% if user.is_authenticated and open_violation_count %}
+                        <dd class="factlist__link"><a href="{% url 'data_quality:contract-search' %}?resolution=OPEN#violation-lookup">Look up open violations</a></dd>
+                    {% endif %}
                 </div>
             </dl>
         </div>

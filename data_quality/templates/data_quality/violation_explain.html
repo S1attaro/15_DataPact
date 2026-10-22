@@ -43,6 +43,7 @@ by Django's autoescaping; nothing here uses |safe.
         <div class="panel__body">
             <dl class="facts">
                 <dt>Dataset</dt><dd><a href="{{ violation.rule.contract.dataset.get_absolute_url }}">{{ violation.rule.contract.dataset.name }}</a> (contract v{{ violation.rule.contract.version_number }})</dd>
+                <dt>Validation run</dt><dd>{{ violation.run.file_name }}, checked {{ violation.run.started_at|date:"Y-m-d" }}</dd>
                 <dt>Column</dt><dd>{{ violation.rule.column_name }}</dd>
                 <dt>Rule</dt><dd><code>{{ rule_text }}</code></dd>
                 <dt>Rows failed</dt><dd>{{ violation.failed_row_count }} of {{ violation.run.row_count }}</dd>

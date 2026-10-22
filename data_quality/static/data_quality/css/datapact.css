@@ -21,7 +21,8 @@
     12. Footer
     13. Home page        (UX Stage 0)
     14. Explain page     (UX Stage 2)
-    15. Small screens
+    15. Violation lookup (UX Stage 3)
+    16. Small screens
    ========================================================================= */
 
 /* ---- design tokens ------------------------------------------- */
@@ -183,7 +184,10 @@ body {
 }
 .panel__body { padding: 1.1rem; }
 
-.datatable { width: 100%; border-collapse: collapse; }
+/* position: relative (UX Stage 3) keeps .visually-hidden text inside the
+   table, so the panel's scroll area holds it; without it the hidden text
+   in a wide table's last column made the whole page scroll sideways. */
+.datatable { width: 100%; border-collapse: collapse; position: relative; }
 .datatable th {
     text-align: left;
     padding: 0.6rem 1.1rem;
@@ -599,6 +603,46 @@ button[aria-disabled="true"] { cursor: progress; }
 @media (prefers-reduced-motion: reduce) {
     .explain__status::before { animation: none; }
 }
+
+/* ---- violation lookup (UX Stage 3) ----------------------------- */
+/* Read by screen readers, not drawn: the run and rule that give each
+   results-table "Explain" link a name of its own. Clipped rather than
+   display:none, which would hide it from screen readers as well. */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Above the lookup form when a link chose the resolution: the lookup
+   has not run yet, and this says what to press. */
+.lookup__hint { margin: 0 0 0.9rem; color: var(--ink-soft); font-size: 0.9rem; }
+
+/* How many violations matched, and for what: the first line on landing. */
+.results__summary {
+    margin: 0;
+    padding: 0.85rem 1.1rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+}
+
+/* A second, quieter line in a table cell (a run's date under its file).
+   --ink-soft, not --ink-faint, so it stays readable (4.5:1). */
+.datatable .cell__sub { display: block; font-size: 0.8rem; color: var(--ink-soft); }
+
+/* Home's "Look up open violations", under the count it explains. Scoped
+   to .factlist because `.factlist dd` would otherwise win the margin. */
+.factlist .factlist__link { margin: 0.35rem 0 0; font-size: 0.85rem; }
+.factlist__link a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.factlist__link a:hover { text-decoration: underline; }
+.factlist__link a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 
 /* ---- small screens --------------------------------------------- */
 /* Between a phone and a full desktop the bar runs out of room: nine nav
