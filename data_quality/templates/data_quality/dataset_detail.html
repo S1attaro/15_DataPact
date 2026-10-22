@@ -7,6 +7,9 @@ Section 3 (Templates / UI) - Ashok Chacko
 Context expected (supplied by DatasetDetailView, a generic DetailView):
     dataset     one Dataset
     contracts   that dataset's Contract versions, newest version first
+    violations  its recorded Violations, newest run first (UX Stage 4)
+    open_violation_count, violations_empty   for the violations summary
+                and its empty state (headline, message)
 
 The contract-version table has its own {% empty %} branch, because a dataset
 can legitimately exist before anyone has written expectations for it, and
@@ -38,8 +41,6 @@ says in plain words beside each one that it is not available yet.
 {% endblock %}
 
 {% block content %}
-    <p class="viewchip">Rendered by: <code>Generic CBV - DetailView (DatasetDetailView)</code></p>
-
     <div class="panel">
         <div class="panel__head"><h2 class="panel__title">Dataset</h2></div>
         <div class="panel__body">
@@ -103,4 +104,52 @@ says in plain words beside each one that it is not available yet.
             </tbody>
         </table>
     </div>
+
+    {% comment %}
+        UX Stage 4: this dataset's recorded violations, newest run first.
+        Each row names its run (file, date, contract version), because the
+        same rule can fail in several files. The hidden part of each
+        Explain link gives it a name of its own (as in the Stage 3 lookup).
+        No sample values or messages: they can hold the file's raw data.
+    {% endcomment %}
+    <section class="panel" id="violations" aria-labelledby="violations-title">
+        <div class="panel__head">
+            <h2 class="panel__title" id="violations-title">Violations</h2>
+        </div>
+        {% if violations %}
+            <p class="results__summary">
+                {{ violations|length }} violation{{ violations|length|pluralize }} recorded, newest run first.{% if open_violation_count %} {{ open_violation_count }} {{ open_violation_count|pluralize:"is,are" }} still open.{% endif %}
+            </p>
+        {% endif %}
+        <table class="datatable">
+            {% if violations %}
+                <thead>
+                    <tr>
+                        <th scope="col">Validation run</th>
+                        <th scope="col">Column / Rule</th>
+                        <th scope="col" class="num">Failed rows</th>
+                        <th scope="col">Resolution</th>
+                        <th scope="col">AI explanation</th>
+                    </tr>
+                </thead>
+            {% endif %}
+            <tbody>
+                {% for violation in violations %}
+                    <tr>
+                        <td>{{ violation.run.file_name }}<span class="cell__sub">{{ violation.run.started_at|date:"Y-m-d" }} &middot; contract v{{ violation.rule.contract.version_number }}</span></td>
+                        <td>{{ violation.rule.column_name }} - {{ violation.rule.get_rule_type_display }}</td>
+                        <td class="num">{{ violation.failed_row_count }}</td>
+                        <td>{{ violation.get_resolution_display }}</td>
+                        <td><a href="{% url 'data_quality:violation-explain' violation.pk %}">Explain<span class="visually-hidden"> {{ violation.rule.column_name }} {{ violation.rule.get_rule_type_display }} in {{ violation.run.file_name }}, {{ violation.run.started_at|date:"Y-m-d" }}</span></a></td>
+                    </tr>
+                {% empty %}
+                    <tr class="is-emptyrow">
+                        <td colspan="5">
+                            {% include "data_quality/includes/_empty_state.html" with headline=violations_empty.0 message=violations_empty.1 only %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
 {% endblock %}

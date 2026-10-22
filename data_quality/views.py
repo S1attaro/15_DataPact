@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -75,7 +75,8 @@ class DatasetListView(LoginRequiredMixin, ListView):
 class DatasetDetailView(LoginRequiredMixin, DetailView):
     """
     Generic CBV: one dataset with its contract version history. Mirrors
-    wireframe screen 2 (Dataset Detail).
+    wireframe screen 2 (Dataset Detail). UX Stage 4 adds its recorded
+    violations, so a dataset's failures can be found from its own page.
     """
 
     model = Dataset
@@ -88,6 +89,38 @@ class DatasetDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["contracts"] = self.object.contracts.all()
+
+        # UX Stage 4: every violation recorded against any of this dataset's
+        # contract versions, newest run first (a run's rows kept together,
+        # the most failed rows first within it), in one query. Evaluated
+        # here so the template's count, rows and open count all read the
+        # same list.
+        violations = list(
+            Violation.objects.filter(rule__contract__dataset=self.object)
+            .select_related("rule", "rule__contract", "run")
+            .order_by("-run__started_at", "-run_id", "-failed_row_count", "pk")
+        )
+        context["violations"] = violations
+        context["open_violation_count"] = sum(
+            1 for v in violations if v.resolution == Violation.Resolution.OPEN
+        )
+        if not violations:
+            # Only an empty list needs to know whether any run happened, and
+            # whether one ended in an error (so that is not read as a pass).
+            runs = ValidationRun.objects.filter(contract__dataset=self.object).aggregate(
+                total=Count("id"), errors=Count("id", filter=Q(status=ValidationRun.Status.ERROR))
+            )
+            run_count = runs["total"]
+            if run_count:
+                message = f"{run_count} validation run{'s' if run_count != 1 else ''} recorded, none with a violation."
+                if runs["errors"]:
+                    message += f" {runs['errors']} ended in an error and may not have been fully checked."
+                context["violations_empty"] = ("No violations recorded for this dataset.", message)
+            else:
+                context["violations_empty"] = (
+                    "No validation runs have been recorded for this dataset yet.",
+                    "Violations appear here when a run finds a file that breaks one of its contract rules.",
+                )
         return context
 
 # ---------------------------------------------------------------
