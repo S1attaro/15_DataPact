@@ -183,6 +183,20 @@ class DatasetViolationsTests(DiscoveryData):
         self.assertIn(reverse("data_quality:login"), response["Location"])
 
 
+class DatasetPageHeaderTests(DiscoveryData):
+    def test_the_page_no_longer_names_the_view_that_rendered_it(self):
+        """
+        The "Rendered by: Generic CBV - DetailView" chip was an A2 grading aid;
+        the rubric asks for view names in docs/notes/notes.txt, not on the page.
+        """
+        response = self.client.get(detail_url(self.enrollment))
+        self.assertNotContains(response, "Rendered by")
+        self.assertNotContains(response, 'class="viewchip"')
+        # The page itself is unchanged: still the DetailView's template.
+        self.assertTemplateUsed(response, "data_quality/dataset_detail.html")
+        self.assertContains(response, "<h2 class=\"panel__title\">Dataset</h2>", html=True)
+
+
 class DatasetViolationsEmptyTests(DiscoveryData):
     def test_a_dataset_with_no_runs_says_none_have_been_recorded(self):
         new = Dataset.objects.create(name="New Feed", owner=self.user, source_team="Ops")
