@@ -9,9 +9,17 @@ Context (supplied by ai_views.violation_explain):
     result       an Explanation, or None when the reply failed the checks
     cause_label  human label for result.likely_cause
     unavailable  True when the chosen engine could not be used (status 503)
+    failure      why: "off", "timeout", "unreachable", "busy", "rejected" or "error"
     engine       "local" or "groq" after a POST; engine_label names it
-The two buttons post engine=local (SmolLM2 on this machine, Part 2.2) or
+    engines      ai_views.engine_choices(): each engine, whether this server
+                 has it set up, and what its button and notes say
+    follow_ups   after a failed or unusable answer: "try again" (only when
+                 that can help) and the other engine, if it is set up
+The buttons post engine=local (SmolLM2 on this machine, Part 2.2) or
 engine=groq (Groq's API, Part 2.3; sample values are sent only if they are known status codes).
+An engine this server has not set up shows as an unavailable label, not a
+button (UX Stage 2). The script at the bottom adds a waiting message, stops a
+second click and moves focus to the answer; without it the page works the same.
 Sample values and violation.message are deliberately not shown: the existing
 lookup keeps them off GET pages (the message can quote values from the file),
 and this page follows suit. Everything the model wrote is escaped
@@ -40,25 +48,64 @@ by Django's autoescaping; nothing here uses |safe.
                 <dt>Rows failed</dt><dd>{{ violation.failed_row_count }} of {{ violation.run.row_count }}</dd>
                 <dt>Recorded resolution</dt><dd>{{ violation.get_resolution_display }}</dd>
             </dl>
-            <form method="post" action="{% url 'data_quality:violation-explain' violation.pk %}">
-                {% csrf_token %}
-                <button type="submit" name="engine" value="local" class="btn btn--primary">Explain with AI</button>
-                <button type="submit" name="engine" value="groq" class="btn btn--ghost">Explain with Groq (external API)</button>
-            </form>
-            <p class="card__note">Groq receives the dataset, column, rule (as written in the contract) and row counts. Values from the file are sent only when they are known status codes such as AUDIT or PENDING (at most 3), or are blank for a not-null rule. Numbers, names, emails, IDs and other text from the file are never sent.</p>
+            {% if any_engine %}
+                <form id="explain-form" method="post" action="{% url 'data_quality:violation-explain' violation.pk %}#ai-suggestion">
+                    {% csrf_token %}
+                    <div class="engines">
+                        {% for choice in engines %}
+                            {% if choice.available %}
+                                <div class="engine">
+                                    <button type="submit" name="engine" value="{{ choice.value }}" class="btn{% if choice.primary %} btn--primary{% endif %}" data-wait="{{ choice.wait }}" data-wait-seconds="{{ choice.wait_seconds }}">{{ choice.button }}</button>
+                                    <span class="engine__note">{{ choice.note }}</span>
+                                </div>
+                            {% else %}
+                                {% include "data_quality/includes/_unavailable_action.html" with label=choice.button reason=choice.reason only %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </form>
+            {% else %}
+                <div class="engines">
+                    {% for choice in engines %}
+                        {% include "data_quality/includes/_unavailable_action.html" with label=choice.button reason=choice.reason only %}
+                    {% endfor %}
+                </div>
+                <p class="card__note">Neither AI engine is set up on this server, so no explanation can be made here. The details above still describe what failed.</p>
+            {% endif %}
+            {% if groq_available %}
+                <p class="card__note">Groq receives the dataset, column, rule (as written in the contract) and row counts. Values from the file are sent only when they are known status codes such as AUDIT or PENDING (at most 3), or are blank for a not-null rule. Numbers, names, emails, IDs and other text from the file are never sent.</p>
+            {% endif %}
         </div>
     </div>
 
+    {% if any_engine %}
+        <p class="explain__status" id="explain-status" role="status"></p>
+    {% endif %}
+
     {% if attempted %}
-        <div class="panel">
-            <div class="panel__head"><h2 class="panel__title">AI suggestion</h2></div>
+        <section class="panel" id="ai-suggestion" tabindex="-1" aria-labelledby="ai-suggestion-title">
+            <div class="panel__head"><h2 class="panel__title" id="ai-suggestion-title">AI suggestion</h2></div>
             <div class="panel__body">
                 {% if unavailable %}
-                    {% if engine == "groq" %}
-                        <p>The Groq API is not available right now (it may not be configured, or it is busy). The violation details above are unchanged; please try again later or use the local model.</p>
-                    {% else %}
-                        <p>The local AI model is not available right now. The violation details above are unchanged; please try again later.</p>
-                    {% endif %}
+                    <p class="message message--warning">
+                        {% if failure == "off" and engine == "groq" %}
+                            Groq is not set up on this server, so it cannot answer here.
+                        {% elif failure == "off" %}
+                            The local model is switched off on this server, so it cannot answer here.
+                        {% elif engine == "local" %}
+                            The local model could not run on this server. It may be out of memory or not installed. Wait a minute, then try again.
+                        {% elif failure == "timeout" %}
+                            Groq did not answer within {{ groq_timeout }} seconds. It may be busy. Try again in a moment.
+                        {% elif failure == "unreachable" %}
+                            DataPact could not reach Groq. Try again in a moment.
+                        {% elif failure == "busy" %}
+                            The Groq request limit has been reached for now. Wait a minute, then try again.
+                        {% elif failure == "rejected" %}
+                            Groq turned the request down, so asking again will not help. The Groq settings on this server may need checking.
+                        {% else %}
+                            Groq sent back an error or a reply DataPact could not read. Try again in a moment.
+                        {% endif %}
+                    </p>
                 {% elif result %}
                     <dl class="facts">
                         <dt>Answered by</dt><dd>{{ engine_label }}</dd>
@@ -68,9 +115,77 @@ by Django's autoescaping; nothing here uses |safe.
                     </dl>
                     <p class="card__note">This is a suggestion from a model. It does not change the recorded resolution; a person decides that.</p>
                 {% else %}
-                    <p>The model could not produce a reliable explanation for this violation. The details above still describe what failed.</p>
+                    <p class="message">The model could not produce a reliable explanation for this violation, so its reply is not shown. Asking the same engine again would most likely give the same reply.</p>
+                {% endif %}
+                {% if follow_ups %}
+                    <div class="engines engines--follow-up">
+                        {% for choice in follow_ups %}
+                            <button type="submit" form="explain-form" name="engine" value="{{ choice.value }}" class="btn{% if forloop.first %} btn--primary{% endif %}" data-wait="{{ choice.wait }}" data-wait-seconds="{{ choice.wait_seconds }}">{{ choice.label }}</button>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% if not result %}
+                    <p class="card__note">The violation details above are unchanged.</p>
                 {% endif %}
             </div>
-        </div>
+        </section>
+    {% endif %}
+
+    {% if any_engine %}
+        <script>
+            // UX Stage 2: say what is happening while the server waits for a model,
+            // and stop a second click from sending a second request.
+            (function () {
+                var form = document.getElementById("explain-form");
+                var status = document.getElementById("explain-status");
+                if (!form || !status) return;
+                var buttons = document.querySelectorAll('button[name="engine"]');
+                var unlock = null;
+
+                function setBusy(busy, message) {
+                    clearTimeout(unlock);
+                    form.setAttribute("aria-busy", busy ? "true" : "false");
+                    status.textContent = message || "";
+                    status.removeAttribute("data-stalled");
+                    for (var i = 0; i < buttons.length; i++) {
+                        // aria-disabled, not disabled: a disabled submit button is left
+                        // out of the form data, which would post no engine at all.
+                        if (busy) buttons[i].setAttribute("aria-disabled", "true");
+                        else buttons[i].removeAttribute("aria-disabled");
+                    }
+                }
+
+                form.addEventListener("submit", function (event) {
+                    if (form.getAttribute("aria-busy") === "true") {
+                        event.preventDefault();
+                        return;
+                    }
+                    var button = event.submitter;
+                    setBusy(true, (button && button.getAttribute("data-wait")) || "Asking the model…");
+                    status.scrollIntoView({ block: "nearest" });
+                    // A stopped request (Esc, the Stop button) sends no event, so
+                    // unlock after the longest the server should take.
+                    var seconds = Number(button && button.getAttribute("data-wait-seconds"));
+                    if (seconds > 0) {
+                        unlock = setTimeout(function () {
+                            setBusy(false, "This is taking longer than expected. If nothing has changed, try again.");
+                            status.setAttribute("data-stalled", "true");
+                        }, seconds * 1000);
+                    }
+                });
+
+                // Coming back with the browser's Back button can restore this page
+                // exactly as it was left, mid-wait; it must not stay locked.
+                window.addEventListener("pageshow", function (event) {
+                    if (event.persisted) setBusy(false);
+                });
+
+                // After an answer or a failure, move focus to it, so keyboard and
+                // screen-reader users start there (the #ai-suggestion link has
+                // already scrolled it into view).
+                var answer = document.getElementById("ai-suggestion");
+                if (answer) answer.focus({ preventScroll: true });
+            })();
+        </script>
     {% endif %}
 {% endblock %}

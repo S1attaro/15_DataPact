@@ -20,7 +20,8 @@
     11. Flash messages   (new in A3)
     12. Footer
     13. Home page        (UX Stage 0)
-    14. Small screens
+    14. Explain page     (UX Stage 2)
+    15. Small screens
    ========================================================================= */
 
 /* ---- design tokens ------------------------------------------- */
@@ -535,6 +536,68 @@ button.btn--primary:hover { background: #2448b0; border-color: #2448b0; }
     .workflow { grid-template-columns: minmax(0, 1fr); }
     .workflow__step { border-left: none; }
     .workflow__step:nth-child(n + 2) { border-top: 1px solid var(--line); }
+}
+
+/* ---- explain page (UX Stage 2) ---------------------------------- */
+/* The failed check and the model's answer: a small label over each value,
+   like .factlist on the detail page, but stacked, because an answer is a
+   sentence. The labels use --ink-soft so they stay readable (4.5:1). */
+.facts { margin: 0; }
+.facts dt {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+.facts dd { margin: 0.2rem 0 0.9rem; }
+.facts dd:last-child { margin-bottom: 0; }
+.card__note { margin: 1rem 0 0; max-width: 70ch; font-size: 0.85rem; color: var(--ink-soft); }
+
+/* Each engine is its button with one plain line under it: the same shape
+   as an engine this server has not set up (_unavailable_action.html). */
+.engines { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1rem 1.5rem; margin-top: 1.25rem; }
+.engines .btn { margin-top: 0; }
+.engine { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0.35rem; }
+.engine__note { max-width: 18rem; font-size: 0.82rem; line-height: 1.4; color: var(--ink-soft); }
+.engines--follow-up { gap: 0.6rem; margin-top: 1rem; }
+/* The same keyboard ring as .btn--primary, on the plain buttons too. */
+.engines .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button[aria-disabled="true"] { cursor: progress; }
+
+/* The answer panel takes focus after a click so screen readers start
+   there. It is not a control and not in the Tab order, so the browser's
+   thick focus outline around the whole panel would only look like one. */
+.panel[tabindex="-1"]:focus { outline: none; }
+.panel__body > .message:first-child { margin-top: 0; }
+
+/* The waiting message the page's script writes into this role="status"
+   line. Empty, it takes no room but stays in the page, so screen readers
+   still treat it as a live region when the text arrives. */
+.explain__status {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: -0.5rem 0 1.5rem;
+    font-size: 0.9rem;
+    color: var(--ink);
+}
+.explain__status:empty { margin: 0; }
+.explain__status::before {
+    content: "";
+    flex: none;
+    width: 0.9rem;
+    height: 0.9rem;
+    border: 2px solid var(--line);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: explain-spin 0.9s linear infinite;
+}
+.explain__status:empty::before,
+.explain__status[data-stalled]::before { display: none; }
+@keyframes explain-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .explain__status::before { animation: none; }
 }
 
 /* ---- small screens --------------------------------------------- */

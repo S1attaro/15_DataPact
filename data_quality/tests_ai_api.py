@@ -186,7 +186,7 @@ class GroqExplainViewTests(TestCase):
         with self.assertLogs("data_quality.ai_views", "WARNING") as logs:
             response = self.client.post(self.url, {"engine": "groq"})
         self.assertEqual(response.status_code, 503)
-        self.assertContains(response, "The Groq API is not available", status_code=503)
+        self.assertContains(response, "Groq did not answer within", status_code=503)
         for text in (TEST_KEY, "read timed out", "api.groq.com"):
             self.assertNotContains(response, text, status_code=503)
         self.assertNotIn(TEST_KEY, "\n".join(logs.output))
@@ -196,7 +196,7 @@ class GroqExplainViewTests(TestCase):
         self.client.force_login(self.user)
         response = self.client.post(self.url, {"engine": "groq"})
         self.assertEqual(response.status_code, 503)
-        self.assertContains(response, "The Groq API is not available", status_code=503)
+        self.assertContains(response, "Groq is not set up on this server", status_code=503)
         self.post.assert_not_called()
 
     def test_groq_output_is_escaped(self):
