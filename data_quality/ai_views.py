@@ -60,7 +60,7 @@ def engine_choices():
             "value": "local",
             "available": settings.AI_LOCAL_ENABLED,
             "button": "Explain with AI",
-            "note": f"{local_name}, running on this server. The first answer after the server "
+            "note": f"{local_name}, a local model on this server. The first answer after the server "
                     "starts can take a minute or more while the model loads.",
             "reason": "The local model is switched off on this server.",
             "wait": "Asking the local model… The first answer after the server starts can take "

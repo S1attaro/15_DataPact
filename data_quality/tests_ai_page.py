@@ -156,7 +156,7 @@ class EngineStatusTests(ExplainPageTestCase):
         self.assertNotIn("btn--primary", buttons[1]["class"])
         # btn--ghost is the dark top bar's button: light grey text, unreadable on a white panel.
         self.assertNotIn("btn--ghost", buttons[1]["class"])
-        self.assertIn("SmolLM2-1.7B-Instruct, running on this server", html)
+        self.assertIn("SmolLM2-1.7B-Instruct, a local model on this server.", html)
         self.assertIn("openai/gpt-oss-20b, through the Groq API", html)
         self.assertEqual(unavailable_labels(html), [])
 
@@ -197,7 +197,8 @@ class EngineStatusTests(ExplainPageTestCase):
     @override_settings(AI_LOCAL_ENABLED=True, GROQ_API_KEY=TEST_KEY)
     def test_the_wording_never_claims_an_engine_is_working(self):
         html = self.page(self.client.get(self.url))
-        for claim in ("online", "healthy", "ready", "connected", "working"):
+        # "running" too: the page reads settings, so it cannot know the model is loaded.
+        for claim in ("online", "healthy", "ready", "connected", "working", "running"):
             with self.subTest(claim=claim):
                 self.assertNotRegex(html, rf"(?i)\b{claim}\b")
 
