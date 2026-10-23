@@ -40,10 +40,16 @@
     --canvas:     #f6f7f9;
     --bar:        #16202c;
     --accent:     #2f5bd7;
+    /* Hover and pressed accent (UX Stage 6): links and primary buttons. */
+    --accent-strong: #2448b0;
     --pass-bg:    #e3f4e8;  --pass-ink:   #1d6b36;
     --fail-bg:    #fce4e4;  --fail-ink:   #a12a2a;
     --warn-bg:    #fdf3d8;  --warn-ink:   #855c11;
     --radius:     8px;
+    /* The small capitals that label data (UX Stage 6): column headers and
+       fact labels. One size, so a panel title (1rem) and a form label
+       (0.85rem, sentence case) can sit visibly above and beside it. */
+    --text-label: 0.72rem;
 }
 
 * { box-sizing: border-box; }
@@ -57,6 +63,18 @@ body {
     font-size: 15px;
     line-height: 1.5;
 }
+
+/* Links (UX Stage 6). There was no base rule, so any link outside a
+   component that styled its own came out browser blue, or visited purple.
+   Underlined by default, so a link in running text does not rely on colour
+   alone; components such as tables and the nav drop the underline. The
+   hover is wrapped in :where() to keep it at a bare link's weight, so the
+   brand, the nav and link-buttons keep their own colours. */
+a { color: var(--accent); text-underline-offset: 0.18em; }
+a:where(:hover) { color: var(--accent-strong); }
+
+/* Selected text in the accent's own tint rather than the browser's. */
+::selection { background: #d6e0fa; color: var(--ink); }
 
 /* Keyboard focus (UX Stage 5): every link, button and scrolling panel gets
    the 2px accent ring the Home links and primary buttons already had,
@@ -146,7 +164,7 @@ body {
     padding: 0 0.4rem;
     border: 1px dashed #949eaa;
     border-radius: 999px;
-    font-size: 0.68rem;
+    font-size: 0.7rem; /* 11.2px: the 11px floor for UI text (was 10.9px) */
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -179,7 +197,9 @@ body {
     margin-bottom: 1.5rem;
 }
 .page__title { margin: 0; font-size: 1.6rem; letter-spacing: -0.01em; }
-.page__subtitle { margin: 0.35rem 0 0; color: var(--ink-soft); font-size: 0.9rem; }
+/* 72ch keeps a long subtitle (Home's runs to two sentences) at a reading
+   measure; it was about 120 characters a line on a desktop. */
+.page__subtitle { margin: 0.35rem 0 0; max-width: 72ch; color: var(--ink-soft); font-size: 0.9rem; }
 
 /* ---- buttons -------------------------------------------------- */
 .btn {
@@ -189,11 +209,20 @@ body {
     font-size: 0.88rem;
     font-weight: 600;
     text-decoration: none;
-    border: 1px solid var(--line);
+    /* --line-strong, as the form fields use (UX Stage 6): the panel line
+       (--line) left a plain button's edge at 1.2:1 against white. */
+    border: 1px solid var(--line-strong);
     background: var(--surface);
     color: var(--ink);
 }
+/* Hover for a plain button, link or <button> alike. :where() keeps it
+   below the primary and ghost hovers, and the unavailable-action labels
+   (spans styled as buttons) never match, so they do not react. */
+:where(a, button).btn:hover { background: var(--canvas); border-color: var(--ink-soft); }
 .btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* Was button.btn--primary:hover, so the link-styled primary buttons
+   ("Explore datasets", "+ Register Dataset") had no hover at all. */
+.btn--primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; }
 /* Keyboard focus (the browser's :focus-visible rule), same ring as the Home page links. */
 .btn--primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* On the dark top bar (signed-out "Sign up") the accent ring is too faint;
@@ -235,13 +264,17 @@ body {
     justify-content: space-between;
     gap: 1rem;
 }
+/* A panel's title is a heading (UX Stage 6): sentence case at 1rem in the
+   main ink. It used to be 0.75rem grey capitals, the same as the column
+   headers right under it, so a panel had two or three stacked bands of
+   tiny capitals before any data. */
 .panel__title {
     margin: 0;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
+    font-size: 1rem;
+    font-weight: 650;
+    line-height: 1.3;
+    letter-spacing: -0.005em;
+    color: var(--ink);
 }
 .panel__body { padding: 1.1rem; }
 
@@ -249,10 +282,13 @@ body {
    table, so the panel's scroll area holds it; without it the hidden text
    in a wide table's last column made the whole page scroll sideways. */
 .datatable { width: 100%; border-collapse: collapse; position: relative; }
-.datatable th {
+/* Column headers only (thead), since UX Stage 6. This used to style every
+   th, so the dataset and outcome names heading each row on Reports and
+   Quality History came out as small grey capitals on a grey band. */
+.datatable thead th {
     text-align: left;
     padding: 0.6rem 1.1rem;
-    font-size: 0.72rem;
+    font-size: var(--text-label);
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;
@@ -261,7 +297,18 @@ body {
     border-bottom: 1px solid var(--line);
 }
 .datatable td { padding: 0.75rem 1.1rem; border-bottom: 1px solid #f0f2f5; }
-.datatable tbody tr:last-child td { border-bottom: none; }
+/* A row header (scope="row") reads like the data it labels, in the main
+   ink and a little heavier, with the same cell spacing as a td. */
+.datatable tbody th {
+    text-align: left;
+    padding: 0.75rem 1.1rem;
+    font-weight: 600;
+    text-transform: none;
+    color: var(--ink);
+    border-bottom: 1px solid #f0f2f5;
+}
+.datatable tbody tr:last-child td,
+.datatable tbody tr:last-child th { border-bottom: none; }
 .datatable tbody tr:hover { background: #fafbfd; }
 .datatable a { color: var(--accent); text-decoration: none; font-weight: 600; }
 .datatable a:hover { text-decoration: underline; }
@@ -291,7 +338,11 @@ body {
     color: var(--ink-soft);
 }
 .badge--active, .badge--passed { background: var(--pass-bg); color: var(--pass-ink); }
-.badge--retired, .badge--failed { background: var(--fail-bg); color: var(--fail-ink); }
+/* Red is for broken data (a failed run). A retired contract version is
+   only history, so it keeps the plain grey badge above (UX Stage 6); it
+   used to share the failure red, and a healthy dataset's page showed
+   three red pills against one green. */
+.badge--failed { background: var(--fail-bg); color: var(--fail-ink); }
 .badge--draft, .badge--error   { background: var(--warn-bg); color: var(--warn-ink); }
 
 /* Small label naming the view kind that rendered the page. It makes
@@ -327,12 +378,14 @@ body {
 /* ---- definition list used on the detail page ------------------ */
 .factlist { display: flex; flex-wrap: wrap; gap: 1.75rem; margin: 0; }
 .factlist div { min-width: 120px; }
+/* The same label as a column header, and --ink-soft like the explain
+   page's .facts labels (it was --ink-faint here, for the same role). */
 .factlist dt {
-    font-size: 0.7rem;
+    font-size: var(--text-label);
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;
-    color: var(--ink-faint);
+    color: var(--ink-soft);
 }
 .factlist dd { margin: 0.2rem 0 0; }
 
@@ -346,14 +399,14 @@ body {
 
 form { display: grid; gap: 0.25rem; justify-items: start; }
 
+/* Sentence case at 0.85rem (UX Stage 6): a label is read before typing,
+   and small capitals are slower to read than the words themselves. */
 label {
     display: block;
     margin-top: 0.6rem;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink);
 }
 form > label:first-child { margin-top: 0; }
 
@@ -388,7 +441,6 @@ input::placeholder, textarea::placeholder { color: var(--ink-faint); }
 form button, form .btn { margin-top: 1rem; }
 
 button.btn { font: inherit; font-weight: 600; cursor: pointer; }
-button.btn--primary:hover { background: #2448b0; border-color: #2448b0; }
 
 /* Django renders field errors as <ul class="errorlist"> and help text as
    <span class="helptext">, so both are styled here rather than in a
@@ -471,7 +523,9 @@ button.btn--primary:hover { background: #2448b0; border-color: #2448b0; }
     border-color: #3b4654;
     color: #c4ccd6;
 }
-.btn--ghost:hover { border-color: #6b7686; color: #fff; }
+/* background: transparent, or the plain button's light hover fill (section
+   5) would show under the white label (UX Stage 6). */
+.btn--ghost:hover { background: transparent; border-color: #6b7686; color: #fff; }
 
 /* The narrow-screen "Menu" button (UX Stage 5). Hidden here; the small
    screens section shows it once base.html's script has set it up. */
@@ -613,7 +667,7 @@ button.btn--primary:hover { background: #2448b0; border-color: #2448b0; }
    sentence. The labels use --ink-soft so they stay readable (4.5:1). */
 .facts { margin: 0; }
 .facts dt {
-    font-size: 0.7rem;
+    font-size: var(--text-label);
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;

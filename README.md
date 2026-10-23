@@ -273,6 +273,15 @@ UX Stage 5 (Tejas) made the site shell in `base.html` easier to use with a keybo
 
 `data_quality/tests_navigation.py` covers these.
 
+UX Stage 6, first increment (Tejas), tidied the shared components in `datapact.css` rather than any one page:
+
+- **Type steps:** panel titles are sentence-case 1rem headings, a step above the small-capital column headers and fact labels, which now share one size (`--text-label`) and colour. Form labels are sentence case.
+- **Tables:** column-header styling applies to `thead` only, so row headers (Reports, Quality History) read like the data they label. Number columns align their headers with their numbers.
+- **Links and buttons:** every link has the site blue and a hover (`--accent-strong`), every button has a hover, and a plain button's edge uses `--line-strong`.
+- **Badges:** red is kept for failed runs; a retired contract version uses the plain grey badge.
+
+`data_quality/tests_visual_foundation.py` covers these.
+
 `dataset_list.html` is written against a single context variable, `datasets`,
 so it does not depend on which kind of view rendered it. Any view can reuse it:
 
