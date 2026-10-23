@@ -47,7 +47,7 @@ by Django's autoescaping; nothing here uses |safe.
                 <dt>Column</dt><dd>{{ violation.rule.column_name }}</dd>
                 <dt>Rule</dt><dd><code>{{ rule_text }}</code></dd>
                 <dt>Rows failed</dt><dd>{{ violation.failed_row_count }} of {{ violation.run.row_count }}</dd>
-                <dt>Recorded resolution</dt><dd>{{ violation.get_resolution_display }}</dd>
+                <dt>Recorded resolution</dt><dd>{% include "data_quality/includes/_status_badge.html" with status=violation.resolution label=violation.get_resolution_display only %}</dd>
             </dl>
             {% if any_engine %}
                 <form id="explain-form" method="post" action="{% url 'data_quality:violation-explain' violation.pk %}#ai-suggestion">

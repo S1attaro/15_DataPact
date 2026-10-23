@@ -223,24 +223,31 @@ a:where(:hover) { color: var(--accent-strong); }
        instant; only these two move, and neither shifts the layout. */
     transition: transform 120ms var(--ease-out), opacity 150ms var(--ease-out);
 }
-/* Hover for a plain button, link or <button> alike. :where() keeps it
-   below the primary and ghost hovers, and the unavailable-action labels
-   (spans styled as buttons) never match, so they do not react. */
-:where(a, button).btn:hover { background: var(--canvas); border-color: var(--ink-soft); }
 .btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-/* Was button.btn--primary:hover, so the link-styled primary buttons
-   ("Explore datasets", "+ Register dataset") had no hover at all. */
-.btn--primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; }
+/* Hover fills need a real pointer (UX Stage 6). A touch screen fakes
+   :hover after a tap and keeps it until the next tap elsewhere, so a tapped
+   button stayed filled. The press (:active), the busy fade and the focus
+   ring below work for every kind of input. */
+@media (hover: hover) and (pointer: fine) {
+    /* A plain button, link or <button> alike. :where() keeps it below the
+       primary and ghost hovers, and the unavailable-action labels (spans
+       styled as buttons) never match, so they do not react. */
+    :where(a, button).btn:hover { background: var(--canvas); border-color: var(--ink-soft); }
+    /* Was button.btn--primary:hover, so the link-styled primary buttons
+       ("Explore datasets", "+ Register dataset") had no hover at all. */
+    .btn--primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; }
+    /* A busy button (below) keeps its resting colours under the pointer. */
+    :where(button).btn[aria-disabled="true"]:hover { background: var(--surface); border-color: var(--line-strong); }
+    .btn--primary[aria-disabled="true"]:hover { background: var(--accent); border-color: var(--accent); }
+}
 /* Press feedback: the button gives a little under the pointer, so a click
    that loads a new page still shows it was heard (UX Stage 6). */
 :where(a, button:not([aria-disabled="true"])).btn:active { transform: scale(0.97); }
 /* Busy: the explain page's script sets aria-disabled="true" on its buttons
    while a model answers (not disabled, which would drop the engine from
-   the form). They fade, keep their resting colours under the pointer and
-   do not press in, so they no longer look ready for a second click. */
+   the form). They fade and do not press in, so they no longer look ready
+   for a second click. */
 button.btn[aria-disabled="true"] { opacity: 0.6; }
-:where(button).btn[aria-disabled="true"]:hover { background: var(--surface); border-color: var(--line-strong); }
-.btn--primary[aria-disabled="true"]:hover { background: var(--accent); border-color: var(--accent); }
 /* Keyboard focus (the browser's :focus-visible rule), same ring as the Home page links. */
 .btn--primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* On the dark top bar (signed-out "Sign up") the accent ring is too faint;
@@ -272,6 +279,21 @@ button.btn[aria-disabled="true"] { opacity: 0.6; }
     overflow: auto;
     margin-bottom: 1.5rem;
     box-shadow: 0 1px 2px rgba(22, 32, 44, 0.04);
+}
+/* Scroll cue (UX Stage 6): on a phone a wide table scrolls inside its
+   panel with nothing to say there is more. A soft shadow now sits on the
+   edge that has more to see. Two white covers move with the content
+   (local) and two shadows stay with the box (scroll); a shadow only shows
+   once its cover has moved off it, so a table that fits shows nothing.
+   Paint only: no layout, no overlay, nothing in the way of a tap. Browsers
+   without :has() keep the plain panel. */
+.panel:has(.datatable) {
+    background:
+        linear-gradient(to right, var(--surface) 30%, rgba(255, 255, 255, 0)) left center / 2.5rem 100% no-repeat local,
+        linear-gradient(to left, var(--surface) 30%, rgba(255, 255, 255, 0)) right center / 2.5rem 100% no-repeat local,
+        radial-gradient(farthest-side at 0 50%, rgba(22, 32, 44, 0.22), rgba(22, 32, 44, 0)) left center / 0.9rem 100% no-repeat scroll,
+        radial-gradient(farthest-side at 100% 50%, rgba(22, 32, 44, 0.22), rgba(22, 32, 44, 0)) right center / 0.9rem 100% no-repeat scroll,
+        var(--surface);
 }
 .panel__head {
     padding: 0.85rem 1.1rem;
@@ -328,7 +350,12 @@ button.btn[aria-disabled="true"] { opacity: 0.6; }
 }
 .datatable tbody tr:last-child td,
 .datatable tbody tr:last-child th { border-bottom: none; }
-.datatable tbody tr:hover { background: #fafbfd; }
+/* The row highlight follows a pointer; on a phone a tap to scroll left it
+   stuck on (UX Stage 6). */
+@media (hover: hover) and (pointer: fine) {
+    .datatable tbody tr:hover { background: #fafbfd; }
+    .datatable tbody tr.is-emptyrow:hover { background: transparent; }
+}
 .datatable a { color: var(--accent); text-decoration: none; font-weight: 600; }
 .datatable a:hover { text-decoration: underline; }
 /* A button-style link in a table (the empty state's Register Dataset) keeps
@@ -337,12 +364,13 @@ button.btn[aria-disabled="true"] { opacity: 0.6; }
 .datatable a.btn--primary { color: #fff; }
 .datatable a.btn--primary:hover { text-decoration: none; }
 .datatable .num { text-align: right; font-variant-numeric: tabular-nums; }
-.datatable .muted { color: var(--ink-faint); }
+/* Quiet text for an absent value: "—", "None active", and the explain
+   page's "Not recorded" (outside a table since UX Stage 6). */
+.muted { color: var(--ink-faint); }
 
 /* A row that holds nothing but the empty state should not look
    like a data row. */
 .datatable .is-emptyrow td { border-bottom: none; padding: 0; }
-.datatable tbody tr.is-emptyrow:hover { background: transparent; }
 
 /* ---- badges and chips ----------------------------------------- */
 .badge {
@@ -573,8 +601,11 @@ button.btn { font: inherit; font-weight: 600; cursor: pointer; }
     color: #c4ccd6;
 }
 /* background: transparent, or the plain button's light hover fill (section
-   5) would show under the white label (UX Stage 6). */
-.btn--ghost:hover { background: transparent; border-color: #6b7686; color: #fff; }
+   5) would show under the white label (UX Stage 6). Pointer only, like
+   that fill. */
+@media (hover: hover) and (pointer: fine) {
+    .btn--ghost:hover { background: transparent; border-color: #6b7686; color: #fff; }
+}
 
 /* The narrow-screen "Menu" button (UX Stage 5). Hidden here; the small
    screens section shows it once base.html's script has set it up. */
