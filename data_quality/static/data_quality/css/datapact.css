@@ -45,6 +45,11 @@
     --pass-bg:    #e3f4e8;  --pass-ink:   #1d6b36;
     --fail-bg:    #fce4e4;  --fail-ink:   #a12a2a;
     --warn-bg:    #fdf3d8;  --warn-ink:   #855c11;
+    /* The contract version in force (UX Stage 6): the accent's own tint,
+       so "Active" no longer wears the "passed" green of a healthy run. */
+    --live-bg:    #e8eefc;  --live-ink:   #2448b0;
+    /* One curve for the little motion there is: a fast start, a soft stop. */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --radius:     8px;
     /* The small capitals that label data (UX Stage 6): column headers and
        fact labels. One size, so a panel title (1rem) and a form label
@@ -214,6 +219,9 @@ a:where(:hover) { color: var(--accent-strong); }
     border: 1px solid var(--line-strong);
     background: var(--surface);
     color: var(--ink);
+    /* The press and the busy fade below (UX Stage 6). Hover colours stay
+       instant; only these two move, and neither shifts the layout. */
+    transition: transform 120ms var(--ease-out), opacity 150ms var(--ease-out);
 }
 /* Hover for a plain button, link or <button> alike. :where() keeps it
    below the primary and ghost hovers, and the unavailable-action labels
@@ -221,8 +229,18 @@ a:where(:hover) { color: var(--accent-strong); }
 :where(a, button).btn:hover { background: var(--canvas); border-color: var(--ink-soft); }
 .btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 /* Was button.btn--primary:hover, so the link-styled primary buttons
-   ("Explore datasets", "+ Register Dataset") had no hover at all. */
+   ("Explore datasets", "+ Register dataset") had no hover at all. */
 .btn--primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; }
+/* Press feedback: the button gives a little under the pointer, so a click
+   that loads a new page still shows it was heard (UX Stage 6). */
+:where(a, button:not([aria-disabled="true"])).btn:active { transform: scale(0.97); }
+/* Busy: the explain page's script sets aria-disabled="true" on its buttons
+   while a model answers (not disabled, which would drop the engine from
+   the form). They fade, keep their resting colours under the pointer and
+   do not press in, so they no longer look ready for a second click. */
+button.btn[aria-disabled="true"] { opacity: 0.6; }
+:where(button).btn[aria-disabled="true"]:hover { background: var(--surface); border-color: var(--line-strong); }
+.btn--primary[aria-disabled="true"]:hover { background: var(--accent); border-color: var(--accent); }
 /* Keyboard focus (the browser's :focus-visible rule), same ring as the Home page links. */
 .btn--primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* On the dark top bar (signed-out "Sign up") the accent ring is too faint;
@@ -264,13 +282,14 @@ a:where(:hover) { color: var(--accent-strong); }
     justify-content: space-between;
     gap: 1rem;
 }
-/* A panel's title is a heading (UX Stage 6): sentence case at 1rem in the
-   main ink. It used to be 0.75rem grey capitals, the same as the column
-   headers right under it, so a panel had two or three stacked bands of
-   tiny capitals before any data. */
+/* A panel's title is a heading (UX Stage 6): sentence case in the main
+   ink. It used to be 0.75rem grey capitals, the same as the column headers
+   right under it, so a panel had two or three stacked bands of tiny
+   capitals before any data. 1.0625rem keeps it a step above the headings
+   inside a panel (Home's step names are 0.95rem). */
 .panel__title {
     margin: 0;
-    font-size: 1rem;
+    font-size: 1.0625rem;
     font-weight: 650;
     line-height: 1.3;
     letter-spacing: -0.005em;
@@ -334,16 +353,36 @@ a:where(:hover) { color: var(--accent-strong); }
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    /* One line: "Contract updated" broke into a two-line pill in the
+       lookup's narrow Resolution column (UX Stage 6). */
+    white-space: nowrap;
     background: #eef0f3;
     color: var(--ink-soft);
 }
-.badge--active, .badge--passed { background: var(--pass-bg); color: var(--pass-ink); }
-/* Red is for broken data (a failed run). A retired contract version is
-   only history, so it keeps the plain grey badge above (UX Stage 6); it
-   used to share the failure red, and a healthy dataset's page showed
-   three red pills against one green. */
+/* Two families that must not be mistaken for each other (UX Stage 6).
+   Each badge also names its state in words, so colour is never the only
+   cue.
+
+   A contract's lifecycle says which version is in force, not whether the
+   data is healthy: Active is the accent's tint with a solid ring, Draft is
+   white with a dashed edge (not written yet), Retired is the plain grey
+   above (history). Active used to share the "passed" green and Draft the
+   "error" amber. */
+.badge--active { background: var(--live-bg); color: var(--live-ink); box-shadow: inset 0 0 0 1px #b4c5f2; }
+.badge--draft  { background: var(--surface); color: var(--ink-soft); outline: 1px dashed var(--line-strong); outline-offset: -1px; }
+
+/* Data health, filled: a run Passed (green), Failed (red) or hit an Error
+   (amber), and a violation still Open needs a decision (red). Decided
+   violations (Data issue, Contract updated) keep the plain grey: there is
+   nothing left to do about them. */
+.badge--passed { background: var(--pass-bg); color: var(--pass-ink); }
 .badge--failed { background: var(--fail-bg); color: var(--fail-ink); }
-.badge--draft, .badge--error   { background: var(--warn-bg); color: var(--warn-ink); }
+.badge--open   { background: var(--fail-bg); color: var(--fail-ink); }
+.badge--error  { background: var(--warn-bg); color: var(--warn-ink); }
+
+/* A badge that names something rather than a state, such as the active
+   version on Overview: "v3" as written elsewhere, not "V3". */
+.badge--named { text-transform: none; letter-spacing: 0; }
 
 /* Small label naming the view kind that rendered the page. It makes
    the A2 screenshots self-describing. */
@@ -388,6 +427,16 @@ a:where(:hover) { color: var(--accent-strong); }
     color: var(--ink-soft);
 }
 .factlist dd { margin: 0.2rem 0 0; }
+/* Counts that are the point of a panel (Home's "At a glance", the Reports
+   totals): the number reads first and the label names it, instead of a bold
+   label over a body-size figure (UX Stage 6). dt + dd skips the link line
+   under a count. */
+.factlist--stats dt + dd {
+    font-size: 1.5rem;
+    font-weight: 650;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
 
 .prose { color: var(--ink-soft); max-width: 62ch; }
 
@@ -626,7 +675,7 @@ button.btn { font: inherit; font-weight: 600; cursor: pointer; }
 }
 .workflow__step { padding: 1.1rem; border-left: 1px solid var(--line); }
 .workflow__step:first-child { border-left: none; }
-.workflow__name { margin: 0 0 0.4rem; font-size: 1rem; line-height: 1.3; }
+.workflow__name { margin: 0 0 0.4rem; font-size: 0.95rem; line-height: 1.3; }
 .workflow__text { margin: 0; color: var(--ink-soft); font-size: 0.9rem; }
 .workflow__links {
     list-style: none;
@@ -721,6 +770,9 @@ button[aria-disabled="true"] { cursor: progress; }
 @keyframes explain-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
     .explain__status::before { animation: none; }
+    /* No movement on press; the busy fade (opacity) stays, as it carries
+       the state. */
+    :where(a, button).btn:active { transform: none; }
 }
 
 /* ---- violation lookup (UX Stage 3) ----------------------------- */

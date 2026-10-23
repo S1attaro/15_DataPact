@@ -403,7 +403,7 @@ class DatasetRenderViewTests(SignedInClientMixin, TestCase):
 
 class DatasetRegisterActionTests(SignedInClientMixin, TestCase):
     """
-    UX Stage 0: the "+ Register Dataset" button in the Datasets page header
+    UX Stage 0: the "+ Register dataset" button in the Datasets page header
     opens the Manage page, where registering already works, instead of being a
     disabled "planned" label. Both routes that render dataset_list.html are
     checked. Only the header is inspected: the nav links to Manage anyway.
@@ -422,7 +422,7 @@ class DatasetRegisterActionTests(SignedInClientMixin, TestCase):
             with self.subTest(route=route):
                 actions = self.page_actions(route)
                 self.assertIn(f'href="{manage_url}"', actions)
-                self.assertIn("+ Register Dataset", actions)
+                self.assertIn("+ Register dataset", actions)
                 self.assertNotIn("btn--disabled", actions)
 
     def test_the_link_opens_the_register_form(self):
@@ -449,7 +449,7 @@ def empty_state_actions(html):
 
 class EmptyStateActionTests(SignedInClientMixin, TestCase):
     """
-    UX Stage 0: an empty dataset list offers "+ Register Dataset" as a real
+    UX Stage 0: an empty dataset list offers "+ Register dataset" as a real
     link to the Manage page, like the page header does. Actions the site
     cannot do yet (a new contract version) stay a disabled label, and empty
     states that never had an action still have none.
@@ -479,7 +479,7 @@ class EmptyStateActionTests(SignedInClientMixin, TestCase):
             with self.subTest(route=route):
                 action = self.action_on(reverse(route))
                 self.assertIn(f'href="{manage_url}"', action)
-                self.assertIn("+ Register Dataset", action)
+                self.assertIn("+ Register dataset", action)
                 self.assertNotIn("btn--disabled", action)
                 self.assertNotIn("Planned for a later assignment", action)
 
@@ -504,7 +504,7 @@ class EmptyStateActionTests(SignedInClientMixin, TestCase):
         self.assertNotIn("btn", violations_action)
         self.assertNotIn("href=", violations_action)
         action = contracts_action
-        self.assertIn("+ New Contract Version", action)
+        self.assertIn("+ New contract version", action)
         self.assertIn("btn--disabled", action)
         self.assertIn("Creating contract versions is not available yet.", action)
         self.assertNotIn("title=", action)
@@ -628,7 +628,7 @@ class StylesheetMixin:
 
 
 class PrimaryButtonStyleTests(StylesheetMixin, TestCase):
-    """The stylesheet rules behind the "+ Register Dataset" buttons."""
+    """The stylesheet rules behind the "+ Register dataset" buttons."""
 
     def test_a_link_button_inside_a_table_keeps_its_white_label(self):
         """
@@ -641,7 +641,7 @@ class PrimaryButtonStyleTests(StylesheetMixin, TestCase):
 
     def test_both_register_buttons_hover_the_same_way(self):
         """
-        The header "+ Register Dataset" link has no hover colour change, so the
+        The header "+ Register dataset" link has no hover colour change, so the
         empty-state one (inside a table) must not get one either. Its hover
         rule only cancels the table's link underline.
         """
@@ -650,7 +650,7 @@ class PrimaryButtonStyleTests(StylesheetMixin, TestCase):
 
     def test_primary_buttons_share_the_site_keyboard_focus_ring(self):
         """
-        Both "+ Register Dataset" buttons (page header and empty state) get
+        Both "+ Register dataset" buttons (page header and empty state) get
         the same visible ring when reached with Tab: the accent outline the
         Home page links already use, not the browser's thin black default.
         Never `outline: none`, which would hide focus from keyboard users.
@@ -730,9 +730,9 @@ class UnavailableActionTests(SignedInClientMixin, TestCase):
         self.assertEqual(
             self.unavailable_blocks(html),
             [
-                ("Upload New File", "Uploading files is not available yet."),
-                ("View / Edit Rules", "Editing contract rules is not available yet."),
-                ("+ New Contract Version", "Creating contract versions is not available yet."),
+                ("Upload new file", "Uploading files is not available yet."),
+                ("View / edit rules", "Editing contract rules is not available yet."),
+                ("+ New contract version", "Creating contract versions is not available yet."),
             ],
         )
         # Every disabled control on the page goes through the shared partial,
@@ -753,7 +753,7 @@ class UnavailableActionTests(SignedInClientMixin, TestCase):
             reverse("data_quality:dataset-detail", args=[dataset.pk])
         ).content.decode()
         labels = [label for label, _ in self.unavailable_blocks(html)]
-        self.assertEqual(labels, ["Upload New File", "View / Edit Rules"])
+        self.assertEqual(labels, ["Upload new file", "View / edit rules"])
 
 
 class UnavailableActionStyleTests(StylesheetMixin, TestCase):

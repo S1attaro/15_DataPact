@@ -282,6 +282,15 @@ UX Stage 6, first increment (Tejas), tidied the shared components in `datapact.c
 
 `data_quality/tests_visual_foundation.py` covers these.
 
+UX Stage 6, second increment (Tejas), gave each kind of status its own colours and tightened the hierarchy:
+
+- **Status colours:** a contract's lifecycle is no longer coloured like data health. Active is the accent's tint with a solid ring, Draft is white with a dashed edge, Retired is plain grey. Run outcomes (Reports, Quality History) are now badges: Passed green, Failed red, Error amber. Violation resolutions are badges too: Open red, Data issue and Contract updated plain grey. Every badge still names its state in words. Overview shows "None active" as plain text instead of a Draft badge.
+- **Hierarchy:** panel titles are a step above the headings inside them, and the counts on Home ("At a glance") and Reports ("Totals") are set larger than their labels (`.factlist--stats`).
+- **Wording:** labels, column headers and buttons are sentence case ("Source team", "+ Register dataset"); page names such as "Quality History" stay as they are.
+- **Busy buttons and press feedback:** while the explain page waits for a model, its buttons fade and keep their resting colours under the pointer. Buttons give a small press (`scale(0.97)`, 120ms), which `prefers-reduced-motion` turns off.
+
+`data_quality/tests_status_hierarchy.py` covers these.
+
 `dataset_list.html` is written against a single context variable, `datasets`,
 so it does not depend on which kind of view rendered it. Any view can reuse it:
 

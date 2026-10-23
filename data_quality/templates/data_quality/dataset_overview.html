@@ -34,9 +34,9 @@ here instead of a generic ListView.
                 <thead>
                     <tr>
                         <th scope="col">Dataset</th>
-                        <th scope="col">Source Team</th>
-                        <th scope="col" class="num">Contract Versions</th>
-                        <th scope="col">Active Contract</th>
+                        <th scope="col">Source team</th>
+                        <th scope="col" class="num">Contract versions</th>
+                        <th scope="col">Active contract</th>
                     </tr>
                 </thead>
             {% endif %}
@@ -52,7 +52,8 @@ here instead of a generic ListView.
                             {% if row.active_contract %}
                                 {% include "data_quality/includes/_status_badge.html" with status="ACTIVE" prefix="v" label=row.active_contract.version_number only %}
                             {% else %}
-                                {% include "data_quality/includes/_status_badge.html" with status="DRAFT" label="none active" only %}
+                                {% comment %} Not a badge: having no active version is not a contract state (it used to wear the Draft badge). {% endcomment %}
+                                <span class="muted">None active</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -60,7 +61,7 @@ here instead of a generic ListView.
                     <tr class="is-emptyrow">
                         <td colspan="4">
                             {% url 'data_quality:dataset-manage' as register_url %}
-                            {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register Dataset" action_url=register_url only %}
+                            {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register dataset" action_url=register_url only %}
                         </td>
                     </tr>
                 {% endfor %}

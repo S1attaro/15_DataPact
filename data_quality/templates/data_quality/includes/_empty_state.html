@@ -10,7 +10,7 @@ Include it like this (the "only" keeps the partial from seeing the rest of
 the page's context, so it can never depend on something by accident):
 
     {% url 'data_quality:dataset-manage' as register_url %}
-    {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register Dataset" action_url=register_url only %}
+    {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register dataset" action_url=register_url only %}
 
   headline      required - the one-line fact
   message       required - what to do next

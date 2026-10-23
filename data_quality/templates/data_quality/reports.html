@@ -26,7 +26,7 @@
             <h2 class="panel__title">Totals</h2>
         </div>
         <div class="panel__body">
-            <dl class="factlist">
+            <dl class="factlist factlist--stats">
                 <div>
                     <dt>Datasets</dt>
                     <dd>{{ dataset_total }}</dd>
@@ -57,7 +57,7 @@
             <tbody>
                 {% for value, label, total in status_breakdown %}
                     <tr>
-                        <th scope="row">{{ label }}</th>
+                        <th scope="row">{% include "data_quality/includes/_status_badge.html" with status=value label=label only %}</th>
                         <td class="num">{{ total }}</td>
                     </tr>
                 {% empty %}
