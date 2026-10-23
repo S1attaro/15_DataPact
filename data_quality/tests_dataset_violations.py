@@ -131,7 +131,7 @@ class DatasetViolationsTests(DiscoveryData):
 
     def test_the_table_headers(self):
         response = self.page()
-        for header in ("Validation run", "Column / Rule", "Failed rows", "Resolution", "AI explanation"):
+        for header in ("Validation run", "Column / rule", "Failed rows", "Resolution", "AI explanation"):
             with self.subTest(header=header):
                 self.assertContains(response, f'<th scope="col">{header}</th>' if header != "Failed rows"
                                     else '<th scope="col" class="num">Failed rows</th>', html=True)

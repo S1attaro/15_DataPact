@@ -75,7 +75,7 @@ the image.
             <tbody>
                 {% for value, label, total in outcomes %}
                     <tr>
-                        <th scope="row">{{ label }}</th>
+                        <th scope="row">{% include "data_quality/includes/_status_badge.html" with status=value label=label only %}</th>
                         <td class="num">{{ total }}</td>
                     </tr>
                 {% empty %}

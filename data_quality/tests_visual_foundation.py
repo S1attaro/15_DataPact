@@ -150,7 +150,7 @@ class TableMarkupTests(SignedInClientMixin, TestCase):
 class NumericColumnTests(DiscoveryData):
     def test_number_columns_align_their_headers_with_their_numbers(self):
         cases = (
-            (reverse("data_quality:dataset-cbv-base"), '<th scope="col" class="num">Contract Versions</th>'),
+            (reverse("data_quality:dataset-cbv-base"), '<th scope="col" class="num">Contract versions</th>'),
             (reverse("data_quality:dataset-detail", args=[self.enrollment.pk]), '<th scope="col" class="num">Rules</th>'),
             (reverse("data_quality:quality-history"), '<th scope="col" class="num">Validation runs</th>'),
         )
