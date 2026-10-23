@@ -43,6 +43,18 @@ RUN_STATUS_COLORS = {
 FIGURE_SIZE = (7.2, 4.0)
 FIGURE_DPI = 110
 
+# The chart's own title (A3 Section 4 asks for a title, labels and a
+# legend on the image). The Quality History panel around it is headed
+# "As a chart", so the page does not say the same words twice.
+RUN_OUTCOMES_TITLE = "Validation run outcomes"
+
+# Text and line colours from datapact.css (UX Stage 6): --ink, --ink-soft
+# and --line-strong. The notes used to be #8b959f, 2.9:1 on white.
+INK = "#16202c"
+INK_SOFT = "#5a6672"
+LINE_STRONG = "#7d8792"
+GRID = "#e3e7ec"
+
 
 def run_outcome_counts():
     """
@@ -115,8 +127,19 @@ def run_volume_points():
     ]
 
 
-def render_run_outcomes_png():
-    """Draw the run-outcome chart and return it as PNG bytes."""
+def build_run_outcomes_figure():
+    """
+    Draw the run-outcome chart as a Figure (the PNG endpoint saves it).
+
+    Separate from the rendering so tests can read the title, labels, legend
+    and colours off the figure instead of guessing at pixels.
+
+    Text sizes (UX Stage 6): nothing is under 11pt. The 792px image is
+    shown about 310px wide on a 390px phone, where the old 9-10pt notes and
+    labels came out near 5 CSS px; at 11-12pt they are about 6.5-7px. It is
+    still a small picture there, which is why the text table under it gives
+    the same numbers as page text.
+    """
     outcomes = run_outcome_counts()
     labels = [label for _, label, _ in outcomes]
     counts = [count for _, _, count in outcomes]
@@ -129,33 +152,36 @@ def render_run_outcomes_png():
 
     bars = ax.bar(labels, counts, color=colors, width=0.55, zorder=2)
 
-    ax.set_title("Validation Run Outcomes", fontsize=14, fontweight="bold", pad=16)
-    ax.set_xlabel("Outcome", fontsize=10, labelpad=10)
-    ax.set_ylabel("Validation runs", fontsize=10, labelpad=10)
+    ax.set_title(RUN_OUTCOMES_TITLE, fontsize=15, fontweight="bold", pad=16, color=INK)
+    ax.set_xlabel("Outcome", fontsize=12, labelpad=10, color=INK)
+    ax.set_ylabel("Validation runs", fontsize=12, labelpad=10, color=INK)
 
     # Whole runs only - "2.5 runs" is not a thing.
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     # Headroom so the value printed above the tallest bar is not clipped.
     ax.set_ylim(0, max(max(counts) * 1.22, 1))
 
-    ax.bar_label(bars, padding=4, fontsize=10, fontweight="bold", color="#16202c")
+    ax.bar_label(bars, padding=4, fontsize=12, fontweight="bold", color=INK)
     # loc="best" rather than a fixed corner: which bar is tallest depends on
     # the data, and a pinned legend would eventually sit on top of one.
-    ax.legend(bars, labels, title="Outcome", frameon=False, fontsize=9,
-              title_fontsize=9, loc="best")
+    legend = ax.legend(bars, labels, title="Outcome", frameon=False, fontsize=11,
+                       title_fontsize=11, loc="best", labelcolor=INK)
+    legend.get_title().set_color(INK)
 
-    ax.grid(axis="y", color="#e3e7ec", linewidth=1, zorder=0)
+    ax.grid(axis="y", color=GRID, linewidth=1, zorder=0)
     ax.set_axisbelow(True)
     for side in ("top", "right", "left"):
         ax.spines[side].set_visible(False)
-    ax.spines["bottom"].set_color("#e3e7ec")
-    ax.tick_params(axis="both", length=0, labelsize=10, colors="#5a6672")
+    # The baseline the bars stand on: --line-strong, 3.65:1 (it was the
+    # grid's own #e3e7ec, 1.25:1, and all but vanished).
+    ax.spines["bottom"].set_color(LINE_STRONG)
+    ax.tick_params(axis="both", length=0, labelsize=12, colors=INK_SOFT)
 
     if total:
         fig.text(
             0.5, 0.015,
             f"{total} validation run{'' if total == 1 else 's'} recorded",
-            ha="center", fontsize=9, color="#8b959f",
+            ha="center", fontsize=11, color=INK_SOFT,
         )
     else:
         # Say so on the image itself: an all-zero chart with no explanation
@@ -163,11 +189,16 @@ def render_run_outcomes_png():
         ax.text(
             0.5, 0.5, "No validation runs recorded yet",
             transform=ax.transAxes, ha="center", va="center",
-            fontsize=12, color="#8b959f",
+            fontsize=13, color=INK_SOFT,
         )
 
-    fig.tight_layout(rect=(0, 0.04, 1, 1))
+    fig.tight_layout(rect=(0, 0.05, 1, 1))
+    return fig
 
+
+def render_run_outcomes_png():
+    """Draw the run-outcome chart and return it as PNG bytes."""
+    fig = build_run_outcomes_figure()
     buffer = BytesIO()
     fig.savefig(buffer, format="png")
     return buffer.getvalue()

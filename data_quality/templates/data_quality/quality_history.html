@@ -41,7 +41,8 @@ the image.
 {% block content %}
     <div class="panel">
         <div class="panel__head">
-            <h2 class="panel__title">Validation run outcomes</h2>
+            {% comment %} The image carries its own title, "Validation run outcomes"; this heading names the panel, paired with "The same numbers, as text" (UX Stage 6). {% endcomment %}
+            <h2 class="panel__title">As a chart</h2>
         </div>
         <div class="panel__body">
             <img class="chart"

@@ -13,7 +13,11 @@ what):
 
     {% include "data_quality/includes/_status_badge.html" with status=contract.status label=contract.get_status_display only %}
 
-  status  required - the raw value (e.g. ACTIVE, FAILED, OPEN); picks the colour
+  status  the raw value (e.g. ACTIVE, FAILED, OPEN); picks the colour. A
+          value with no colour rule (one the app does not know) keeps the
+          plain grey badge and shows its own text; an empty one shows
+          "Not recorded" rather than an empty pill (UX Stage 6). slugify
+          keeps the class name to letters, digits, "_" and "-".
   label   optional - text to show; falls back to the raw status value
   prefix  optional - text placed immediately before the label, e.g. "v" so a
                      version number reads "v3". A template cannot join two
@@ -21,4 +25,4 @@ what):
                      A prefixed badge names something (a version), so it
                      keeps its own case: "v3", not "V3" (badge--named).
 {% endcomment %}
-<span class="badge badge--{{ status|lower }}{% if prefix %} badge--named{% endif %}">{{ prefix }}{{ label|default:status }}</span>
+{% if status %}<span class="badge badge--{{ status|slugify }}{% if prefix %} badge--named{% endif %}">{{ prefix }}{{ label|default:status }}</span>{% else %}<span class="muted">Not recorded</span>{% endif %}

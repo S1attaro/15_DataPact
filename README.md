@@ -291,6 +291,15 @@ UX Stage 6, second increment (Tejas), gave each kind of status its own colours a
 
 `data_quality/tests_status_hierarchy.py` covers these.
 
+UX Stage 6, third increment (Tejas), finished the phone and touch details:
+
+- **Hover on touch screens:** button hover fills and the table row highlight sit behind `@media (hover: hover) and (pointer: fine)`, so a tapped button no longer keeps its hover look on a phone. The press, the busy fade and the keyboard focus ring do not depend on hover.
+- **Explain page:** the recorded resolution uses the shared status badge. A value the app does not know shows its own text in the plain grey badge, and an empty one says "Not recorded".
+- **Quality History chart:** the image keeps its title, axis labels and legend (A3 Section 4), with every word in the site's ink colours at 11pt or more and a visible baseline. The panel around it is headed "As a chart", so the page no longer repeats the chart's title.
+- **Scroll cue:** a panel whose table is wider than the screen shows a soft shadow on the edge that has more to see. It is drawn with backgrounds only, so it appears only when the table really overflows and never covers a tap.
+
+`data_quality/tests_final_polish.py` covers these.
+
 `dataset_list.html` is written against a single context variable, `datasets`,
 so it does not depend on which kind of view rendered it. Any view can reuse it:
 
