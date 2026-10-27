@@ -1,0 +1,7 @@
+Daily Traffic Category,Daily Active Users,Requests per Day,Avg Tokens per Request,Total Daily Token Load
+Prototype,1000,1000,656,656000
+Early Startup,10000,10000,656,6560000
+Growing Product,100000,100000,656,65600000
+Large Platform,1000000,1000000,656,656000000
+Mass Consumer App,10000000,10000000,656,6560000000
+Global Platform,100000000,100000000,656,65600000000

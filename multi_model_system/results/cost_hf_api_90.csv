@@ -1,0 +1,91 @@
+Local LLM Model,Local LLM Model Size,Comparable Paid Model Hosted on Hugging Face,Cost of Paid API per Token ($),"Same, per 1M Tokens ($)",Daily Traffic Category,Total Token Load,Estimated API Cost ($/day),Machines Required (API infrastructure),Total Cost ($/day)
+SmolLM2-135M-Instruct,0.13B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+SmolLM2-135M-Instruct,0.13B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+SmolLM2-135M-Instruct,0.13B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+SmolLM2-135M-Instruct,0.13B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+SmolLM2-135M-Instruct,0.13B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+SmolLM2-135M-Instruct,0.13B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
+SmolLM-360M-Instruct,0.36B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+SmolLM-360M-Instruct,0.36B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+SmolLM-360M-Instruct,0.36B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+SmolLM-360M-Instruct,0.36B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+SmolLM-360M-Instruct,0.36B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+SmolLM-360M-Instruct,0.36B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
+SmolLM2-360M-Instruct,0.36B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+SmolLM2-360M-Instruct,0.36B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+SmolLM2-360M-Instruct,0.36B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+SmolLM2-360M-Instruct,0.36B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+SmolLM2-360M-Instruct,0.36B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+SmolLM2-360M-Instruct,0.36B (Ultra-light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
+Qwen2-0.5B-Instruct,0.49B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+Qwen2-0.5B-Instruct,0.49B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+Qwen2-0.5B-Instruct,0.49B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+Qwen2-0.5B-Instruct,0.49B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+Qwen2-0.5B-Instruct,0.49B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+Qwen2-0.5B-Instruct,0.49B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
+Qwen2.5-0.5B-Instruct,0.49B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+Qwen2.5-0.5B-Instruct,0.49B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+Qwen2.5-0.5B-Instruct,0.49B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+Qwen2.5-0.5B-Instruct,0.49B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+Qwen2.5-0.5B-Instruct,0.49B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+Qwen2.5-0.5B-Instruct,0.49B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
+h2o-danube3-500m-chat,0.51B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+h2o-danube3-500m-chat,0.51B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+h2o-danube3-500m-chat,0.51B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+h2o-danube3-500m-chat,0.51B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+h2o-danube3-500m-chat,0.51B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+h2o-danube3-500m-chat,0.51B (Light),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
+TinyLlama-1.1B-Chat-v1.0,1.1B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+TinyLlama-1.1B-Chat-v1.0,1.1B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+TinyLlama-1.1B-Chat-v1.0,1.1B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+TinyLlama-1.1B-Chat-v1.0,1.1B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+TinyLlama-1.1B-Chat-v1.0,1.1B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+TinyLlama-1.1B-Chat-v1.0,1.1B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
+granite-3.1-1b-a400m-instruct,1.33B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+granite-3.1-1b-a400m-instruct,1.33B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+granite-3.1-1b-a400m-instruct,1.33B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+granite-3.1-1b-a400m-instruct,1.33B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+granite-3.1-1b-a400m-instruct,1.33B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+granite-3.1-1b-a400m-instruct,1.33B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
+OLMo-2-0425-1B-Instruct,1.48B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+OLMo-2-0425-1B-Instruct,1.48B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+OLMo-2-0425-1B-Instruct,1.48B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+OLMo-2-0425-1B-Instruct,1.48B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+OLMo-2-0425-1B-Instruct,1.48B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+OLMo-2-0425-1B-Instruct,1.48B (Small),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
+Qwen2.5-1.5B-Instruct,1.54B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+Qwen2.5-1.5B-Instruct,1.54B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+Qwen2.5-1.5B-Instruct,1.54B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+Qwen2.5-1.5B-Instruct,1.54B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+Qwen2.5-1.5B-Instruct,1.54B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+Qwen2.5-1.5B-Instruct,1.54B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
+stablelm-2-zephyr-1_6b,1.64B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+stablelm-2-zephyr-1_6b,1.64B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+stablelm-2-zephyr-1_6b,1.64B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+stablelm-2-zephyr-1_6b,1.64B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+stablelm-2-zephyr-1_6b,1.64B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+stablelm-2-zephyr-1_6b,1.64B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
+Falcon3-1B-Instruct,1.67B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+Falcon3-1B-Instruct,1.67B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+Falcon3-1B-Instruct,1.67B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+Falcon3-1B-Instruct,1.67B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+Falcon3-1B-Instruct,1.67B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+Falcon3-1B-Instruct,1.67B (Medium),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
+SmolLM2-1.7B-Instruct,1.71B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+SmolLM2-1.7B-Instruct,1.71B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+SmolLM2-1.7B-Instruct,1.71B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+SmolLM2-1.7B-Instruct,1.71B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+SmolLM2-1.7B-Instruct,1.71B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+SmolLM2-1.7B-Instruct,1.71B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
+h2o-danube2-1.8b-chat,1.83B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+h2o-danube2-1.8b-chat,1.83B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+h2o-danube2-1.8b-chat,1.83B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+h2o-danube2-1.8b-chat,1.83B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+h2o-danube2-1.8b-chat,1.83B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+h2o-danube2-1.8b-chat,1.83B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
+Qwen1.5-1.8B-Chat,1.84B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Prototype,656000,0.04,1,2.03
+Qwen1.5-1.8B-Chat,1.84B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Early Startup,6560000,0.36,1,2.35
+Qwen1.5-1.8B-Chat,1.84B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Growing Product,65600000,3.55,1,5.55
+Qwen1.5-1.8B-Chat,1.84B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Large Platform,656000000,35.5,2,39.49
+Qwen1.5-1.8B-Chat,1.84B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Mass Consumer App,6560000000,355.0,17,388.95
+Qwen1.5-1.8B-Chat,1.84B (Large),google/gemma-3-4b-it (DeepInfra via Hugging Face),5.411585365853659e-08,0.0541,Global Platform,65600000000,3550.0,166,3881.47
