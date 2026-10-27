@@ -1,0 +1,91 @@
+Model Name,Model Category,Daily Traffic Category,Avg Tokens per User,Total Daily Token Load,"Per Machine Cost (Cloud, $/day)",Machines Needed,Total Machine Cost ($/day)
+SmolLM2-135M-Instruct,Ultra-light,Prototype,656,656000,28.9,1,28.9
+SmolLM2-135M-Instruct,Ultra-light,Early Startup,656,6560000,28.9,1,28.9
+SmolLM2-135M-Instruct,Ultra-light,Growing Product,656,65600000,28.9,4,115.58
+SmolLM2-135M-Instruct,Ultra-light,Large Platform,656,656000000,28.9,39,1126.94
+SmolLM2-135M-Instruct,Ultra-light,Mass Consumer App,656,6560000000,28.9,387,11182.75
+SmolLM2-135M-Instruct,Ultra-light,Global Platform,656,65600000000,28.9,3862,111596.35
+SmolLM-360M-Instruct,Ultra-light,Prototype,656,656000,28.9,1,28.9
+SmolLM-360M-Instruct,Ultra-light,Early Startup,656,6560000,28.9,1,28.9
+SmolLM-360M-Instruct,Ultra-light,Growing Product,656,65600000,28.9,4,115.58
+SmolLM-360M-Instruct,Ultra-light,Large Platform,656,656000000,28.9,39,1126.94
+SmolLM-360M-Instruct,Ultra-light,Mass Consumer App,656,6560000000,28.9,386,11153.86
+SmolLM-360M-Instruct,Ultra-light,Global Platform,656,65600000000,28.9,3859,111509.66
+SmolLM2-360M-Instruct,Ultra-light,Prototype,656,656000,28.9,1,28.9
+SmolLM2-360M-Instruct,Ultra-light,Early Startup,656,6560000,28.9,1,28.9
+SmolLM2-360M-Instruct,Ultra-light,Growing Product,656,65600000,28.9,4,115.58
+SmolLM2-360M-Instruct,Ultra-light,Large Platform,656,656000000,28.9,38,1098.05
+SmolLM2-360M-Instruct,Ultra-light,Mass Consumer App,656,6560000000,28.9,378,10922.69
+SmolLM2-360M-Instruct,Ultra-light,Global Platform,656,65600000000,28.9,3777,109140.19
+Qwen2-0.5B-Instruct,Light,Prototype,656,656000,28.9,1,28.9
+Qwen2-0.5B-Instruct,Light,Early Startup,656,6560000,28.9,1,28.9
+Qwen2-0.5B-Instruct,Light,Growing Product,656,65600000,28.9,3,86.69
+Qwen2-0.5B-Instruct,Light,Large Platform,656,656000000,28.9,30,866.88
+Qwen2-0.5B-Instruct,Light,Mass Consumer App,656,6560000000,28.9,300,8668.8
+Qwen2-0.5B-Instruct,Light,Global Platform,656,65600000000,28.9,2992,86456.83
+Qwen2.5-0.5B-Instruct,Light,Prototype,656,656000,28.9,1,28.9
+Qwen2.5-0.5B-Instruct,Light,Early Startup,656,6560000,28.9,1,28.9
+Qwen2.5-0.5B-Instruct,Light,Growing Product,656,65600000,28.9,4,115.58
+Qwen2.5-0.5B-Instruct,Light,Large Platform,656,656000000,28.9,31,895.78
+Qwen2.5-0.5B-Instruct,Light,Mass Consumer App,656,6560000000,28.9,302,8726.59
+Qwen2.5-0.5B-Instruct,Light,Global Platform,656,65600000000,28.9,3013,87063.65
+h2o-danube3-500m-chat,Light,Prototype,656,656000,28.9,1,28.9
+h2o-danube3-500m-chat,Light,Early Startup,656,6560000,28.9,1,28.9
+h2o-danube3-500m-chat,Light,Growing Product,656,65600000,28.9,3,86.69
+h2o-danube3-500m-chat,Light,Large Platform,656,656000000,28.9,21,606.82
+h2o-danube3-500m-chat,Light,Mass Consumer App,656,6560000000,28.9,201,5808.1
+h2o-danube3-500m-chat,Light,Global Platform,656,65600000000,28.9,2009,58052.06
+TinyLlama-1.1B-Chat-v1.0,Small,Prototype,656,656000,28.9,1,28.9
+TinyLlama-1.1B-Chat-v1.0,Small,Early Startup,656,6560000,28.9,1,28.9
+TinyLlama-1.1B-Chat-v1.0,Small,Growing Product,656,65600000,28.9,3,86.69
+TinyLlama-1.1B-Chat-v1.0,Small,Large Platform,656,656000000,28.9,28,809.09
+TinyLlama-1.1B-Chat-v1.0,Small,Mass Consumer App,656,6560000000,28.9,271,7830.82
+TinyLlama-1.1B-Chat-v1.0,Small,Global Platform,656,65600000000,28.9,2709,78279.26
+granite-3.1-1b-a400m-instruct,Small,Prototype,656,656000,28.9,1,28.9
+granite-3.1-1b-a400m-instruct,Small,Early Startup,656,6560000,28.9,1,28.9
+granite-3.1-1b-a400m-instruct,Small,Growing Product,656,65600000,28.9,4,115.58
+granite-3.1-1b-a400m-instruct,Small,Large Platform,656,656000000,28.9,39,1126.94
+granite-3.1-1b-a400m-instruct,Small,Mass Consumer App,656,6560000000,28.9,385,11124.96
+granite-3.1-1b-a400m-instruct,Small,Global Platform,656,65600000000,28.9,3847,111162.91
+OLMo-2-0425-1B-Instruct,Small,Prototype,656,656000,28.9,1,28.9
+OLMo-2-0425-1B-Instruct,Small,Early Startup,656,6560000,28.9,1,28.9
+OLMo-2-0425-1B-Instruct,Small,Growing Product,656,65600000,28.9,3,86.69
+OLMo-2-0425-1B-Instruct,Small,Large Platform,656,656000000,28.9,22,635.71
+OLMo-2-0425-1B-Instruct,Small,Mass Consumer App,656,6560000000,28.9,214,6183.74
+OLMo-2-0425-1B-Instruct,Small,Global Platform,656,65600000000,28.9,2133,61635.17
+Qwen2.5-1.5B-Instruct,Medium,Prototype,656,656000,28.9,1,28.9
+Qwen2.5-1.5B-Instruct,Medium,Early Startup,656,6560000,28.9,1,28.9
+Qwen2.5-1.5B-Instruct,Medium,Growing Product,656,65600000,28.9,4,115.58
+Qwen2.5-1.5B-Instruct,Medium,Large Platform,656,656000000,28.9,36,1040.26
+Qwen2.5-1.5B-Instruct,Medium,Mass Consumer App,656,6560000000,28.9,351,10142.5
+Qwen2.5-1.5B-Instruct,Medium,Global Platform,656,65600000000,28.9,3502,101193.79
+stablelm-2-zephyr-1_6b,Medium,Prototype,656,656000,28.9,1,28.9
+stablelm-2-zephyr-1_6b,Medium,Early Startup,656,6560000,28.9,1,28.9
+stablelm-2-zephyr-1_6b,Medium,Growing Product,656,65600000,28.9,3,86.69
+stablelm-2-zephyr-1_6b,Medium,Large Platform,656,656000000,28.9,21,606.82
+stablelm-2-zephyr-1_6b,Medium,Mass Consumer App,656,6560000000,28.9,208,6010.37
+stablelm-2-zephyr-1_6b,Medium,Global Platform,656,65600000000,28.9,2075,59959.2
+Falcon3-1B-Instruct,Medium,Prototype,656,656000,28.9,1,28.9
+Falcon3-1B-Instruct,Medium,Early Startup,656,6560000,28.9,1,28.9
+Falcon3-1B-Instruct,Medium,Growing Product,656,65600000,28.9,3,86.69
+Falcon3-1B-Instruct,Medium,Large Platform,656,656000000,28.9,25,722.4
+Falcon3-1B-Instruct,Medium,Mass Consumer App,656,6560000000,28.9,247,7137.31
+Falcon3-1B-Instruct,Medium,Global Platform,656,65600000000,28.9,2464,71199.74
+SmolLM2-1.7B-Instruct,Large,Prototype,656,656000,28.9,1,28.9
+SmolLM2-1.7B-Instruct,Large,Early Startup,656,6560000,28.9,1,28.9
+SmolLM2-1.7B-Instruct,Large,Growing Product,656,65600000,28.9,3,86.69
+SmolLM2-1.7B-Instruct,Large,Large Platform,656,656000000,28.9,25,722.4
+SmolLM2-1.7B-Instruct,Large,Mass Consumer App,656,6560000000,28.9,243,7021.73
+SmolLM2-1.7B-Instruct,Large,Global Platform,656,65600000000,28.9,2423,70015.01
+h2o-danube2-1.8b-chat,Large,Prototype,656,656000,28.9,1,28.9
+h2o-danube2-1.8b-chat,Large,Early Startup,656,6560000,28.9,1,28.9
+h2o-danube2-1.8b-chat,Large,Growing Product,656,65600000,28.9,4,115.58
+h2o-danube2-1.8b-chat,Large,Large Platform,656,656000000,28.9,31,895.78
+h2o-danube2-1.8b-chat,Large,Mass Consumer App,656,6560000000,28.9,301,8697.7
+h2o-danube2-1.8b-chat,Large,Global Platform,656,65600000000,28.9,3002,86745.79
+Qwen1.5-1.8B-Chat,Large,Prototype,656,656000,28.9,1,28.9
+Qwen1.5-1.8B-Chat,Large,Early Startup,656,6560000,28.9,1,28.9
+Qwen1.5-1.8B-Chat,Large,Growing Product,656,65600000,28.9,3,86.69
+Qwen1.5-1.8B-Chat,Large,Large Platform,656,656000000,28.9,25,722.4
+Qwen1.5-1.8B-Chat,Large,Mass Consumer App,656,6560000000,28.9,249,7195.1
+Qwen1.5-1.8B-Chat,Large,Global Platform,656,65600000000,28.9,2485,71806.56

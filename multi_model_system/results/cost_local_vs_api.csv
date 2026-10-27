@@ -1,0 +1,7 @@
+Daily Traffic Category,Daily Active Users,"Local, cheapest model ($/day)","Local, most expensive model ($/day)",API total ($/day),Cheaper option
+Prototype,1000,28.9,28.9,2.03,API
+Early Startup,10000,28.9,28.9,2.35,API
+Growing Product,100000,86.69,115.58,5.55,API
+Large Platform,1000000,606.82,1126.94,39.49,API
+Mass Consumer App,10000000,5808.1,11182.75,388.95,API
+Global Platform,100000000,58052.06,111596.35,3881.47,API
