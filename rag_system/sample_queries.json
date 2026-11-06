@@ -1,0 +1,7 @@
+[
+  {"id": "q1", "query": "What should I do when a column has blank values?", "expected_doc": "rule_types.md", "expected_section": "Not null", "expected_keywords": ["blank", "source team"]},
+  {"id": "q2", "query": "Why would a key column have duplicate values?", "expected_doc": "rule_types.md", "expected_section": "Unique", "expected_keywords": ["exported twice", "joined"]},
+  {"id": "q3", "query": "Can I edit a contract that was already used?", "expected_doc": "validation_process.md", "expected_section": "Contracts and versions", "expected_keywords": ["new version"]},
+  {"id": "q4", "query": "When does a validation run count as failed?", "expected_doc": "validation_process.md", "expected_section": "Validation runs", "expected_keywords": ["at least one rule"]},
+  {"id": "q5", "query": "What is the refund policy for paid DataPact plans?", "out_of_scope": true}
+]
