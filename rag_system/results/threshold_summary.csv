@@ -1,0 +1,10 @@
+embedding_model,chunking_strategy,lowest_answerable,highest_unanswerable,gap,suggested_threshold
+large,fixed,0.59,0.5816,0.0084,0.5858
+large,hybrid,0.5486,0.6061,-0.0575,
+large,overlap,0.5985,0.5913,0.0072,0.5949
+medium,fixed,0.3562,0.4169,-0.0607,
+medium,hybrid,0.3459,0.4294,-0.0835,
+medium,overlap,0.2891,0.4056,-0.1165,
+small,fixed,0.4155,0.4568,-0.0413,
+small,hybrid,0.3648,0.444,-0.0792,
+small,overlap,0.3697,0.3681,0.0016,0.3689

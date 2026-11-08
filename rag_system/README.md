@@ -61,7 +61,8 @@ First paragraph of 80 to 200 words.
 Second paragraph.
 ```
 
-Keep each section to one topic. Chunks never cross sections, and the scoring uses the section name.
+Keep each section to one topic. Hybrid chunks never cross sections. Fixed and overlap chunks can
+cover two sections, but never two documents. The scoring uses the section name.
 
 Put the queries in `test_queries.json`, next to the notebook:
 
