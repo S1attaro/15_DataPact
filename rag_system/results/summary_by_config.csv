@@ -1,0 +1,10 @@
+embedding_model,chunking_strategy,context_hit_rate,context_phrase_recall,answer_phrase_recall,avg_search_ms,avg_generate_s,declined_correctly
+large,fixed,1.0,0.792,0.333,16.017,0.852,1.0
+large,hybrid,0.833,0.833,0.375,15.808,1.014,1.0
+large,overlap,0.833,0.833,0.417,16.225,1.342,1.0
+medium,fixed,1.0,0.958,0.472,9.825,1.056,1.0
+medium,hybrid,1.0,1.0,0.25,7.983,0.898,1.0
+medium,overlap,0.917,0.917,0.5,9.425,1.628,1.0
+small,fixed,1.0,0.833,0.25,4.875,0.821,1.0
+small,hybrid,1.0,1.0,0.375,5.508,1.273,1.0
+small,overlap,0.833,0.833,0.417,5.008,1.53,1.0
