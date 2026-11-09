@@ -9,8 +9,13 @@ the notebook; it runs this copy, so the app chunks and prompts exactly the
 way A8 measured. CopiedFromA8Tests (tests_handbook.py) fails if the two drift
 apart, so change them only together with the notebook.
 
-Note: make_chunk() keeps the document file name and section but not the
-document title, so retrieval.py looks the title up from the paragraphs.
+Copied from the notebook as merged on 8 Nov 2026 (PR #48), where fixed and
+overlap chunks run across the sections of one document (never across two
+documents) and hybrid chunks stay inside one section.
+
+Note: make_chunk() keeps the document file name and the section(s) but not
+the document title, so retrieval.py looks the title up from the paragraphs.
+A chunk that covers two sections has a section label like "A + B".
 """
 
 import re
@@ -72,34 +77,51 @@ def pack_sentences(sentences, limit):
     return groups
 
 
-def make_chunk(key, text, embed_text=None):
-    doc, title, section = key
-    return {"doc": doc, "section": section, "text": text, "embed_text": embed_text or text,
-            "words": len(text.split())}
+def group_by_doc(paragraphs):
+    docs = {}
+    for p in paragraphs:
+        docs.setdefault(p["doc"], []).append(p)
+    return docs
+
+
+def make_chunk(doc, sections, text, embed_text=None):
+    sections = list(dict.fromkeys(sections))
+    return {"doc": doc, "sections": sections, "section": " + ".join(sections), "text": text,
+            "embed_text": embed_text or text, "words": len(text.split())}
 
 
 def fixed_chunks(paragraphs):
     chunks = []
-    for key, texts in group_by_section(paragraphs).items():
-        sentences = [s for text in texts for s in split_sentences(text)]
-        chunks += [make_chunk(key, text) for text in pack_sentences(sentences, FIXED_WORDS)]
+    for doc, paras in group_by_doc(paragraphs).items():
+        current, sections, count = [], [], 0
+        for p in paras:
+            for sentence in split_sentences(p["text"]):
+                size = len(sentence.split())
+                if current and count + size > FIXED_WORDS:
+                    chunks.append(make_chunk(doc, sections, " ".join(current)))
+                    current, sections, count = [], [], 0
+                current.append(sentence)
+                sections.append(p["section"])
+                count += size
+        if current:
+            chunks.append(make_chunk(doc, sections, " ".join(current)))
     return chunks
 
 
 def overlap_chunks(paragraphs):
     chunks = []
-    for key, texts in group_by_section(paragraphs).items():
-        if len(texts) == 1:
-            chunks.append(make_chunk(key, texts[0]))
-        for first, second in zip(texts, texts[1:]):
-            chunks.append(make_chunk(key, first + " " + second))
+    for doc, paras in group_by_doc(paragraphs).items():
+        if len(paras) == 1:
+            chunks.append(make_chunk(doc, [paras[0]["section"]], paras[0]["text"]))
+        for first, second in zip(paras, paras[1:]):
+            chunks.append(make_chunk(doc, [first["section"], second["section"]],
+                                     first["text"] + " " + second["text"]))
     return chunks
 
 
 def hybrid_chunks(paragraphs):
     chunks = []
-    for key, texts in group_by_section(paragraphs).items():
-        doc, title, section = key
+    for (doc, title, section), texts in group_by_section(paragraphs).items():
         merged = []
         for text in texts:
             if merged and len(merged[-1].split()) < HYBRID_MIN_WORDS:
@@ -115,7 +137,7 @@ def hybrid_chunks(paragraphs):
             if len(text.split()) > HYBRID_MAX_WORDS:
                 pieces = pack_sentences(split_sentences(text), HYBRID_SPLIT_WORDS)
             for piece in pieces:
-                chunks.append(make_chunk(key, piece, f"{title} - {section}: {piece}"))
+                chunks.append(make_chunk(doc, [section], piece, f"{title} - {section}: {piece}"))
     return chunks
 
 

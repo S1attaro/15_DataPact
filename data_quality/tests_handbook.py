@@ -37,7 +37,7 @@ NOTEBOOK = Path(settings.BASE_DIR) / "rag_system" / "rag_system.ipynb"
 
 COPIED_NAMES = (
     "FIXED_WORDS", "HYBRID_MIN_WORDS", "HYBRID_MAX_WORDS", "HYBRID_SPLIT_WORDS",
-    "load_paragraphs", "split_sentences", "group_by_section", "pack_sentences", "make_chunk",
+    "load_paragraphs", "split_sentences", "group_by_section", "group_by_doc", "pack_sentences", "make_chunk",
     "fixed_chunks", "overlap_chunks", "hybrid_chunks", "CHUNKERS",
     "EMBEDDING_MODELS", "SYSTEM_PROMPT", "build_messages",
 )
