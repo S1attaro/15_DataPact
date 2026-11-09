@@ -116,6 +116,7 @@ it in production. See docs/notes/notes.txt section 30.
                     <span class="mainnav__planned">Upload <span class="mainnav__tag">Not<span class="visually-hidden"> available</span> yet</span></span>
                     <a href="{% url 'data_quality:quality-history' %}"{% if here == 'quality-history' %} class="is-active" aria-current="page"{% endif %}>Quality History</a>
                     <a href="{% url 'data_quality:reports' %}"{% if here == 'reports' %} class="is-active" aria-current="page"{% endif %}>Reports</a>
+                    <a href="{% url 'data_quality:handbook-ask' %}"{% if here == 'handbook-ask' %} class="is-active" aria-current="page"{% endif %}>Handbook</a>
                 {% endif %}
             </nav>
             {% endwith %}

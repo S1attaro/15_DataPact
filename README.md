@@ -9,6 +9,8 @@ Since A6, a signed-in user can also ask an AI model to explain a violation: whet
 
 The answer is advice only and never changes the database. Details, privacy rules and what was verified are in [`README_AI.md`](README_AI.md).
 
+A9 adds a handbook Q&A page (`/handbook/`): a signed-in user asks how DataPact works, the app searches the team's handbook with a `sentence-transformers` embedding model and the same local SmolLM2 model answers from the passages it found, which are listed under the answer. It needs setting up first; see "Handbook Q&A (A9)" below and the A9 section of [`README_AI.md`](README_AI.md).
+
 INFO 490, Team 15, Fall 2026.
 
 ## Team
@@ -17,11 +19,30 @@ Hriday Agarwal, Ashok Chacko, Tejas Jaggi, Connor Slattery
 
 ## Where the project is
 
-The repo holds the project through A6: the A1 data model, the A2 settings
-split and views, the A3 ORM/forms/navigation/visualisation work, the A4
-APIs, charts, exports and deployment preparation, the A5 sign-in and access
-control, and the A6 text-intelligence features. All 294 tests pass on `main`
-(19 Oct 2026, after the A6 merges).
+The repo holds the A1 data model, the A2 settings split and views, the A3
+ORM/forms/navigation/visualisation work, the A4 APIs, charts, exports and
+deployment preparation, the A5 sign-in and access control, the A6
+text-intelligence features, the A7 multi-model design
+(`multi_model_system/`) and the A8 retrieval pipeline (`rag_system/`).
+
+A9, the handbook Q&A, was built on the branch `tejas/a9-rag-integration`. It
+runs end to end with the real models, but so far only on two small sample
+files. The real handbook (`rag_system/knowledge_base/`), the A8 test queries,
+the A8 experiment run and its hand-graded evaluation reached `main` on 8-9 Nov
+2026. A9 has not yet been switched to the settings A8 recommends or evaluated
+on the real handbook. The A9 section of [`README_AI.md`](README_AI.md) tracks
+what is done and what is pending.
+
+Test counts, with where they were run:
+
+* `main`, 19 Oct 2026, after the A6 merges: 294 tests passed. This is the last
+  test run on `main` recorded here.
+* `main` at `b3fce0c` (6 Nov 2026), where the A9 branch starts: 485 tests. This
+  is a count of the test methods in the code, not a test run. The 191 extra
+  tests came with the UX changes of 21-23 Oct 2026.
+* The A9 branch (`tejas/a9-rag-integration`), run locally on 7 Nov 2026, before
+  the branch was pushed or merged: all 576 tests in `data_quality` passed. By
+  count, that is the 485 tests from `main` plus 91 new handbook tests.
 
 | A4 part | What | Status |
 | --- | --- | --- |
@@ -80,7 +101,7 @@ If PowerShell blocks the script, run `Set-ExecutionPolicy -Scope Process Bypass`
 pip install -r requirements.txt
 ```
 
-This includes `torch`, `transformers` and `accelerate` for the A6 local model. PyPI's `torch` is CPU-only on Windows; `requirements.txt` has the one-line command for the NVIDIA (CUDA) build. A server that cannot fit these (such as PythonAnywhere) uses `requirements-deploy.txt` instead, and the local model stays off there. See [`README_AI.md`](README_AI.md).
+This includes `torch`, `transformers` and `accelerate` for the A6 local model, and `sentence-transformers` for the A9 handbook search. PyPI's `torch` is CPU-only on Windows; `requirements.txt` has the one-line command for the NVIDIA (CUDA) build. A server that cannot fit these (such as PythonAnywhere) uses `requirements-deploy.txt` instead, and the local model stays off there. See [`README_AI.md`](README_AI.md).
 
 4. Make your own `.env` file.
 
@@ -90,14 +111,27 @@ Copy-Item .env.example .env
 
 Fill in your own values. Do not commit `.env`. Git ignores it. Settings read `.env` on startup; without a `SECRET_KEY` every `manage.py` command stops with a message telling you to create the file.
 
-5. The repo already includes `db.sqlite3` with demo data, so you can skip this step. To reset the database, run:
+5. Set up a database and a login account.
+
+The committed `db.sqlite3` is an old demo snapshot, last committed on 19 Sep 2026, before Google sign-in (A5) was added. Its app tables are current, but it has none of the sign-in tables (17 migrations from `sites`, `account` and `socialaccount` are not applied). Used as it is, the login page fails with `no such table: django_site`, so no page that needs sign-in can be reached. Treat it as historical sample data and leave it unchanged. Work on a database of your own instead: in `.env`, uncomment or add
+
+```
+DATABASE_NAME=db.local.sqlite3
+```
+
+then run:
 
 ```
 python manage.py migrate
 python manage.py seed_demo
+python manage.py createsuperuser
 ```
 
-`seed_demo` clears the app tables before it loads the demo data.
+* `migrate` creates every table in `db.local.sqlite3`, a file Git ignores. Run it again after pulling a change that adds migrations.
+* `seed_demo` loads the demo datasets, contracts and runs. It clears the app tables first, and it is optional.
+* `createsuperuser` asks for a username, an email and a password. Use them on the login page (`/accounts/login/`); every signed-in page, including the handbook (`/handbook/`), needs an account.
+
+Running `migrate` without `DATABASE_NAME` migrates the committed `db.sqlite3` itself. That also works, but it changes a tracked file.
 
 ## Environment variables
 
@@ -116,6 +150,13 @@ python manage.py seed_demo
 | `AI_LOCAL_ENABLED` | Optional (A6). Turns the "Explain with AI" local model on or off. On by default in development, off by default in production. |
 | `AI_LOCAL_MODEL_ID` | Optional (A6). Hugging Face model to load. Defaults to `HuggingFaceTB/SmolLM2-1.7B-Instruct`, the model the benchmark notebook chose. |
 | `AI_LOCAL_DEVICE` | Optional (A6). `auto` (GPU if there is one), `cuda` or `cpu`. The model needs about 4 GB of free GPU memory, or about 7 GB of free RAM on CPU. |
+| `RAG_EMBEDDING_MODEL_ID` | A9 handbook. Hugging Face id of the `sentence-transformers` model that searches the handbook. Empty by default, and then the page says the handbook is not configured. A8 compared `sentence-transformers/all-MiniLM-L6-v2`, `sentence-transformers/all-mpnet-base-v2` and `BAAI/bge-large-en-v1.5` and recommends `all-mpnet-base-v2`. A9 has not been run with it yet; so far it has used only MiniLM, on the sample files. |
+| `RAG_KB_DIR` | Optional (A9). Folder of handbook `.md` files, relative to the repository root. Defaults to `rag_system/knowledge_base`. |
+| `RAG_EMBEDDING_DEVICE` | Optional (A9). `cpu` (the default, which leaves the GPU to the local model) or `cuda`. |
+| `RAG_CHUNKING` | Optional (A9). The A8 chunking strategy: `fixed`, `overlap` or `hybrid` (the default, chosen before the A8 results). A9's `fixed` and `overlap` come from an older copy of the A8 code and do not yet match what A8 measured; see "A8 results and what A9 still has to change" in [`README_AI.md`](README_AI.md). |
+| `RAG_TOP_K` | Optional (A9). How many passages the search returns. Defaults to 3. |
+| `RAG_MIN_SCORE` | Optional (A9). Passages with a lower similarity are not sent to the model; with none left, no answer is written. Defaults to 0.3, set before the A8 results. A8 found that no cutoff separates answerable from out-of-scope questions, and recommends none; `-1` keeps every passage. Which to use in A9 is not decided yet. |
+| `RAG_QUERY_PREFIX` | Optional (A9). Text put before each question when it is embedded. Leave it unset to use the prefix A8 gave the model (only `BAAI/bge-large-en-v1.5` has one); setting it, even to an empty value, overrides that. |
 
 To make a new secret key:
 
@@ -147,6 +188,34 @@ python manage.py collectstatic --noinput --settings=datapact_project.settings.pr
 
 Skip that step and the pages still render, just without the content hash in the stylesheet URL. Development mode needs no collectstatic.
 
+## Handbook Q&A (A9)
+
+The handbook page answers questions about how DataPact works from the team's handbook (the A8 knowledge base). It is **not ready out of the box**: with the default settings the page says no embedding model is configured. How it works, its limits and what was tested are in the A9 section of [`README_AI.md`](README_AI.md).
+
+1. Install the packages as in Setup. `requirements.txt` includes `sentence-transformers`. `requirements-deploy.txt` does not, and production settings turn the local model off by default, so the page is off on PythonAnywhere.
+2. The handbook is in `rag_system/knowledge_base/`, the default `RAG_KB_DIR`: the A8 knowledge base, 9 documents with one `.md` file each, in the A8 format (`# ` title, `## ` section, paragraphs separated by blank lines; see [`rag_system/README.md`](rag_system/README.md)). `rag_system/sample_kb` holds two small sample files. They are not the handbook, but every A9 run so far used them.
+3. Set an embedding model in `.env`. The only setup run in A9 so far is the smallest model on the sample files. A8 recommends `sentence-transformers/all-mpnet-base-v2` for the real handbook, but A9 has not been run or evaluated with it yet (see the A9 section of [`README_AI.md`](README_AI.md)). The setup A9 has run:
+
+```
+RAG_EMBEDDING_MODEL_ID=sentence-transformers/all-MiniLM-L6-v2
+RAG_KB_DIR=rag_system/sample_kb
+```
+
+4. Run the server, sign in with the account from Setup step 5, and open **Handbook** in the navigation (or http://127.0.0.1:8000/handbook/).
+
+```
+python manage.py runserver
+```
+
+Notes:
+
+* **Downloads.** Nothing downloads until the first question. Then the embedding model downloads into the Hugging Face cache, outside the repository (all-MiniLM-L6-v2 was about 88 MB), and so does the local model if it is not there yet (about 3.4 GB, as for A6). Later questions use the cached copies.
+* **First answer.** The first question loads both models, so it is slow. With both already downloaded, loading took about 17-20 s on our laptop (RTX 3050 Ti, 4 GB).
+* **Hardware.** The local model needs about 4 GB of free GPU memory, or about 7 GB of free RAM on CPU, as for A6. The embedding model runs on the CPU by default.
+* **The local model must be on.** The page uses `AI_LOCAL_ENABLED`, which is on by default in development and off by default in production.
+* **Editing the handbook.** The search index is built once per server process, so restart the server after changing the `.md` files.
+* **Tests.** `python manage.py test data_quality.tests_handbook` runs the handbook tests with fake models; it downloads nothing.
+
 ## Pages
 
 | URL | View | Kind |
@@ -171,6 +240,7 @@ Skip that step and the pages still render, just without the content hash in the 
 | `/api/datasets/` | `dataset_api` | Function-based, JsonResponse (dataset registry) |
 | `/api/lookup/` | `dataset_lookup_api` | Function-based, JsonResponse (external API) |
 | `/violations/<id>/explain/` | `violation_explain` | Function-based, render() (A6 AI; GET shows, POST explains with the local model or the Groq API) |
+| `/handbook/` | `handbook_ask` | Function-based, render() (A9 AI; GET shows the form, POST searches the handbook and answers with the local model) |
 | `/reports/` | `reports_view` | Function-based, render() |
 | `/reports/export/validation-runs.csv` | `export_validation_runs_csv` | Function-based, CSV via HttpResponse |
 | `/reports/export/validation-runs.json` | `export_validation_runs_json` | Function-based, JsonResponse |
@@ -358,7 +428,7 @@ A full request/response transcript of both modes is in
 python manage.py test data_quality
 ```
 
-294 tests on `main` (19 Oct 2026): the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, the Reports page and CSV/JSON exports, the A4 chart APIs, Vega-Lite specification endpoints and charts page, Google sign-in, the A5 access control, and the A6 explain page (local model and Groq). The A6 tests use a fake local model and fake Groq responses, so they need no GPU, no key and no network. Run them before you open a pull request.
+The test suite builds its own empty database from the migrations, so it passes even though the committed `db.sqlite3` is not migrated (Setup, step 5). On the A9 branch, run locally on 7 Nov 2026, before the branch was pushed or merged, all 576 tests passed. They include 91 handbook tests (`data_quality/tests_handbook.py`), which use a fake embedding model and a fake generator, so they need no GPU and download nothing. The list below is from 19 Oct 2026, when `main` had 294 tests, so it leaves out the tests added by the UX changes of 21-23 Oct 2026 and the A9 handbook tests: the A2 class-based views, the templates, the render() view, the settings split, `ContractSearchView`, `DatasetManageView`, the static-file and cache-busting checks, the home page, navigation and Quality History chart, the Reports page and CSV/JSON exports, the A4 chart APIs, Vega-Lite specification endpoints and charts page, Google sign-in, the A5 access control, and the A6 explain page (local model and Groq). The A6 tests use a fake local model and fake Groq responses, so they need no GPU, no key and no network. Run them before you open a pull request.
 
 ## Google sign-in (Hriday)
 
@@ -388,7 +458,7 @@ Google matches redirect URIs exactly, including the trailing slash, and `localho
 
 **URL order.** In `datapact_project/urls.py` the project's own routes (`data_quality.urls`) come before `allauth.urls`. Django uses the first pattern that matches, so a project view on the same path as an allauth one, such as a custom `accounts/login/`, is not shadowed, while allauth still serves the Google login, its callback and the rest. A test guards the order.
 
-**On PythonAnywhere:** pull the code, `pip install -r requirements-deploy.txt` (the same pins as `requirements.txt` minus torch, transformers and accelerate, which the host cannot fit; the local AI model stays off there), `python manage.py migrate`, `python manage.py collectstatic`, make sure the server's `.env` has both Google values, then reload the web app. Production settings send an `https://` callback (`ACCOUNT_DEFAULT_HTTP_PROTOCOL`), because PythonAnywhere hands Django a plain-http request and Google would otherwise reject the callback with `redirect_uri_mismatch`.
+**On PythonAnywhere:** pull the code, `pip install -r requirements-deploy.txt` (the same pins as `requirements.txt` minus torch, transformers, accelerate and sentence-transformers, which the host cannot fit; the local AI model, and with it the handbook page, stays off there), `python manage.py migrate`, `python manage.py collectstatic`, make sure the server's `.env` has both Google values, then reload the web app. Production settings send an `https://` callback (`ACCOUNT_DEFAULT_HTTP_PROTOCOL`), because PythonAnywhere hands Django a plain-http request and Google would otherwise reject the callback with `redirect_uri_mismatch`.
 
 **After pulling this change locally**, install the new package and create the allauth tables:
 
@@ -397,7 +467,7 @@ pip install -r requirements.txt
 python manage.py migrate
 ```
 
-`migrate` also changes the committed `db.sqlite3`. Restore it with `git checkout -- db.sqlite3` unless the team decides to commit the migrated file for deployment.
+Before running `migrate`, set `DATABASE_NAME=db.local.sqlite3` in `.env` as in Setup, step 5, so the new tables go into your own local database. With `DATABASE_NAME` unset, `migrate` in development writes them into the committed `db.sqlite3`, a tracked file; do not commit that change unless the team decides to.
 
 ## A3, Section 2 & Section 5 (Hriday)
 
@@ -582,24 +652,33 @@ Screenshots: `docs/screenshots/a4/a4_p1_charts_page.png`,
 ```
 15_DataPact/
   README.md
-  README_AI.md          A6 AI features: workflow, guardrails, what was verified
+  README_AI.md          A6 and A9 AI features: workflow, guardrails, what was verified
   manage.py
-  requirements.txt      everything, including torch/transformers for the local model
-  requirements-deploy.txt  the same pins without torch/transformers/accelerate
+  requirements.txt      everything, including torch/transformers and sentence-transformers
+  requirements-deploy.txt  the same pins without torch/transformers/accelerate/sentence-transformers
   .env.example          placeholder values, safe to commit
   .gitignore
-  db.sqlite3            demo database
+  db.sqlite3            old demo database, not migrated for sign-in (Setup, step 5)
   datapact_project/     root URLs, wsgi, asgi
     settings/           base.py (shared), development.py, production.py
   data_quality/         models, views, urls, charts, vega, forms, tests
+                        (A9: handbook_views.py, tests_handbook.py)
     ai/                 A6: prompts, local model, Groq client
+                        A9: retrieval.py, handbook.py, handbook_a8.py (copied from A8)
     static/
       data_quality/     css/datapact.css, img/datapact-logo.svg
     templates/
       data_quality/     base.html, page templates, includes/ partials
   staticfiles/          collectstatic output (generated, git-ignored)
   llm-test/             A6 Part 1 notebooks and their result CSVs/charts
+  multi_model_system/   A7 benchmark notebook, results/ and system_design.md
+  rag_system/           A8: rag_system.ipynb (pipeline and full run), knowledge_base/
+                        (the handbook), test_queries.json, results/ (run output),
+                        evaluation/ (manual grades), rag_analysis.md (write-up),
+                        part4_system_design.md (Part 4 draft), sample_kb/ and
+                        sample_queries.json
   docs/
+    a9/                 A9 sample-knowledge-base run results (JSON) and notes
     notes/              notes.txt, with weekly updates from each teammate
     wireframes/v1/      wireframes PDF
     branching_strategy/ how we use branches and pull requests

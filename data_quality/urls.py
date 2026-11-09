@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import ai_views, auth_views, views
+from . import ai_views, auth_views, handbook_views, views
 
 app_name = "data_quality"
 
@@ -68,6 +68,9 @@ urlpatterns = [
         ai_views.violation_explain,
         name="violation-explain",
     ),
+
+    # --- A9: ask the DataPact handbook (retrieval + the local model) (Tejas) ---
+    path("handbook/", handbook_views.handbook_ask, name="handbook-ask"),
 
     # --- A4 Part 3: reports and exports (Hriday) ---
     path("reports/", views.reports_view, name="reports"),

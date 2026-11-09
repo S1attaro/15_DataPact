@@ -1,0 +1,515 @@
+{
+  "settings": {
+    "RAG_EMBEDDING_MODEL_ID": "sentence-transformers/all-MiniLM-L6-v2",
+    "RAG_KB_DIR": "rag_system/sample_kb",
+    "RAG_CHUNKING": "hybrid",
+    "RAG_EMBEDDING_DEVICE": "cpu",
+    "RAG_TOP_K": "3",
+    "RAG_MIN_SCORE": "0.3",
+    "AI_LOCAL_MODEL_ID": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+    "AI_LOCAL_DEVICE": "auto",
+    "AI_MAX_NEW_TOKENS": "160"
+  },
+  "env": {
+    "torch": "2.14.1+cu132",
+    "gpu": "NVIDIA GeForce RTX 3050 Ti Laptop GPU",
+    "hf_offline": "1",
+    "generator_device": "cuda"
+  },
+  "prompts": {
+    "baseline": "You answer questions about DataPact, a data quality tool. Use only the context below. If the context does not contain the answer, say: I could not find that in the documents. After each fact, cite the number of the context passage it comes from, like [1].",
+    "A": "You answer questions about DataPact, a data quality tool. Use only the context below. If the context does not contain the answer, say: I could not find that in the documents. Rules: Use only the numbered context passages. Put the number of the passage that supports each sentence right after that sentence, like [1]. Do not add assumptions, general knowledge or details that are not in the passages. If the passages do not establish the answer, say only: I could not find that in the documents. Never invent passage numbers or document names.",
+    "B": "You answer questions about DataPact, a data quality tool. Use only the context below. If the context does not contain the answer, say: I could not find that in the documents. Rules: Use only the numbered context passages. Put the number of the passage that supports each sentence right after that sentence, like [1]. Do not add assumptions, general knowledge or details that are not in the passages. If the passages do not establish the answer, say only: I could not find that in the documents. Never invent passage numbers or document names.\n\nExample.\nContext:\n[1] An ALLOWED_VALUES rule lists every value a column may hold. The parameters hold the list. A status column might allow ACTIVE, INACTIVE and AUDIT.\nQuestion: What does an ALLOWED_VALUES rule check?\nAnswer: An ALLOWED_VALUES rule lists every value a column may hold [1]. Its parameters hold that list [1]."
+  },
+  "load_s": 20.39,
+  "retrieval": {
+    "q1": {
+      "question": "What should I do when a column has blank values?",
+      "hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.5352,
+          "sent": true,
+          "text": "A NOT_NULL rule says a column must have a value in every row. It takes no parameters. A blank cell counts as a failure. This rule fits columns such as a student ID, where a missing value makes the whole row useless to the team that receives the file. When a NOT_NULL rule fails, DataPact records how many rows were blank. The usual causes are a broken export or a new optional field in the source system. The owner of the dataset should ask the source team whether the blanks are expected before changing the contract."
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Allowed values",
+          "score": 0.2812,
+          "sent": false,
+          "text": "An ALLOWED_VALUES rule lists every value a column may hold. The parameters hold the list. A status column might allow ACTIVE, INACTIVE and AUDIT. A new code in the file fails the rule even if it is valid in the source system, so this rule is the one most often changed when a source team adds a status."
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Range",
+          "score": 0.2809,
+          "sent": false,
+          "text": "A RANGE rule says a number must fall between a minimum and a maximum. The parameters hold those two limits. A credit hours column might use a range of 0 to 24. Values outside the limits are counted as violations, and sample values are kept for the person who reviews the run."
+        }
+      ]
+    },
+    "q2": {
+      "question": "Why would a key column have duplicate values?",
+      "hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Unique",
+          "score": 0.4875,
+          "sent": true,
+          "text": "A UNIQUE rule says no value may appear twice in a column. It takes no parameters. It is the rule to use for keys such as an order number. A failed UNIQUE rule usually means the file was exported twice or two batches were joined together. Duplicates can also come from a legitimate change. If a student can now hold two enrollments in one term, the key is no longer the student ID alone. In that case the contract should change, and the change should be saved as a new contract version."
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.2723,
+          "sent": false,
+          "text": "A NOT_NULL rule says a column must have a value in every row. It takes no parameters. A blank cell counts as a failure. This rule fits columns such as a student ID, where a missing value makes the whole row useless to the team that receives the file. When a NOT_NULL rule fails, DataPact records how many rows were blank. The usual causes are a broken export or a new optional field in the source system. The owner of the dataset should ask the source team whether the blanks are expected before changing the contract."
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Allowed values",
+          "score": 0.2183,
+          "sent": false,
+          "text": "An ALLOWED_VALUES rule lists every value a column may hold. The parameters hold the list. A status column might allow ACTIVE, INACTIVE and AUDIT. A new code in the file fails the rule even if it is valid in the source system, so this rule is the one most often changed when a source team adds a status."
+        }
+      ]
+    },
+    "q3": {
+      "question": "Can I edit a contract that was already used?",
+      "hits": [
+        {
+          "rank": 1,
+          "doc": "validation_process.md",
+          "section": "Contracts and versions",
+          "score": 0.4995,
+          "sent": true,
+          "text": "A contract is the written agreement about what the files of a dataset must contain. Each contract belongs to one dataset and holds a list of rules. A contract that has been used in a validation run must never be edited. Any change is saved as a new version, so old runs can still be read against the rules they were checked with."
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Unique",
+          "score": 0.2846,
+          "sent": false,
+          "text": "A UNIQUE rule says no value may appear twice in a column. It takes no parameters. It is the rule to use for keys such as an order number. A failed UNIQUE rule usually means the file was exported twice or two batches were joined together. Duplicates can also come from a legitimate change. If a student can now hold two enrollments in one term, the key is no longer the student ID alone. In that case the contract should change, and the change should be saved as a new contract version."
+        },
+        {
+          "rank": 3,
+          "doc": "validation_process.md",
+          "section": "Reviewing violations",
+          "score": 0.1417,
+          "sent": false,
+          "text": "A violation stores the rule that failed, the number of failed rows and a few sample values. A person then records what the failure meant. The resolution says whether the data was wrong or the contract was out of date. Keeping this decision matters because the same violation may come back in a later file, and the team can see how it was handled last time."
+        }
+      ]
+    },
+    "q4": {
+      "question": "When does a validation run count as failed?",
+      "hits": [
+        {
+          "rank": 1,
+          "doc": "validation_process.md",
+          "section": "Validation runs",
+          "score": 0.7149,
+          "sent": true,
+          "text": "A validation run is one occasion on which an uploaded file was checked against one contract version. The run records the file, the contract version and the outcome. A run passes when every rule passes. A run fails when at least one rule fails, and each failed rule produces one aggregated violation rather than one record per bad row."
+        },
+        {
+          "rank": 2,
+          "doc": "validation_process.md",
+          "section": "Reviewing violations",
+          "score": 0.5703,
+          "sent": true,
+          "text": "A violation stores the rule that failed, the number of failed rows and a few sample values. A person then records what the failure meant. The resolution says whether the data was wrong or the contract was out of date. Keeping this decision matters because the same violation may come back in a later file, and the team can see how it was handled last time."
+        },
+        {
+          "rank": 3,
+          "doc": "validation_process.md",
+          "section": "Contracts and versions",
+          "score": 0.4098,
+          "sent": true,
+          "text": "A contract is the written agreement about what the files of a dataset must contain. Each contract belongs to one dataset and holds a list of rules. A contract that has been used in a validation run must never be edited. Any change is saved as a new version, so old runs can still be read against the rules they were checked with."
+        }
+      ]
+    },
+    "q5": {
+      "question": "What is the refund policy for paid DataPact plans?",
+      "hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.364,
+          "sent": true,
+          "text": "A NOT_NULL rule says a column must have a value in every row. It takes no parameters. A blank cell counts as a failure. This rule fits columns such as a student ID, where a missing value makes the whole row useless to the team that receives the file. When a NOT_NULL rule fails, DataPact records how many rows were blank. The usual causes are a broken export or a new optional field in the source system. The owner of the dataset should ask the source team whether the blanks are expected before changing the contract."
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Range",
+          "score": 0.341,
+          "sent": true,
+          "text": "A RANGE rule says a number must fall between a minimum and a maximum. The parameters hold those two limits. A credit hours column might use a range of 0 to 24. Values outside the limits are counted as violations, and sample values are kept for the person who reviews the run."
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Unique",
+          "score": 0.3298,
+          "sent": true,
+          "text": "A UNIQUE rule says no value may appear twice in a column. It takes no parameters. It is the rule to use for keys such as an order number. A failed UNIQUE rule usually means the file was exported twice or two batches were joined together. Duplicates can also come from a legitimate change. If a student can now hold two enrollments in one term, the key is no longer the student ID alone. In that case the contract should change, and the change should be saved as a new contract version."
+        }
+      ]
+    },
+    "t6": {
+      "question": "What parameters does a RANGE rule take?",
+      "hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Range",
+          "score": 0.5776,
+          "sent": true,
+          "text": "A RANGE rule says a number must fall between a minimum and a maximum. The parameters hold those two limits. A credit hours column might use a range of 0 to 24. Values outside the limits are counted as violations, and sample values are kept for the person who reviews the run."
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Allowed values",
+          "score": 0.3856,
+          "sent": true,
+          "text": "An ALLOWED_VALUES rule lists every value a column may hold. The parameters hold the list. A status column might allow ACTIVE, INACTIVE and AUDIT. A new code in the file fails the rule even if it is valid in the source system, so this rule is the one most often changed when a source team adds a status."
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.2142,
+          "sent": false,
+          "text": "A NOT_NULL rule says a column must have a value in every row. It takes no parameters. A blank cell counts as a failure. This rule fits columns such as a student ID, where a missing value makes the whole row useless to the team that receives the file. When a NOT_NULL rule fails, DataPact records how many rows were blank. The usual causes are a broken export or a new optional field in the source system. The owner of the dataset should ask the source team whether the blanks are expected before changing the contract."
+        }
+      ]
+    },
+    "t7": {
+      "question": "How do I reset my DataPact password?",
+      "hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.2807,
+          "sent": false,
+          "text": "A NOT_NULL rule says a column must have a value in every row. It takes no parameters. A blank cell counts as a failure. This rule fits columns such as a student ID, where a missing value makes the whole row useless to the team that receives the file. When a NOT_NULL rule fails, DataPact records how many rows were blank. The usual causes are a broken export or a new optional field in the source system. The owner of the dataset should ask the source team whether the blanks are expected before changing the contract."
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Unique",
+          "score": 0.2584,
+          "sent": false,
+          "text": "A UNIQUE rule says no value may appear twice in a column. It takes no parameters. It is the rule to use for keys such as an order number. A failed UNIQUE rule usually means the file was exported twice or two batches were joined together. Duplicates can also come from a legitimate change. If a student can now hold two enrollments in one term, the key is no longer the student ID alone. In that case the contract should change, and the change should be saved as a new contract version."
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Range",
+          "score": 0.196,
+          "sent": false,
+          "text": "A RANGE rule says a number must fall between a minimum and a maximum. The parameters hold those two limits. A credit hours column might use a range of 0 to 24. Values outside the limits are counted as violations, and sample values are kept for the person who reviews the run."
+        }
+      ]
+    }
+  },
+  "runs": [
+    {
+      "variant": "baseline",
+      "id": "q1",
+      "status": "answered",
+      "raw_reply": "[1] When a column has blank values, you should check if the blanks are expected or if they are due to a broken export or a new optional field in the source system. If the blanks are expected, you should ask the source team whether the blanks are expected before changing the contract. If the blanks are not expected, you should change the contract to NOT_NULL rule to ensure that the column must have a value in every row.",
+      "shown_text": "[1] When a column has blank values, you should check if the blanks are expected or if they are due to a broken export or a new optional field in the source system. If the blanks are expected, you should ask the source team whether the blanks are expected before changing the contract. If the blanks are not expected, you should change the contract to NOT_NULL rule to ensure that the column must have a value in every row.",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 10.9,
+      "generate_s": 4.26,
+      "gpu_peak_mb": 3335
+    },
+    {
+      "variant": "baseline",
+      "id": "q2",
+      "status": "invalid",
+      "raw_reply": "A key column would have duplicate values if it is used for a UNIQUE rule and a legitimate change occurs, such as a student being able to hold two enrollments in one term. In this case, the change should be saved as a new contract version.",
+      "shown_text": "",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 13.2,
+      "generate_s": 1.77,
+      "gpu_peak_mb": 3325
+    },
+    {
+      "variant": "baseline",
+      "id": "q3",
+      "status": "not_found",
+      "raw_reply": "I could not find that in the documents.",
+      "shown_text": "",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 10.3,
+      "generate_s": 0.43,
+      "gpu_peak_mb": 3312
+    },
+    {
+      "variant": "baseline",
+      "id": "q4",
+      "status": "invalid",
+      "raw_reply": "A validation run counts as failed when at least one rule fails, and each failed rule produces one aggregated violation rather than one record per bad row.",
+      "shown_text": "",
+      "passages_sent": [
+        1,
+        2,
+        3
+      ],
+      "search_ms": 8.3,
+      "generate_s": 1.16,
+      "gpu_peak_mb": 3354
+    },
+    {
+      "variant": "baseline",
+      "id": "q5",
+      "status": "not_found",
+      "raw_reply": "I could not find that in the documents.",
+      "shown_text": "",
+      "passages_sent": [
+        1,
+        2,
+        3
+      ],
+      "search_ms": 9.5,
+      "generate_s": 0.46,
+      "gpu_peak_mb": 3369
+    },
+    {
+      "variant": "baseline",
+      "id": "t6",
+      "status": "invalid",
+      "raw_reply": "A RANGE rule takes two parameters: a minimum and a maximum.",
+      "shown_text": "",
+      "passages_sent": [
+        1,
+        2
+      ],
+      "search_ms": 8.2,
+      "generate_s": 0.65,
+      "gpu_peak_mb": 3332
+    },
+    {
+      "variant": "baseline",
+      "id": "t7",
+      "status": "no_passages",
+      "raw_reply": null,
+      "shown_text": "",
+      "passages_sent": [],
+      "search_ms": 8.4,
+      "generate_s": 0.0,
+      "gpu_peak_mb": 3272
+    },
+    {
+      "variant": "A",
+      "id": "q1",
+      "status": "answered",
+      "raw_reply": "[1] A NOT_NULL rule says a column must have a value in every row. It takes no parameters. A blank cell counts as a failure. This rule fits columns such as a student ID, where a missing value makes the whole row useless to the team that receives the file. When a NOT_NULL rule fails, DataPact records how many rows were blank. The usual causes are a broken export or a new optional field in the source system. The owner of the dataset should ask the source team whether the blanks are expected before changing the contract.",
+      "shown_text": "[1] A NOT_NULL rule says a column must have a value in every row. It takes no parameters. A blank cell counts as a failure. This rule fits columns such as a student ID, where a missing value makes the whole row useless to the team that receives the file. When a NOT_NULL rule fails, DataPact records how many rows were blank. The usual causes are a broken export or a new optional field in the source system. The owner of the dataset should ask the source team whether the blanks are expected before changing the contract.",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 8.1,
+      "generate_s": 4.25,
+      "gpu_peak_mb": 3345
+    },
+    {
+      "variant": "A",
+      "id": "q2",
+      "status": "answered",
+      "raw_reply": "[1] A UNIQUE rule says no value may appear twice in a column. It takes no parameters. It is the rule to use for keys such as an order number. A failed UNIQUE rule usually means the file was exported twice or two batches were joined together. Duplicates can also come from a legitimate change. If a student can now hold two enrollments in one term, the key is no longer the student ID alone. In that case the contract should change, and the change should be saved as a new contract version.",
+      "shown_text": "[1] A UNIQUE rule says no value may appear twice in a column. It takes no parameters. It is the rule to use for keys such as an order number. A failed UNIQUE rule usually means the file was exported twice or two batches were joined together. Duplicates can also come from a legitimate change. If a student can now hold two enrollments in one term, the key is no longer the student ID alone. In that case the contract should change, and the change should be saved as a new contract version.",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 7.6,
+      "generate_s": 4.05,
+      "gpu_peak_mb": 3343
+    },
+    {
+      "variant": "A",
+      "id": "q3",
+      "status": "not_found",
+      "raw_reply": "I could not find that in the documents.",
+      "shown_text": "",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 8.0,
+      "generate_s": 0.46,
+      "gpu_peak_mb": 3328
+    },
+    {
+      "variant": "A",
+      "id": "q4",
+      "status": "invalid",
+      "raw_reply": "A validation run counts as failed when at least one rule fails, and each failed rule produces one aggregated violation rather than one record per bad row.",
+      "shown_text": "",
+      "passages_sent": [
+        1,
+        2,
+        3
+      ],
+      "search_ms": 8.8,
+      "generate_s": 1.21,
+      "gpu_peak_mb": 3364
+    },
+    {
+      "variant": "A",
+      "id": "q5",
+      "status": "not_found",
+      "raw_reply": "I could not find that in the documents.",
+      "shown_text": "",
+      "passages_sent": [
+        1,
+        2,
+        3
+      ],
+      "search_ms": 8.3,
+      "generate_s": 0.57,
+      "gpu_peak_mb": 3386
+    },
+    {
+      "variant": "A",
+      "id": "t6",
+      "status": "answered",
+      "raw_reply": "[1] A RANGE rule takes two parameters: a minimum and a maximum.",
+      "shown_text": "[1] A RANGE rule takes two parameters: a minimum and a maximum.",
+      "passages_sent": [
+        1,
+        2
+      ],
+      "search_ms": 9.6,
+      "generate_s": 0.81,
+      "gpu_peak_mb": 3349
+    },
+    {
+      "variant": "A",
+      "id": "t7",
+      "status": "no_passages",
+      "raw_reply": null,
+      "shown_text": "",
+      "passages_sent": [],
+      "search_ms": 7.9,
+      "generate_s": 0.0,
+      "gpu_peak_mb": 3272
+    },
+    {
+      "variant": "B",
+      "id": "q1",
+      "status": "answered",
+      "raw_reply": "[1] When a column has blank values, you should ask the source team whether the blanks are expected before changing the contract.",
+      "shown_text": "[1] When a column has blank values, you should ask the source team whether the blanks are expected before changing the contract.",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 7.3,
+      "generate_s": 1.12,
+      "gpu_peak_mb": 3363
+    },
+    {
+      "variant": "B",
+      "id": "q2",
+      "status": "answered",
+      "raw_reply": "[1] A key column would have duplicate values if a student can now hold two enrollments in one term. In that case, the change should be saved as a new contract version.",
+      "shown_text": "[1] A key column would have duplicate values if a student can now hold two enrollments in one term. In that case, the change should be saved as a new contract version.",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 7.7,
+      "generate_s": 1.63,
+      "gpu_peak_mb": 3359
+    },
+    {
+      "variant": "B",
+      "id": "q3",
+      "status": "answered",
+      "raw_reply": "[1] A contract is the written agreement about what the files of a dataset must contain. Each contract belongs to one dataset and holds a list of rules. A contract that has been used in a validation run must never be edited. Any change is saved as a new version, so old runs can still be read against the rules they were checked with.",
+      "shown_text": "[1] A contract is the written agreement about what the files of a dataset must contain. Each contract belongs to one dataset and holds a list of rules. A contract that has been used in a validation run must never be edited. Any change is saved as a new version, so old runs can still be read against the rules they were checked with.",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 8.7,
+      "generate_s": 3.09,
+      "gpu_peak_mb": 3354
+    },
+    {
+      "variant": "B",
+      "id": "q4",
+      "status": "invalid",
+      "raw_reply": "A validation run counts as failed when at least one rule fails, and each failed rule produces one aggregated violation rather than one record per bad row.",
+      "shown_text": "",
+      "passages_sent": [
+        1,
+        2,
+        3
+      ],
+      "search_ms": 7.9,
+      "generate_s": 1.53,
+      "gpu_peak_mb": 3390
+    },
+    {
+      "variant": "B",
+      "id": "q5",
+      "status": "answered",
+      "raw_reply": "[1] A NOT_NULL rule says a column must have a value in every row. It takes no parameters. A blank cell counts as a failure. This rule fits columns such as a student ID, where a missing value makes the whole row useless to the team that receives the file. When a NOT_NULL rule fails, DataPact records how many rows were blank. The usual causes are a broken export or a new optional field in the source system. The owner of the dataset should ask the source team whether the blanks are expected before changing the contract.",
+      "shown_text": "[1] A NOT_NULL rule says a column must have a value in every row. It takes no parameters. A blank cell counts as a failure. This rule fits columns such as a student ID, where a missing value makes the whole row useless to the team that receives the file. When a NOT_NULL rule fails, DataPact records how many rows were blank. The usual causes are a broken export or a new optional field in the source system. The owner of the dataset should ask the source team whether the blanks are expected before changing the contract.",
+      "passages_sent": [
+        1,
+        2,
+        3
+      ],
+      "search_ms": 8.9,
+      "generate_s": 4.96,
+      "gpu_peak_mb": 3405
+    },
+    {
+      "variant": "B",
+      "id": "t6",
+      "status": "answered",
+      "raw_reply": "[1] A RANGE rule says a number must fall between a minimum and a maximum. The parameters hold those two limits.",
+      "shown_text": "[1] A RANGE rule says a number must fall between a minimum and a maximum. The parameters hold those two limits.",
+      "passages_sent": [
+        1,
+        2
+      ],
+      "search_ms": 8.1,
+      "generate_s": 1.18,
+      "gpu_peak_mb": 3369
+    },
+    {
+      "variant": "B",
+      "id": "t7",
+      "status": "no_passages",
+      "raw_reply": null,
+      "shown_text": "",
+      "passages_sent": [],
+      "search_ms": 8.3,
+      "generate_s": 0.0,
+      "gpu_peak_mb": 3272
+    }
+  ],
+  "total_s": 54.24
+}

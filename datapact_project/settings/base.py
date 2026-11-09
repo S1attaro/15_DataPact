@@ -254,6 +254,26 @@ AI_LOCAL_MODEL_ID = os.getenv('AI_LOCAL_MODEL_ID', '').strip() or 'HuggingFaceTB
 AI_LOCAL_DEVICE = os.getenv('AI_LOCAL_DEVICE', '').strip().lower() or 'auto'
 AI_MAX_NEW_TOKENS = 160
 
+# A9: the handbook Q&A page (data_quality/ai/retrieval.py, handbook.py). It
+# searches the A8 knowledge base and answers with the local model above, so it
+# is off wherever AI_LOCAL_ENABLED is (production's default). The embedding
+# model is deliberately empty until the A8 experiments pick one: until then
+# the page says the handbook is not configured. Candidates (A8):
+# sentence-transformers/all-MiniLM-L6-v2, sentence-transformers/all-mpnet-base-v2,
+# BAAI/bge-large-en-v1.5. RAG_QUERY_PREFIX unset uses the prefix A8 gave that
+# model. RAG_TOP_K is the A8 notebook's TOP_K. RAG_CHUNKING's "hybrid" is A9's
+# default, not an A8 result: the notebook ranks every (model, strategy) pair
+# and keeps the best, and that run on the real knowledge base is still to come.
+# RAG_MIN_SCORE is a placeholder to tune on the A8 results (scores below it are
+# not shown to the model, and with none left nothing is generated).
+RAG_EMBEDDING_MODEL_ID = os.getenv('RAG_EMBEDDING_MODEL_ID', '').strip()
+RAG_QUERY_PREFIX = os.getenv('RAG_QUERY_PREFIX')
+RAG_EMBEDDING_DEVICE = os.getenv('RAG_EMBEDDING_DEVICE', '').strip().lower() or 'cpu'
+RAG_KB_DIR = BASE_DIR / (os.getenv('RAG_KB_DIR', '').strip() or 'rag_system/knowledge_base')
+RAG_CHUNKING = os.getenv('RAG_CHUNKING', '').strip().lower() or 'hybrid'
+RAG_TOP_K = int(os.getenv('RAG_TOP_K', '').strip() or 3)
+RAG_MIN_SCORE = float(os.getenv('RAG_MIN_SCORE', '').strip() or 0.3)
+
 # A6 Part 2.3: the external-API explanation (data_quality/ai/groq_client.py).
 # The key lives only in .env; with it blank the Groq button answers "not
 # available" and nothing is sent. Values from the file are sent only when they
