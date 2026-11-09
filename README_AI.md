@@ -711,8 +711,14 @@ without re-running the model:
 
 In the browser rehearsal, q13 asked live gave the same hidden result.
 
-**Limits.** The check catches invented numbers only, not invented words. q03
-and q06 show that a citation can still point at the wrong passage.
+**Limits.** This is a check on digits, not a check that the answer is
+supported:
+* It catches invented numbers written in digits only. Numbers written as
+  words ("five") and invented claims without numbers are not checked.
+* It searches all the passages together, not the passage a sentence cites.
+  A number from passage [2] passes next to a `[1]` citation, and a number
+  that appears in a passage can still be used in a wrong claim.
+* q03 and q06 show that a citation can still point at the wrong passage.
 
 ### Guardrails (A9 Step 1.5)
 
@@ -759,9 +765,11 @@ and q06 show that a citation can still point at the wrong passage.
   and answerable ones as low as 0.36, so no cutoff can do this job alone. In
   A9's own real-handbook run, the model refused q14 but invented an answer to
   q13, which the number check now hides.
-* **The page subtitle overstates.** It says "The answer comes only from the
-  handbook passages listed with it", which the code cannot guarantee. A
-  rewording is waiting for approval.
+* **The page subtitle overstated; corrected on 9 Nov 2026.** It said "The
+  answer comes only from the handbook passages listed with it", which the
+  checks cannot guarantee. It now says "The model uses the retrieved handbook
+  passages shown below as context. Check them before acting on the answer."
+  The A9 screenshots show only the answer panel, so they are unaffected.
 * **Off in production.** `production.py` turns the local model off by default,
   and `requirements-deploy.txt` has neither torch nor sentence-transformers.
 

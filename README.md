@@ -45,7 +45,8 @@ Test counts, with where they were run:
   count, that is the 485 tests from `main` plus 91 new handbook tests.
 * The A9 branch after `main` (A8 work) was merged in, run locally on 9 Nov
   2026: all 579 tests in `data_quality` passed, the 485 from `main` plus 94
-  handbook tests.
+  handbook tests. The handbook tests use fake models, so they check the page
+  and the checks, not the quality of real answers.
 
 | A4 part | What | Status |
 | --- | --- | --- |
@@ -222,7 +223,7 @@ Notes:
 * **The local model must be on.** The page uses `AI_LOCAL_ENABLED`, which is on by default in development and off by default in production.
 * **Editing the handbook.** The search index is built once per server process, so restart the server after changing the `.md` files.
 * **Tests.** `python manage.py test data_quality.tests_handbook` runs the 94 handbook tests with fake models; it downloads nothing.
-* **Known weak spots** (from the real-handbook run): answers often copy whole passages, a `[1]` citation can point at the wrong passage, and the model invented a price for an out-of-scope question (now hidden by a number check). The passages under each answer are there so the reader can check it.
+* **Known weak spots** (from the real-handbook run): answers often copy whole passages, a `[1]` citation can point at the wrong passage, and the model invented a price for an out-of-scope question (now hidden by a number check, which catches invented numbers in digits only and does not show that an answer is supported). The passages under each answer are there so the reader can check it.
 
 ## Pages
 

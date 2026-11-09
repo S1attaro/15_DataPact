@@ -260,7 +260,8 @@ AI_MAX_NEW_TOKENS = 160
 # model is empty by default, so the page says the handbook is not configured
 # until .env names one. A8 compared sentence-transformers/all-MiniLM-L6-v2,
 # sentence-transformers/all-mpnet-base-v2 and BAAI/bge-large-en-v1.5 and
-# recommends mpnet; A9 was evaluated with MiniLM (README_AI.md, A9 section).
+# recommends mpnet; A9 was evaluated with MiniLM as a fallback, because mpnet
+# was not downloaded (README_AI.md, A9 section).
 # RAG_QUERY_PREFIX unset uses the prefix A8 gave that model. RAG_TOP_K is the
 # A8 notebook's TOP_K. RAG_CHUNKING "hybrid" is the strategy A9 chose from its
 # own retrieval test on the real handbook. RAG_MIN_SCORE: scores below it are

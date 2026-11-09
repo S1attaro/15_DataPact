@@ -11,8 +11,9 @@ Context (supplied by handbook_views.handbook_ask):
     failure    why a valid POST could not be answered: a status above,
                "empty_kb", "retrieval_error" or "error" (the page is then a 503)
     answer     handbook.HandbookAnswer: status "answered", "not_found",
-               "no_passages" or "invalid" (no valid [n] citation, or one to a
-               passage or document it was not given), the checked text, and
+               "no_passages" or "invalid" (no valid [n] citation, one to a
+               passage or document it was not given, or a number none of
+               the passages contains), the checked text, and
                the passages the model was given
 Sources listed here are the passages the model was actually shown, never
 names the model wrote. Everything the model or the knowledge base wrote is
@@ -26,7 +27,7 @@ uses |safe.
 {% endblock %}
 {% block page_title %}Ask the DataPact handbook{% endblock %}
 {% block page_subtitle %}
-    <p class="page__subtitle">Ask how DataPact works. The answer comes only from the handbook passages listed with it.</p>
+    <p class="page__subtitle">Ask how DataPact works. The model uses the retrieved handbook passages shown below as context. Check them before acting on the answer.</p>
 {% endblock %}
 {% block content %}
     <div class="panel">

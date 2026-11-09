@@ -9,9 +9,13 @@ in one NumPy matrix for the life of the process, as in the A8 notebook's
 VectorIndex. A search embeds the question and ranks chunks by cosine
 similarity (the vectors are normalized, so a dot product).
 
-The final embedding model is not chosen here. RAG_EMBEDDING_MODEL_ID is empty
-by default, which means the handbook is "not configured" and the page says so;
-nothing stands in for the real model. Set it once the A8 results pick one.
+The code does not pick an embedding model. RAG_EMBEDDING_MODEL_ID is empty by
+default, which means the handbook is "not configured" and the page says so
+until .env names a model; nothing stands in for the real one. A8 recommends
+sentence-transformers/all-mpnet-base-v2. A9 was evaluated with
+sentence-transformers/all-MiniLM-L6-v2 as a fallback, because mpnet was not
+downloaded on the test laptop. The evaluated configuration and this
+limitation are in README_AI.md (A9 section).
 
 As in local_model.py: nothing loads when Django starts or on a GET, the
 sentence-transformers import happens inside the loader, the built index is
