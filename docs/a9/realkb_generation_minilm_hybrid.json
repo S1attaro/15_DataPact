@@ -1,0 +1,597 @@
+{
+  "settings": {
+    "RAG_EMBEDDING_MODEL_ID": "sentence-transformers/all-MiniLM-L6-v2",
+    "RAG_CHUNKING": "hybrid",
+    "RAG_TOP_K": "3",
+    "RAG_MIN_SCORE": "-1.0",
+    "RAG_EMBEDDING_DEVICE": "cpu",
+    "AI_LOCAL_MODEL_ID": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+    "AI_LOCAL_DEVICE": "auto",
+    "AI_MAX_NEW_TOKENS": "160",
+    "RAG_KB_DIR": "rag_system/knowledge_base",
+    "CITATION_INSTRUCTION_is_variant_A": true,
+    "system_prompt": "You answer questions about DataPact, a data quality tool. Use only the context below. If the context does not contain the answer, say: I could not find that in the documents. Rules: Use only the numbered context passages. Put the number of the passage that supports each sentence right after that sentence, like [1]. Do not add assumptions, general knowledge or details that are not in the passages. If the passages do not establish the answer, say only: I could not find that in the documents. Never invent passage numbers or document names.",
+    "hf_offline": "1",
+    "embedder_load_and_index_s": 9.2,
+    "generator_load_s": 7.13,
+    "torch": "2.14.1+cu132",
+    "cuda": true,
+    "gpu": "NVIDIA GeForce RTX 3050 Ti Laptop GPU"
+  },
+  "runs": [
+    {
+      "id": "q01",
+      "query": "What does a not null rule check for?",
+      "difficulty": "easy",
+      "out_of_scope": false,
+      "expected": "rule_types.md > Not null",
+      "status": "answered",
+      "shown_text": "[1] A not-null rule asserts that a column always carries a value. It fails on empty strings and on missing fields as well as on true nulls, because all three mean the same thing to somebody reading a report. This rule needs no parameters. It is the cheapest check to write and usually the first one worth adding to a new contract, since a column that is sometimes blank will break almost any downstream calculation. When it fails on a large share of rows, the usual cause is an upstream export that changed which columns it includes rather than a genuine data-entry problem, so check the file header before chasing individual records.\n\nAnswer: A not-null rule checks for a column that always carries a value.",
+      "raw_reply": "[1] A not-null rule asserts that a column always carries a value. It fails on empty strings and on missing fields as well as on true nulls, because all three mean the same thing to somebody reading a report. This rule needs no parameters. It is the cheapest check to write and usually the first one worth adding to a new contract, since a column that is sometimes blank will break almost any downstream calculation. When it fails on a large share of rows, the usual cause is an upstream export that changed which columns it includes rather than a genuine data-entry problem, so check the file header before chasing individual records.\n\nAnswer: A not-null rule checks for a column that always carries a value.",
+      "cited": [
+        1
+      ],
+      "citations_valid": true,
+      "passages": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.6725,
+          "text": "A not-null rule asserts that a column always carries a value. It fails on empty strings and on missing fields as well as on true nulls, because all three mean the same thing to somebody reading a report. This rule needs no parameters. It is the cheapest check to write and usually the first one worth adding to a new contract, since a column that is sometimes blank will break almost any downstream calculation. When it fails on a large share of rows, the usual cause is an upstream export that changed which columns it includes rather than a genuine data-entry problem, so check the file header before chasing individual records."
+        },
+        {
+          "rank": 2,
+          "doc": "contracts.md",
+          "section": "Writing a new rule",
+          "score": 0.4377,
+          "text": "A rule names one column, chooses a rule type, and supplies whatever parameters that type needs. A range rule needs a minimum and a maximum; an allowed-values rule needs the list of permitted values; a not-null rule needs no parameters at all. Rules are stored as data rather than written into code, which is what lets an analyst author and inspect them without a developer changing the application. Each rule belongs to exactly one contract version, so adding a rule to a version that is already in use is not possible. The change goes into a new version instead."
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Allowed values",
+          "score": 0.4226,
+          "text": "An allowed-values rule asserts that a column only contains entries from a fixed list, such as a set of status codes or campus names. It fails on anything outside the list. This rule type produces the clearest signal of an outdated contract: when a single new value appears consistently across many rows, the business has almost certainly added a category and the list needs extending. When a handful of rows carry misspellings or stray whitespace of existing values, that is a data problem instead. Reading how many distinct new values appear, and how often, separates the two cases faster than reading the rows."
+        }
+      ],
+      "search_ms": 16.1,
+      "generate_s": 5.03,
+      "gpu_peak_mib": 3401,
+      "status_with_number_check": "answered"
+    },
+    {
+      "id": "q02",
+      "query": "How do I register a new dataset in DataPact?",
+      "difficulty": "easy",
+      "out_of_scope": false,
+      "expected": "getting_started.md > Registering a dataset",
+      "status": "answered",
+      "shown_text": "[1] A dataset in DataPact represents a data feed that your team receives repeatedly in the same shape, such as a monthly enrollment export or a weekly sales extract. You register it once from the Manage Datasets page by giving it a name, naming the team that sends it, and writing a short description of what the feed contains. The name has to be unique for the owner, so two people can each track a feed called Monthly Export without colliding. Registering a dataset does not upload any data. It only creates the subject that contracts and validation runs will attach to later. Until a contract exists, uploads for that dataset cannot be checked against anything.\n\nAnswer: Register a dataset by giving it a name, naming the team that sends it, and writing a short description of",
+      "raw_reply": "[1] A dataset in DataPact represents a data feed that your team receives repeatedly in the same shape, such as a monthly enrollment export or a weekly sales extract. You register it once from the Manage Datasets page by giving it a name, naming the team that sends it, and writing a short description of what the feed contains. The name has to be unique for the owner, so two people can each track a feed called Monthly Export without colliding. Registering a dataset does not upload any data. It only creates the subject that contracts and validation runs will attach to later. Until a contract exists, uploads for that dataset cannot be checked against anything.\n\nAnswer: Register a dataset by giving it a name, naming the team that sends it, and writing a short description of",
+      "cited": [
+        1
+      ],
+      "citations_valid": true,
+      "passages": [
+        {
+          "rank": 1,
+          "doc": "getting_started.md",
+          "section": "Registering a dataset",
+          "score": 0.7255,
+          "text": "A dataset in DataPact represents a data feed that your team receives repeatedly in the same shape, such as a monthly enrollment export or a weekly sales extract. You register it once from the Manage Datasets page by giving it a name, naming the team that sends it, and writing a short description of what the feed contains. The name has to be unique for the owner, so two people can each track a feed called Monthly Export without colliding. Registering a dataset does not upload any data. It only creates the subject that contracts and validation runs will attach to later. Until a contract exists, uploads for that dataset cannot be checked against anything."
+        },
+        {
+          "rank": 2,
+          "doc": "getting_started.md",
+          "section": "Who owns a dataset",
+          "score": 0.4605,
+          "text": "Every dataset has exactly one owner, and ownership records who is accountable for the feed rather than who may look at it. Any signed-in user can view a dataset, search its contracts and read its violations. The owner is the person the team contacts when a file stops arriving or starts failing. Because ownership carries that responsibility, DataPact refuses to delete a user account that still owns datasets. The account has to be reassigned first, which prevents a single deletion from silently orphaning a feed and all of its history. Deactivating an account is the normal path when somebody leaves a team."
+        },
+        {
+          "rank": 3,
+          "doc": "accounts_and_access.md",
+          "section": "Creating an account",
+          "score": 0.4423,
+          "text": "Anyone can create a DataPact account from the sign-up page by choosing a username and a password. No email address is required and no invitation is needed, which is deliberate: the system is meant to be easy for a reviewer or a new team member to get into. Password strength is checked when the account is created, so very short, entirely numeric or very common passwords are rejected with an explanation. Creating an account gives immediate access to every page in the application. There are no permission tiers, so a new account can see the same datasets and reports as an established one."
+        }
+      ],
+      "search_ms": 9.3,
+      "generate_s": 4.22,
+      "gpu_peak_mib": 3404,
+      "status_with_number_check": "answered"
+    },
+    {
+      "id": "q03",
+      "query": "What are the three statuses a contract version can have?",
+      "difficulty": "easy",
+      "out_of_scope": false,
+      "expected": "contracts.md > Activating and retiring a version",
+      "status": "answered",
+      "shown_text": "[1] A contract version can have one of three statuses: draft, active, and retired.",
+      "raw_reply": "[1] A contract version can have one of three statuses: draft, active, and retired.",
+      "cited": [
+        1
+      ],
+      "citations_valid": true,
+      "passages": [
+        {
+          "rank": 1,
+          "doc": "contracts.md",
+          "section": "Contract versions",
+          "score": 0.6428,
+          "text": "Each contract carries a version number that counts from one within its dataset, so two datasets can both have a version three without ambiguity. Versions exist so that historical validation runs stay interpretable after expectations change. A run records which contract version it was judged against, which means you can look at a result from six months ago and know exactly which rules produced it. Version numbers are unique per dataset and are enforced by the database, so two rows cannot both claim to be version three of the same contract. Changing expectations means adding a version, never renumbering an existing one."
+        },
+        {
+          "rank": 2,
+          "doc": "contracts.md",
+          "section": "Activating and retiring a version",
+          "score": 0.6005,
+          "text": "A contract version has one of three statuses. A draft is being written and is not used to check anything. An active version is the one that incoming files are measured against, and a dataset normally has exactly one. A retired version is kept for history after a newer version replaced it. Moving a version from draft to active is what puts it into force, and the previously active version becomes retired at the same moment. Retired versions are never deleted, because deleting one would leave every validation run that used it impossible to interpret."
+        },
+        {
+          "rank": 3,
+          "doc": "contracts.md",
+          "section": "Editing a contract that has been used",
+          "score": 0.5189,
+          "text": "A contract version that has been referenced by a validation run must never be edited. Changing its rules afterwards would alter the meaning of a result that already happened, so a run recorded as passing could later appear to have been judged by rules it never saw. Any change is therefore saved as a new version, and the old one is retired rather than modified. The database enforces part of this by refusing to delete a contract that has runs attached to it. A version that has never been used has no runs and can be deleted cleanly, which is the intended behaviour for an abandoned draft."
+        }
+      ],
+      "search_ms": 7.0,
+      "generate_s": 0.7,
+      "gpu_peak_mib": 3399,
+      "status_with_number_check": "answered"
+    },
+    {
+      "id": "q04",
+      "query": "Can I change a contract after it has already been used to check a file?",
+      "difficulty": "medium",
+      "out_of_scope": false,
+      "expected": "contracts.md > Editing a contract that has been used",
+      "status": "answered",
+      "shown_text": "[1] A contract version that has been referenced by a validation run must never be edited. Changing its rules afterwards would alter the meaning of a result that already happened, so a run recorded as passing could later appear to have been judged by rules it never saw. Any change is therefore saved as a new version, and the old one is retired rather than modified. The database enforces part of this by refusing to delete a contract that has runs attached to it. A version that has never been used has no runs and can be deleted cleanly, which is the intended behaviour for an abandoned draft.\n\n[2] Once a dataset has an active contract you can submit a file for checking. DataPact reads the file, counts the data rows, and tests every rule in the active contract",
+      "raw_reply": "[1] A contract version that has been referenced by a validation run must never be edited. Changing its rules afterwards would alter the meaning of a result that already happened, so a run recorded as passing could later appear to have been judged by rules it never saw. Any change is therefore saved as a new version, and the old one is retired rather than modified. The database enforces part of this by refusing to delete a contract that has runs attached to it. A version that has never been used has no runs and can be deleted cleanly, which is the intended behaviour for an abandoned draft.\n\n[2] Once a dataset has an active contract you can submit a file for checking. DataPact reads the file, counts the data rows, and tests every rule in the active contract",
+      "cited": [
+        1,
+        2
+      ],
+      "citations_valid": true,
+      "passages": [
+        {
+          "rank": 1,
+          "doc": "contracts.md",
+          "section": "Editing a contract that has been used",
+          "score": 0.472,
+          "text": "A contract version that has been referenced by a validation run must never be edited. Changing its rules afterwards would alter the meaning of a result that already happened, so a run recorded as passing could later appear to have been judged by rules it never saw. Any change is therefore saved as a new version, and the old one is retired rather than modified. The database enforces part of this by refusing to delete a contract that has runs attached to it. A version that has never been used has no runs and can be deleted cleanly, which is the intended behaviour for an abandoned draft."
+        },
+        {
+          "rank": 2,
+          "doc": "getting_started.md",
+          "section": "Your first upload",
+          "score": 0.4013,
+          "text": "Once a dataset has an active contract you can submit a file for checking. DataPact reads the file, counts the data rows, and tests every rule in the active contract against the relevant column. The result is recorded as a validation run, which is permanent. Nothing about the upload modifies the contract, and a failing file is not rejected or deleted. The point of the system is to produce evidence about what arrived, not to block the pipeline. If the file cannot be read at all, the run is recorded with an error outcome so the attempt still appears in the history."
+        },
+        {
+          "rank": 3,
+          "doc": "contracts.md",
+          "section": "What a contract is",
+          "score": 0.4013,
+          "text": "A contract is the written agreement about what the files of a dataset must contain. It belongs to exactly one dataset and holds a list of rules, each describing one checkable expectation about one column. A contract is the thing that makes a validation result meaningful: without it, a file is just data, and there is no standard to measure it against. Contracts are written by people who understand the feed, usually the analyst who receives it, and they are meant to be readable by somebody who is not an engineer. A dataset normally has one contract that is currently in force, with earlier ones kept as history."
+        }
+      ],
+      "search_ms": 9.1,
+      "generate_s": 4.38,
+      "gpu_peak_mib": 3402,
+      "status_with_number_check": "answered"
+    },
+    {
+      "id": "q05",
+      "query": "Why won't the system let me delete a teammate's account?",
+      "difficulty": "medium",
+      "out_of_scope": false,
+      "expected": "getting_started.md > Who owns a dataset",
+      "status": "answered",
+      "shown_text": "[1] Because ownership carries that responsibility, DataPact refuses to delete a user account that still owns datasets.",
+      "raw_reply": "[1] Because ownership carries that responsibility, DataPact refuses to delete a user account that still owns datasets.",
+      "cited": [
+        1
+      ],
+      "citations_valid": true,
+      "passages": [
+        {
+          "rank": 1,
+          "doc": "getting_started.md",
+          "section": "Who owns a dataset",
+          "score": 0.4691,
+          "text": "Every dataset has exactly one owner, and ownership records who is accountable for the feed rather than who may look at it. Any signed-in user can view a dataset, search its contracts and read its violations. The owner is the person the team contacts when a file stops arriving or starts failing. Because ownership carries that responsibility, DataPact refuses to delete a user account that still owns datasets. The account has to be reassigned first, which prevents a single deletion from silently orphaning a feed and all of its history. Deactivating an account is the normal path when somebody leaves a team."
+        },
+        {
+          "rank": 2,
+          "doc": "accounts_and_access.md",
+          "section": "Creating an account",
+          "score": 0.3534,
+          "text": "Anyone can create a DataPact account from the sign-up page by choosing a username and a password. No email address is required and no invitation is needed, which is deliberate: the system is meant to be easy for a reviewer or a new team member to get into. Password strength is checked when the account is created, so very short, entirely numeric or very common passwords are rejected with an explanation. Creating an account gives immediate access to every page in the application. There are no permission tiers, so a new account can see the same datasets and reports as an established one."
+        },
+        {
+          "rank": 3,
+          "doc": "contracts.md",
+          "section": "Editing a contract that has been used",
+          "score": 0.2462,
+          "text": "A contract version that has been referenced by a validation run must never be edited. Changing its rules afterwards would alter the meaning of a result that already happened, so a run recorded as passing could later appear to have been judged by rules it never saw. Any change is therefore saved as a new version, and the old one is retired rather than modified. The database enforces part of this by refusing to delete a contract that has runs attached to it. A version that has never been used has no runs and can be deleted cleanly, which is the intended behaviour for an abandoned draft."
+        }
+      ],
+      "search_ms": 7.9,
+      "generate_s": 0.79,
+      "gpu_peak_mib": 3401,
+      "status_with_number_check": "answered"
+    },
+    {
+      "id": "q06",
+      "query": "What is the difference between a run that failed and a run that errored?",
+      "difficulty": "medium",
+      "out_of_scope": false,
+      "expected": "validation_runs.md > Run outcomes",
+      "status": "answered",
+      "shown_text": "[1] A run that failed means the checks ran and the data did not meet them, which is a statement about the file. A run that errored means the checks never ran, which is a statement about the pipeline. A run of errors in a row usually points at a change in how the file is produced rather than a change in its contents. Because an error produces no violations, there is nothing to resolve; the fix is to make the file readable and submit it again, which creates a new run.",
+      "raw_reply": "[1] A run that failed means the checks ran and the data did not meet them, which is a statement about the file. A run that errored means the checks never ran, which is a statement about the pipeline. A run of errors in a row usually points at a change in how the file is produced rather than a change in its contents. Because an error produces no violations, there is nothing to resolve; the fix is to make the file readable and submit it again, which creates a new run.",
+      "cited": [
+        1
+      ],
+      "citations_valid": true,
+      "passages": [
+        {
+          "rank": 1,
+          "doc": "validation_runs.md",
+          "section": "Run outcomes",
+          "score": 0.6544,
+          "text": "A run finishes in one of three states. Passed means every rule passed. Failed means at least one rule produced a violation, and the violations are attached to the run for review. Error means the file could not be evaluated at all, usually because it was unreadable, had no header row, or was missing columns the contract refers to. Error is deliberately distinct from failed: a failed run tells you something true about the data, while an error tells you the check never happened. Treating them the same would make the quality history misleading."
+        },
+        {
+          "rank": 2,
+          "doc": "troubleshooting.md",
+          "section": "The run says error rather than failed",
+          "score": 0.5725,
+          "text": "Failed and error mean different things and are worth separating carefully. Failed means the checks ran and the data did not meet them, which is a statement about the file. Error means the checks never ran, which is a statement about the pipeline. A run of errors in a row usually points at a change in how the file is produced rather than a change in its contents. Because an error produces no violations, there is nothing to resolve; the fix is to make the file readable and submit it again, which creates a new run."
+        },
+        {
+          "rank": 3,
+          "doc": "validation_runs.md",
+          "section": "How a run is scored",
+          "score": 0.4955,
+          "text": "Every rule in the active contract is evaluated against the file, and each rule produces either a pass or one aggregated violation. A run passes only when every rule passes. It fails when at least one rule fails, regardless of how many rows were involved, because a single broken rule still means the file did not meet the agreement. The run does not stop at the first failure; all rules are evaluated so that one upload tells you everything that is wrong rather than only the first problem. That matters when several columns changed at once."
+        }
+      ],
+      "search_ms": 7.0,
+      "generate_s": 2.86,
+      "gpu_peak_mib": 3396,
+      "status_with_number_check": "answered"
+    },
+    {
+      "id": "q07",
+      "query": "Duplicate IDs showed up in a key column. How do I tell whether the file was exported twice?",
+      "difficulty": "medium",
+      "out_of_scope": false,
+      "expected": "rule_types.md > Unique",
+      "status": "answered",
+      "shown_text": "[1] A unique rule asserts that no value appears twice in a column, which is how key columns are protected. It fails when duplicates exist and reports how many rows were involved. Duplicates usually mean one of two things. Either the file was exported twice and concatenated, in which case entire blocks of rows repeat and the row count is roughly double what it should be, or a join upstream multiplied records, in which case only some identifiers repeat and the rest of the row differs. Comparing the number of failed rows against the total row count is the quickest way to tell which happened.",
+      "raw_reply": "[1] A unique rule asserts that no value appears twice in a column, which is how key columns are protected. It fails when duplicates exist and reports how many rows were involved. Duplicates usually mean one of two things. Either the file was exported twice and concatenated, in which case entire blocks of rows repeat and the row count is roughly double what it should be, or a join upstream multiplied records, in which case only some identifiers repeat and the rest of the row differs. Comparing the number of failed rows against the total row count is the quickest way to tell which happened.",
+      "cited": [
+        1
+      ],
+      "citations_valid": true,
+      "passages": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Unique",
+          "score": 0.6197,
+          "text": "A unique rule asserts that no value appears twice in a column, which is how key columns are protected. It fails when duplicates exist and reports how many rows were involved. Duplicates usually mean one of two things. Either the file was exported twice and concatenated, in which case entire blocks of rows repeat and the row count is roughly double what it should be, or a join upstream multiplied records, in which case only some identifiers repeat and the rest of the row differs. Comparing the number of failed rows against the total row count is the quickest way to tell which happened."
+        },
+        {
+          "rank": 2,
+          "doc": "reports_and_exports.md",
+          "section": "CSV export",
+          "score": 0.4133,
+          "text": "The reports page offers a download of validation run data as CSV. The file opens directly in a spreadsheet, uses the first row as column headers, and contains one row per validation run ordered consistently. The download filename carries a timestamp, so repeated exports do not overwrite each other and it is always clear when a given extract was taken. CSV is the right choice when somebody wants to pivot the data, chart it, or hand it to a colleague who does not use DataPact. It contains no nested structure, which is the tradeoff for being universally readable."
+        },
+        {
+          "rank": 3,
+          "doc": "reports_and_exports.md",
+          "section": "JSON export",
+          "score": 0.3898,
+          "text": "The same data is also available as JSON, which suits anything that will be read by a program rather than a person. The JSON export is pretty-printed and wraps the records in a small envelope carrying the time the export was generated and how many records it contains. That metadata matters when the file is archived, because a bare list of records gives no way to tell when it was produced or whether it is complete. Like the CSV, the filename is timestamped. Both exports require an account, since they contain dataset names and owner information."
+        }
+      ],
+      "search_ms": 19.5,
+      "generate_s": 3.24,
+      "gpu_peak_mib": 3400,
+      "status_with_number_check": "answered"
+    },
+    {
+      "id": "q08",
+      "query": "One new code appeared in thousands of rows. Is the data wrong or is our rule out of date?",
+      "difficulty": "hard",
+      "out_of_scope": false,
+      "expected": "violations.md > Data issue or contract updated",
+      "status": "answered",
+      "shown_text": "[1] When a single rule fails on close to every row, suspect the rule or the export before suspecting the data. The three common causes are a column that changed type upstream, so a numeric check now sees formatted text; a column that was renamed or reordered, so the rule is reading the wrong field; and a legitimate change in the business that the contract has not caught up with. Look at the sample values first. If they all look reasonable to a human, the contract is almost certainly the thing that needs updating.\n\n[2] Telling the two resolutions apart is the central judgement in DataPact. A data issue means the file is wrong and somebody upstream should fix it. A contract update means reality changed and the rule should be rewritten. Three signals usually separate",
+      "raw_reply": "[1] When a single rule fails on close to every row, suspect the rule or the export before suspecting the data. The three common causes are a column that changed type upstream, so a numeric check now sees formatted text; a column that was renamed or reordered, so the rule is reading the wrong field; and a legitimate change in the business that the contract has not caught up with. Look at the sample values first. If they all look reasonable to a human, the contract is almost certainly the thing that needs updating.\n\n[2] Telling the two resolutions apart is the central judgement in DataPact. A data issue means the file is wrong and somebody upstream should fix it. A contract update means reality changed and the rule should be rewritten. Three signals usually separate",
+      "cited": [
+        1,
+        2
+      ],
+      "citations_valid": true,
+      "passages": [
+        {
+          "rank": 1,
+          "doc": "troubleshooting.md",
+          "section": "Every row fails one rule",
+          "score": 0.5695,
+          "text": "When a single rule fails on close to every row, suspect the rule or the export before suspecting the data. The three common causes are a column that changed type upstream, so a numeric check now sees formatted text; a column that was renamed or reordered, so the rule is reading the wrong field; and a legitimate change in the business that the contract has not caught up with. Look at the sample values first. If they all look reasonable to a human, the contract is almost certainly the thing that needs updating."
+        },
+        {
+          "rank": 2,
+          "doc": "violations.md",
+          "section": "Data issue or contract updated",
+          "score": 0.536,
+          "text": "Telling the two resolutions apart is the central judgement in DataPact. A data issue means the file is wrong and somebody upstream should fix it. A contract update means reality changed and the rule should be rewritten. Three signals usually separate them. How many rows failed: a handful suggests data entry, a large and consistent block suggests a change in the business. Whether the offending values are all the same: one repeated new value suggests a new legitimate category, while scattered variants suggest typos. And whether the value looks plausible: a negative quantity is never legitimate, while a new campus code probably is."
+        },
+        {
+          "rank": 3,
+          "doc": "validation_runs.md",
+          "section": "Row counts and partial files",
+          "score": 0.501,
+          "text": "Each run records the total number of data rows in the file, and each violation records how many of those rows broke its rule. The ratio between the two is often more informative than either number alone. A rule that fails on three rows out of five thousand is probably a data-entry problem worth fixing at the source. The same rule failing on four thousand rows out of five thousand usually means the contract is out of date or the file is a different export than expected. A sharp change in the total row count between runs is itself worth investigating even when every rule passes."
+        }
+      ],
+      "search_ms": 7.1,
+      "generate_s": 4.3,
+      "gpu_peak_mib": 3400,
+      "status_with_number_check": "answered"
+    },
+    {
+      "id": "q09",
+      "query": "If a program is going to read the download rather than a person, which format should I pick?",
+      "difficulty": "hard",
+      "out_of_scope": false,
+      "expected": "reports_and_exports.md > JSON export",
+      "status": "answered",
+      "shown_text": "[1] The same data is also available as JSON, which suits anything that will be read by a program rather than a person.",
+      "raw_reply": "[1] The same data is also available as JSON, which suits anything that will be read by a program rather than a person.",
+      "cited": [
+        1
+      ],
+      "citations_valid": true,
+      "passages": [
+        {
+          "rank": 1,
+          "doc": "reports_and_exports.md",
+          "section": "JSON export",
+          "score": 0.3648,
+          "text": "The same data is also available as JSON, which suits anything that will be read by a program rather than a person. The JSON export is pretty-printed and wraps the records in a small envelope carrying the time the export was generated and how many records it contains. That metadata matters when the file is archived, because a bare list of records gives no way to tell when it was produced or whether it is complete. Like the CSV, the filename is timestamped. Both exports require an account, since they contain dataset names and owner information."
+        },
+        {
+          "rank": 2,
+          "doc": "reports_and_exports.md",
+          "section": "CSV export",
+          "score": 0.361,
+          "text": "The reports page offers a download of validation run data as CSV. The file opens directly in a spreadsheet, uses the first row as column headers, and contains one row per validation run ordered consistently. The download filename carries a timestamp, so repeated exports do not overwrite each other and it is always clear when a given extract was taken. CSV is the right choice when somebody wants to pivot the data, chart it, or hand it to a colleague who does not use DataPact. It contains no nested structure, which is the tradeoff for being universally readable."
+        },
+        {
+          "rank": 3,
+          "doc": "violations.md",
+          "section": "Deciding the resolution",
+          "score": 0.2233,
+          "text": "A violation starts life as open, meaning nobody has judged it yet. A person then records what the failure meant. DataPact never decides this automatically, because the decision is about the business rather than about the data. The two outcomes are that the incoming data was wrong, or that the data was fine and the rule had fallen out of date. Recording the decision matters beyond the current file: the same violation often returns in a later upload, and the team can then see how it was handled last time instead of relitigating it."
+        }
+      ],
+      "search_ms": 6.4,
+      "generate_s": 0.84,
+      "gpu_peak_mib": 3399,
+      "status_with_number_check": "answered"
+    },
+    {
+      "id": "q10",
+      "query": "Can anyone see our data without signing in?",
+      "difficulty": "hard",
+      "out_of_scope": false,
+      "expected": "accounts_and_access.md > Protected and public endpoints",
+      "status": "answered",
+      "shown_text": "[1] No, anyone cannot see our data without signing in. The run-outcome summary is public, but every other endpoint requires a session. Protected pages redirect a signed-out browser to the login screen, which is the right behaviour for a person. Protected data endpoints instead return an unauthorised status with a short message, because a program calling an endpoint needs a clear refusal rather than a login page it cannot read.",
+      "raw_reply": "[1] No, anyone cannot see our data without signing in. The run-outcome summary is public, but every other endpoint requires a session. Protected pages redirect a signed-out browser to the login screen, which is the right behaviour for a person. Protected data endpoints instead return an unauthorised status with a short message, because a program calling an endpoint needs a clear refusal rather than a login page it cannot read.",
+      "cited": [
+        1
+      ],
+      "citations_valid": true,
+      "passages": [
+        {
+          "rank": 1,
+          "doc": "accounts_and_access.md",
+          "section": "Protected and public endpoints",
+          "score": 0.4469,
+          "text": "DataPact draws a deliberate line between its endpoints. The run-outcome summary is public: it returns three aggregate counts and no file names, dataset names or usernames, so it can be read without an account and used for charts or demonstrations. Every other endpoint requires a session. Protected pages redirect a signed-out browser to the login screen, which is the right behaviour for a person. Protected data endpoints instead return an unauthorised status with a short message, because a program calling an endpoint needs a clear refusal rather than a login page it cannot read."
+        },
+        {
+          "rank": 2,
+          "doc": "accounts_and_access.md",
+          "section": "Creating an account",
+          "score": 0.4432,
+          "text": "Anyone can create a DataPact account from the sign-up page by choosing a username and a password. No email address is required and no invitation is needed, which is deliberate: the system is meant to be easy for a reviewer or a new team member to get into. Password strength is checked when the account is created, so very short, entirely numeric or very common passwords are rejected with an explanation. Creating an account gives immediate access to every page in the application. There are no permission tiers, so a new account can see the same datasets and reports as an established one."
+        },
+        {
+          "rank": 3,
+          "doc": "accounts_and_access.md",
+          "section": "What anonymous visitors can see",
+          "score": 0.4094,
+          "text": "Signed-out visitors see the home page, the login and sign-up pages, and nothing else. The navigation hides every protected link while you are signed out, so the menu describes what the visitor can actually do rather than offering doors that are locked. Hiding the links is a courtesy, not the security boundary: typing a protected address directly still redirects to the login page, because the protection lives in the view rather than in the menu. The home page also points anonymous visitors at the one endpoint that is public on purpose."
+        }
+      ],
+      "search_ms": 5.8,
+      "generate_s": 2.39,
+      "gpu_peak_mib": 3399,
+      "status_with_number_check": "answered"
+    },
+    {
+      "id": "q11",
+      "query": "Why is there no AI explanation showing on this violation?",
+      "difficulty": "hard",
+      "out_of_scope": false,
+      "expected": "ai_explanations.md > Why a suggestion may be missing",
+      "status": "answered",
+      "shown_text": "[1] A violation can appear with no explanation attached, and that is a designed outcome rather than a bug. The model's reply is checked before use: it must parse, carry exactly the expected fields, and give a cause from the two permitted values. If the reply fails any of those checks the system retries once against a fallback, and if that also fails the page shows the violation with no AI text and a short note. The same thing happens when the model is unavailable. A missing explanation is always preferable to a confident wrong one.",
+      "raw_reply": "[1] A violation can appear with no explanation attached, and that is a designed outcome rather than a bug. The model's reply is checked before use: it must parse, carry exactly the expected fields, and give a cause from the two permitted values. If the reply fails any of those checks the system retries once against a fallback, and if that also fails the page shows the violation with no AI text and a short note. The same thing happens when the model is unavailable. A missing explanation is always preferable to a confident wrong one.",
+      "cited": [
+        1
+      ],
+      "citations_valid": true,
+      "passages": [
+        {
+          "rank": 1,
+          "doc": "ai_explanations.md",
+          "section": "Why a suggestion may be missing",
+          "score": 0.7022,
+          "text": "A violation can appear with no explanation attached, and that is a designed outcome rather than a bug. The model's reply is checked before use: it must parse, carry exactly the expected fields, and give a cause from the two permitted values. If the reply fails any of those checks the system retries once against a fallback, and if that also fails the page shows the violation with no AI text and a short note. The same thing happens when the model is unavailable. A missing explanation is always preferable to a confident wrong one."
+        },
+        {
+          "rank": 2,
+          "doc": "ai_explanations.md",
+          "section": "Limits of the suggestion",
+          "score": 0.5958,
+          "text": "The explanation is a draft produced by a small model, and it carries three known limits. It sees only the fields listed above, so it knows nothing about an email from the data provider or a change announced in a meeting. It cannot tell a new legitimate category from a systematic typo any better than the sample values allow, which is the same constraint a human reader faces. And because it is required to answer in a fixed structure, a well-formed reply is not evidence of a correct one. Treat it as a first opinion from a colleague who has only read the violation record."
+        },
+        {
+          "rank": 3,
+          "doc": "ai_explanations.md",
+          "section": "How a suggestion is produced",
+          "score": 0.5534,
+          "text": "The system does not send free text to a model. It assembles the prompt from fields DataPact already holds about the violation: the dataset name, the column, the rule and its parameters, how many rows failed out of how many, and a few sample values. Those are flattened into a short labelled block and wrapped in a fixed instruction with a small number of worked examples, which measurably improves both accuracy and speed compared with asking the question cold. The model's reply is required to be structured, and the application validates it before showing anything."
+        }
+      ],
+      "search_ms": 6.2,
+      "generate_s": 3.03,
+      "gpu_peak_mib": 3399,
+      "status_with_number_check": "answered"
+    },
+    {
+      "id": "q12",
+      "query": "A single rule is failing on almost every row of the file. Where should I look first?",
+      "difficulty": "hard",
+      "out_of_scope": false,
+      "expected": "troubleshooting.md > Every row fails one rule",
+      "status": "answered",
+      "shown_text": "[1] When a single rule fails on almost every row, suspect the rule or the export before suspecting the data.",
+      "raw_reply": "[1] When a single rule fails on almost every row, suspect the rule or the export before suspecting the data.",
+      "cited": [
+        1
+      ],
+      "citations_valid": true,
+      "passages": [
+        {
+          "rank": 1,
+          "doc": "troubleshooting.md",
+          "section": "Every row fails one rule",
+          "score": 0.6713,
+          "text": "When a single rule fails on close to every row, suspect the rule or the export before suspecting the data. The three common causes are a column that changed type upstream, so a numeric check now sees formatted text; a column that was renamed or reordered, so the rule is reading the wrong field; and a legitimate change in the business that the contract has not caught up with. Look at the sample values first. If they all look reasonable to a human, the contract is almost certainly the thing that needs updating."
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.5984,
+          "text": "A not-null rule asserts that a column always carries a value. It fails on empty strings and on missing fields as well as on true nulls, because all three mean the same thing to somebody reading a report. This rule needs no parameters. It is the cheapest check to write and usually the first one worth adding to a new contract, since a column that is sometimes blank will break almost any downstream calculation. When it fails on a large share of rows, the usual cause is an upstream export that changed which columns it includes rather than a genuine data-entry problem, so check the file header before chasing individual records."
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Unique",
+          "score": 0.5932,
+          "text": "A unique rule asserts that no value appears twice in a column, which is how key columns are protected. It fails when duplicates exist and reports how many rows were involved. Duplicates usually mean one of two things. Either the file was exported twice and concatenated, in which case entire blocks of rows repeat and the row count is roughly double what it should be, or a join upstream multiplied records, in which case only some identifiers repeat and the rest of the row differs. Comparing the number of failed rows against the total row count is the quickest way to tell which happened."
+        }
+      ],
+      "search_ms": 7.6,
+      "generate_s": 0.81,
+      "gpu_peak_mib": 3400,
+      "status_with_number_check": "answered"
+    },
+    {
+      "id": "q13",
+      "query": "How much does a DataPact enterprise licence cost per seat?",
+      "difficulty": "out of scope",
+      "out_of_scope": true,
+      "expected": null,
+      "status": "answered",
+      "shown_text": "[1] A DataPact enterprise licence costs $100 per seat.",
+      "raw_reply": "[1] A DataPact enterprise licence costs $100 per seat.",
+      "cited": [
+        1
+      ],
+      "citations_valid": true,
+      "passages": [
+        {
+          "rank": 1,
+          "doc": "getting_started.md",
+          "section": "Registering a dataset",
+          "score": 0.3437,
+          "text": "A dataset in DataPact represents a data feed that your team receives repeatedly in the same shape, such as a monthly enrollment export or a weekly sales extract. You register it once from the Manage Datasets page by giving it a name, naming the team that sends it, and writing a short description of what the feed contains. The name has to be unique for the owner, so two people can each track a feed called Monthly Export without colliding. Registering a dataset does not upload any data. It only creates the subject that contracts and validation runs will attach to later. Until a contract exists, uploads for that dataset cannot be checked against anything."
+        },
+        {
+          "rank": 2,
+          "doc": "getting_started.md",
+          "section": "Reading the dashboard",
+          "score": 0.3046,
+          "text": "The home page summarises the whole workspace in three numbers: how many datasets are registered, how many validation runs have been recorded, and how many violations are still open. An open violation is one that nobody has judged yet, so that figure is the real backlog. From there the navigation takes you to the dataset registry, contract search, quality history and reports. Signed-out visitors see only the home page and the public run-outcome summary, because every other page requires an account. The dashboard is deliberately small; it answers whether anything needs attention, not what to do about it."
+        },
+        {
+          "rank": 3,
+          "doc": "accounts_and_access.md",
+          "section": "Protected and public endpoints",
+          "score": 0.301,
+          "text": "DataPact draws a deliberate line between its endpoints. The run-outcome summary is public: it returns three aggregate counts and no file names, dataset names or usernames, so it can be read without an account and used for charts or demonstrations. Every other endpoint requires a session. Protected pages redirect a signed-out browser to the login screen, which is the right behaviour for a person. Protected data endpoints instead return an unauthorised status with a short message, because a program calling an endpoint needs a clear refusal rather than a login page it cannot read."
+        }
+      ],
+      "search_ms": 7.3,
+      "generate_s": 0.62,
+      "gpu_peak_mib": 3404,
+      "status_with_number_check": "invalid"
+    },
+    {
+      "id": "q14",
+      "query": "What phone number do I call for DataPact support at the weekend?",
+      "difficulty": "out of scope",
+      "out_of_scope": true,
+      "expected": null,
+      "status": "not_found",
+      "shown_text": "",
+      "raw_reply": "I could not find that in the documents.",
+      "cited": [],
+      "citations_valid": false,
+      "passages": [
+        {
+          "rank": 1,
+          "doc": "getting_started.md",
+          "section": "Registering a dataset",
+          "score": 0.444,
+          "text": "A dataset in DataPact represents a data feed that your team receives repeatedly in the same shape, such as a monthly enrollment export or a weekly sales extract. You register it once from the Manage Datasets page by giving it a name, naming the team that sends it, and writing a short description of what the feed contains. The name has to be unique for the owner, so two people can each track a feed called Monthly Export without colliding. Registering a dataset does not upload any data. It only creates the subject that contracts and validation runs will attach to later. Until a contract exists, uploads for that dataset cannot be checked against anything."
+        },
+        {
+          "rank": 2,
+          "doc": "violations.md",
+          "section": "Deciding the resolution",
+          "score": 0.39,
+          "text": "A violation starts life as open, meaning nobody has judged it yet. A person then records what the failure meant. DataPact never decides this automatically, because the decision is about the business rather than about the data. The two outcomes are that the incoming data was wrong, or that the data was fine and the rule had fallen out of date. Recording the decision matters beyond the current file: the same violation often returns in a later upload, and the team can then see how it was handled last time instead of relitigating it."
+        },
+        {
+          "rank": 3,
+          "doc": "accounts_and_access.md",
+          "section": "Signing in with Google",
+          "score": 0.3585,
+          "text": "As well as a username and password, DataPact supports signing in with a Google account. The Continue with Google button appears on both the login and sign-up pages, and the flow hands the account straight back to the application once Google confirms it. Google sign-in and password sign-in are alternatives rather than a sequence, so an account created one way does not need the other. If Google credentials have not been configured in the environment the button is replaced by a short note, and password sign-in continues to work normally, so a missing configuration never locks anybody out."
+        }
+      ],
+      "search_ms": 7.2,
+      "generate_s": 0.41,
+      "gpu_peak_mib": 3402,
+      "status_with_number_check": "not_found"
+    }
+  ]
+}

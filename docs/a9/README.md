@@ -1,11 +1,19 @@
-# A9 evidence: sample knowledge base runs (6 Nov 2026)
+# A9 evidence
 
-These are the raw results of the A9 handbook Q&A runs with the real models
-(`sentence-transformers/all-MiniLM-L6-v2` on CPU, `HuggingFaceTB/SmolLM2-1.7B-Instruct`
-on an RTX 3050 Ti Laptop GPU, 4 GB) against **`rag_system/sample_kb/`**, the two
-small sample files in the A8 folder (7 hybrid chunks). They are **not** the A9
-evaluation on the real knowledge base, which is still to come. They are summarised in
-[`README_AI.md`](../../README_AI.md), section "A9".
+Raw results of the A9 handbook Q&A runs with the real models. They are summarised in
+[`README_AI.md`](../../README_AI.md), section "A9". There are two groups:
+
+* **Sample files (6 Nov 2026):** the three `phase*` files below, run against
+  `rag_system/sample_kb/`.
+* **Real handbook (9 Nov 2026):** the two `realkb_*` files, described at the end.
+
+## Sample knowledge base runs (6 Nov 2026)
+
+These runs used `sentence-transformers/all-MiniLM-L6-v2` on the CPU and
+`HuggingFaceTB/SmolLM2-1.7B-Instruct` on an RTX 3050 Ti Laptop GPU (4 GB). They ran
+against **`rag_system/sample_kb/`**, the two small sample files in the A8 folder
+(7 hybrid chunks). They are not the evaluation on the real knowledge base, which is
+in the last section.
 
 | File | What it is |
 | --- | --- |
@@ -52,3 +60,35 @@ The `status` field is what the app's own check (`check_reply` in
 separate judgement, made by reading each statement against the passage text, and is
 recorded in `README_AI.md`, not in these files. A valid citation does not show that a
 claim is supported.
+
+## Real handbook runs (9 Nov 2026)
+
+These ran against `rag_system/knowledge_base/` (the A8 handbook: 9 documents, 40
+sections) with the 14 questions in `rag_system/test_queries.json`. They used A9's own
+code, with Hugging Face offline mode on, in one pass with no reruns. The embedding
+model was `sentence-transformers/all-MiniLM-L6-v2`, a fallback: A8 recommends
+`all-mpnet-base-v2`, which was not downloaded. The files hold no local paths
+(`RAG_KB_DIR` is stored relative to the repository).
+
+| File | What it is |
+| --- | --- |
+| `realkb_retrieval_minilm_fixed_vs_hybrid.json` | Retrieval only, fixed against hybrid chunking, top 3, no cutoff. For each question: the 3 passages with document, section, score and text; whether the expected section was retrieved; and whether the answering sentences were (`answer_bearing`: full, partial or none, with the sentences found). |
+| `realkb_generation_minilm_hybrid.json` | The full run through `handbook.answer_question`: hybrid chunking, top 3, `RAG_MIN_SCORE=-1`, Variant A, SmolLM2-1.7B on the 4 GB GPU. For each question: the passages, the raw reply, the status, the shown text, the cited numbers, the timings and the peak GPU memory. `settings` records the configuration and the exact system prompt. |
+
+`status` in the generation file is what `check_reply` decided during the run.
+`status_with_number_check` was added afterwards. It is the same recorded reply checked
+again with the number rule that the run led to (`check_reply` now hides a reply that
+states a number no passage contains). Only q13 differs: `answered`, then `invalid`.
+The model was not run again.
+
+Copies of the run logs and the scripts are not included. SHA-256 with LF endings (as
+Git stores them):
+
+| File | SHA-256 (LF) |
+| --- | --- |
+| `realkb_retrieval_minilm_fixed_vs_hybrid.json` | `da31e848f1a5c31c9870f9a408547044a7adf2e73399903555160c0da6f9fe5f` |
+| `realkb_generation_minilm_hybrid.json` | `6d67f6862d7fcaf2064e694067ca9b51756b9486ff8d7f407a36c932f33091cc` |
+
+The browser rehearsal screenshots for the same configuration are in
+`docs/screenshots/a9/`: q04 answered with its passages, q14 refused, q13 hidden by the
+number check, and q08's weak answer.

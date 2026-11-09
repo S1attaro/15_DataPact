@@ -277,32 +277,42 @@ and `rag_system/rag_analysis.md`: Hriday Agarwal.
 
 **Status (9 Nov 2026).**
 
-* **Done in A9:** the page, retrieval, prompt, checks and 91 fake-model
-  tests. It has run end to end with the real models, but only on the two small
-  sample files in `rag_system/sample_kb/`.
-* **Done in A8 and merged to `main` (8-9 Nov):** the real handbook
-  (`rag_system/knowledge_base/`), 14 test queries, Connor's 9-setup run and
-  Hriday's hand-graded evaluation. They are summarised in "A8 results and what
-  A9 still has to change" below. These are A8 notebook results, not A9 results.
-* **Still pending in A9:**
-  * bringing A9's copy of the A8 chunking code up to date with the merged
-    notebook;
-  * choosing the A9 settings (embedding model, chunking, cutoff);
-  * the A9 evaluation on the real handbook;
-  * a browser check with Variant A.
-* **The citation instruction** is still a candidate chosen from 7 questions on
-  the sample files, not a proven prompt.
+* **Done in A9:**
+  * The page, retrieval, prompt and checks.
+  * 94 fake-model tests.
+  * The A8 copy synced with the merged notebook.
+  * A retrieval test and one real-model run of all 14 A8 questions on the real
+    handbook ("A9 evaluation on the real handbook", below).
+  * A browser rehearsal on the real handbook.
+* **Configuration evaluated:**
+  * `sentence-transformers/all-MiniLM-L6-v2`, as a **fallback**: A8
+    recommends `all-mpnet-base-v2`, which was not downloaded;
+  * hybrid chunking, top 3, no similarity cutoff (`RAG_MIN_SCORE=-1`);
+  * the Variant A prompt and SmolLM2-1.7B.
+* **Done in A8 and merged to `main` (8-9 Nov):**
+  * the real handbook (`rag_system/knowledge_base/`) and 14 test queries;
+  * Connor's 9-setup run and Hriday's hand-graded evaluation.
+
+  They are summarised in "A8 results" below. These are A8 notebook results,
+  not A9 results.
+* **Not done:**
+  * A9 with `all-mpnet-base-v2`;
+  * a second, independent grading of the A9 answers;
+  * production deployment.
+* **The citation instruction** (Variant A) is still the prompt chosen on the
+  sample files. On the real handbook it gave no wrong refusals, but it let
+  one invented answer through (q13; see the number check below).
 
 | Part | Where |
 | --- | --- |
 | Page and form | `data_quality/handbook_views.py`, `templates/data_quality/handbook_ask.html`, URL `/handbook/` (name `handbook-ask`), "Handbook" link in the signed-in navigation |
 | Retrieval | `data_quality/ai/retrieval.py` |
 | Answer and checks | `data_quality/ai/handbook.py` |
-| Copied from the A8 notebook | `data_quality/ai/handbook_a8.py` (paragraph loader, 3 chunking strategies, embedding-model table, RAG prompt), copied from the notebook as it was on 6 Nov, before PR #48 changed its chunking |
+| Copied from the A8 notebook | `data_quality/ai/handbook_a8.py` (paragraph loader, 3 chunking strategies, embedding-model table, RAG prompt), synced on 9 Nov with the notebook as merged in PR #48 |
 | Generator | `data_quality/ai/local_model.py` (the A6 model, unchanged) |
 | Settings | `RAG_*` in `datapact_project/settings/base.py`; see `README.md`, "Handbook Q&A (A9)" |
 | Tests | `data_quality/tests_handbook.py` (fake models only) |
-| Sample-KB evidence | `docs/a9/` |
+| Evidence (sample files, then the real handbook) | `docs/a9/` (raw JSON) and `docs/screenshots/a9/` (browser rehearsal) |
 
 ### Why DataPact has it
 
@@ -354,7 +364,8 @@ those passages under the answer, so the reader can check it.
      `no_passages`, and the generator is not called.
 6. **Prompt.** `handbook_a8.build_messages` from A8 builds the chat:
    * The system message is A8's `SYSTEM_PROMPT`, word for word, followed by
-     A9's `CITATION_INSTRUCTION` (see "Improvement" below).
+     A9's `CITATION_INSTRUCTION` (see "Earlier improvement: the citation instruction"
+     below).
    * The user message is `Context:` with the passages numbered by rank
      (`[1] ...`), then `Question: ...`.
 7. **Generation.** The A6 local model, `HuggingFaceTB/SmolLM2-1.7B-Instruct`
@@ -372,7 +383,8 @@ those passages under the answer, so the reader can check it.
    * Otherwise the reply must cite at least one passage as `[n]` or
      `[n, m]`. Every cited number must be a passage the model was given, and
      every `*.md` name it mentions must be the file of one of those passages.
-     If not, it is `invalid`.
+     Every number it states outside its citations must appear in one of those
+     passages (added after the real-handbook run). If not, it is `invalid`.
    * Anything else is `answered`.
 9. **Response** (`handbook_ask.html`, everything escaped by Django, no `|safe`):
    * `answered`: the answer, how long the search and the answer took, and the
@@ -461,22 +473,35 @@ earlier results do not show it is the best model, so here is what they do show:
   Comparing them on the real knowledge base is the next step before
   production.
 
-**Embedding model: A8 recommends `sentence-transformers/all-mpnet-base-v2`;
-A9 has not used it yet.**
+**Embedding model: `sentence-transformers/all-MiniLM-L6-v2`, as a fallback.**
 * A8 compared `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions),
   `sentence-transformers/all-mpnet-base-v2` (768) and `BAAI/bge-large-en-v1.5`
-  (1024).
-* `RAG_EMBEDDING_MODEL_ID` is still empty by default.
-* The sample-KB runs below used MiniLM, the smallest, only as a test setting.
+  (1024), and recommends `all-mpnet-base-v2`.
+* A9 was evaluated with MiniLM because it was the only one of the three
+  already on the development laptop, and no new model download was approved
+  for this run.
+* In A8, MiniLM put the answering text in the top 3 for 100% of answerable
+  questions with hybrid chunks (Hriday's grading). A9's own retrieval test
+  below agrees.
+* `RAG_EMBEDDING_MODEL_ID` is still empty by default; the evaluated setup sets
+  it in `.env`.
 
 **Chunking, top-k and threshold.**
-* `RAG_CHUNKING` defaults to `hybrid`, chosen before the A8 results. Connor's
-  run recommends `fixed`; Hriday's grading recommends testing `hybrid` first
-  (see below). Not decided for A9.
+* **Chunking: `hybrid`,** chosen by A9's own retrieval test on the real
+  handbook (below). It is also the code default.
+  * Connor's A8 run recommends `fixed`; Hriday's grading recommends testing
+    `hybrid` first.
+  * In A9's test, both strategies found the expected section for all 12
+    answerable questions. Hybrid put the full answering text in the top 3 for
+    all 12; fixed did so for 9.
 * `RAG_TOP_K` = 3 is the notebook's `TOP_K`, and the 160-token limit is its
   `MAX_NEW_TOKENS`.
-* `RAG_MIN_SCORE` = 0.3 was set before the A8 results, and A8 recommends no
-  cutoff. Not decided for A9.
+* **Cutoff:** the evaluation used `RAG_MIN_SCORE=-1`, which keeps all 3
+  passages, because A8 found no cutoff that separates answerable from
+  out-of-scope questions.
+  * The code default is still 0.3.
+  * With `-1`, the "nothing close enough" message never appears, and refusing
+    depends on the model and the checks.
 
 **How earlier work shaped the design.**
 * A6 gave the model, its loader (lazy loading, the 60-second retry, friendly
@@ -484,13 +509,14 @@ A9 has not used it yet.**
 * A8 gave the knowledge-base format, the chunking code and the RAG prompt.
   They are copied into `handbook_a8.py`, and a test
   (`CopiedFromA8Tests`) fails if the copy and the notebook drift apart, so
-  Django chunks and prompts the way A8 measures. The copy was taken on 6 Nov.
-  PR #48 has since changed the notebook's chunking, so this holds again only
-  once the copy is updated (see below).
+  Django chunks and prompts the way A8 measures. After PR #48 changed the
+  notebook's chunking, the test failed (4 subtests), and the copy was synced on
+  9 Nov. On the real handbook, A9 and the notebook now give identical chunks
+  for all three strategies (fixed 40, overlap 31, hybrid 40).
 * A7's results are the reason the choice above is explained as a hardware
   and reuse trade-off rather than a quality win.
 
-### A8 results and what A9 still has to change
+### A8 results, and what A9 did with them
 
 **This is A8 evidence, from the A8 notebook and its write-up, not from the
 Django app.** The sources on `main` are:
@@ -540,43 +566,153 @@ The figures below were checked against those CSVs on 9 Nov 2026.
   settling, because fixed chunks split sections (q03). Until then, fixed +
   strict is the best measured setup.
 
-**What A9 still has to change.** These are pending decisions; nothing has been
-changed yet.
+**What A9 did with these results (9 Nov):**
 
-1. **Update the A8 copy.**
-   * `handbook_a8.py` was copied on 6 Nov. PR #48 then changed A8's fixed and
-     overlap chunking so a chunk can cross a section boundary within a
-     document.
-   * On the real handbook, A9's current `fixed` gives 40 chunks of one section
-     each. A8's gives 40 chunks of 46-119 words, 22 of them crossing a section
-     boundary. `overlap` differs too. `hybrid` gives the same chunk text in
-     both.
-   * Once `main` is merged into the A9 branch, 4 `CopiedFromA8Tests` subtests
-     (`make_chunk`, `fixed_chunks`, `overlap_chunks`, `hybrid_chunks`) are
-     expected to fail until the copy is updated and `group_by_doc` is added.
-2. **Choose chunking:** fixed (Connor) or hybrid (Hriday's follow-up test).
-3. **Choose the cutoff.**
-   * At A9's current 0.3, medium + fixed would drop 6 of the 42 passages the
-     A8 run sent. Two of them are from the expected section (q09 rank 2 at
-     0.292, q10 rank 3 at 0.299).
-   * `RAG_MIN_SCORE=-1` keeps every passage. But then the "nothing close
-     enough" path never runs, and refusing depends on the model alone.
-4. **Choose the prompt.**
-   * A9's prompt is A8's normal prompt plus Variant A, which requires `[n]`
-     citations.
+1. **Synced the A8 copy.**
+   * PR #48 changed A8's fixed and overlap chunking so a chunk can cross a
+     section boundary within a document.
+   * `CopiedFromA8Tests` failed 4 subtests after `main` was merged in.
+   * `handbook_a8.py` now matches the notebook, including `group_by_doc`.
+2. **Chunking:** hybrid, chosen from A9's own retrieval test (below).
+3. **Cutoff:** none (`RAG_MIN_SCORE=-1`) for the evaluation.
+   * At 0.3, medium + fixed in A8 would have dropped 6 of the 42 passages
+     sent, 2 of them from the expected section.
+4. **Prompt:** kept Variant A.
    * A8's strict prompt asks for no citations, so `check_reply` would hide
      every answer it produces as `invalid`.
-   * Adopting it means combining it with a citation rule and testing the
-     result.
-5. **Download the model.** `all-mpnet-base-v2` is not yet in the development
-   laptop's Hugging Face cache.
+   * Combining the two was not tested.
+5. **Embedding model:** MiniLM, as a fallback; `all-mpnet-base-v2` was not
+   downloaded.
 
-A8's numbers do not show how A9 will do:
+A8's numbers do not show how A9 does:
 * A8 ran on a different machine (AMD GPU); A9 embeds on the CPU.
 * A8 used a different prompt and had no citation check.
 * Some scores are near-ties that could flip (q08: 0.5456 against 0.5446).
 
-Only an A9 run can show how A9 does.
+A9's own results are in the next section.
+
+### A9 evaluation on the real handbook (A9 Steps 3.1-3.2, 9 Nov 2026)
+
+**This is A9 evidence, from the Django code, not from the A8 notebook.**
+
+**Setup.**
+* The knowledge base is `rag_system/knowledge_base/` (9 documents, 40
+  sections).
+* The 14 questions are from `rag_system/test_queries.json`: 12 answerable and
+  2 out of scope.
+* Retrieval used `all-MiniLM-L6-v2` (fallback) on the CPU, hybrid chunking,
+  top 3 and `RAG_MIN_SCORE=-1`.
+* Generation used SmolLM2-1.7B-Instruct on an RTX 3050 Ti Laptop GPU (4 GB),
+  greedy decoding, 160 new tokens, and the Variant A prompt.
+* Hugging Face offline mode was on, so nothing downloaded.
+* The run made one pass with no reruns.
+* Raw data: `docs/a9/realkb_retrieval_minilm_fixed_vs_hybrid.json` and
+  `docs/a9/realkb_generation_minilm_hybrid.json`.
+
+**Step 1: retrieval only (fixed against hybrid).**
+* The test used A9's own `retrieval.load_chunks` and `HandbookIndex`.
+* A question counts as "answer-bearing" only when the top 3 passages contain
+  the handbook sentences that answer it. A matching section label is not
+  enough.
+
+| Chunking | Expected section in top 3 (of 12) | Full answering text in top 3 | Partial | None |
+| --- | --- | --- | --- | --- |
+| fixed (40 chunks) | 12 | 9 | 2 (q04, q12) | 1 (q03) |
+| **hybrid** (40 chunks) | 12 | **12** | 0 | 0 |
+
+* Both strategies "hit" every section. But fixed chunks cut sections mid-way:
+  * q03's chunk ends at "A contract version has one of three statuses.", and
+    the list itself is in the next chunk;
+  * q04's chunk misses "must never be edited";
+  * q12's chunk misses "Look at the sample values first".
+* Hybrid was therefore used for generation. This shows hybrid was better for
+  these 14 questions with this model, not that it is better in general.
+* With MiniLM, A9's top scores match A8's small-model scores to 3-4 decimals
+  (for example, fixed q01 0.702, hybrid q14 0.444), which cross-checks the
+  synced chunking.
+* Scores still overlap with hybrid: out-of-scope questions scored up to 0.444
+  (q14), and answerable ones as low as 0.365 (q09).
+
+**Step 2: answers through `handbook.answer_question`.** The grades below are
+one reader's judgement, made by checking each statement against the passages.
+They use the A8 rubric:
+* **Good:** correct and faithful.
+* **Partial:** the core is right, but the answer is incomplete, padded,
+  indirect or wrongly cited.
+* **Poor:** wrong, invented, or a refusal of an answerable question.
+
+| Test Input | Expected Behavior | Actual Output (status) | Quality Notes | Latency |
+| --- | --- | --- | --- | --- |
+| q01 What does a not null rule check for? | Fails on blanks and missing fields; no parameters | Answered [1]: copies the Not null passage, then "Answer: A not-null rule checks for a column that always carries a value." | **Good.** Correct, mostly a verbatim copy | 5.03 s (search 16 ms) |
+| q02 How do I register a new dataset? | Manage Datasets page; name, team, description | Answered [1]: copies the Registering a dataset passage, then a summary cut off at the token limit | **Good.** Correct; the trailing summary is truncated | 4.22 s (9 ms) |
+| q03 Three statuses of a contract version? | Draft, active, retired | Answered: "[1] … draft, active, and retired." | **Partial: citation failure.** The answer is right, but passage [1] (Contract versions) does not list the statuses; [2] does. The check cannot see this | 0.70 s (7 ms) |
+| q04 Can I change a used contract? | No; changes go into a new version | Answered [1][2]: copies the right passage, then copies an off-topic upload passage until the token limit | **Partial.** Correct, padded with an unrelated passage | 4.38 s (9 ms) |
+| q05 Why can't I delete a teammate's account? | They own datasets; reassign first | Answered: "[1] Because ownership carries that responsibility, DataPact refuses to delete a user account that still owns datasets." | **Partial.** Correct, but leaves out "reassign first" | 0.79 s (8 ms) |
+| q06 Failed against errored run? | Failed = checks ran; error = never ran | Answered [1]: correct contrast | **Partial: citation failure.** The text comes from passage [2] (Troubleshooting), not [1] | 2.86 s (7 ms) |
+| q07 How to tell if the file was exported twice? | Compare failed rows with total rows | Answered [1]: copies the Unique passage, including "Comparing the number of failed rows against the total row count…" | **Good** (verbatim copy). A8's normal prompt refused this question | 3.24 s (20 ms) |
+| q08 New code in thousands of rows: data or rule? | Contract update, with the three signals | Answered [1][2]: copies "Every row fails one rule" (ends "the contract is almost certainly the thing that needs updating"), then the start of the right section, cut off before the signals | **Partial.** Relevant, but never answers the either/or directly | 4.30 s (7 ms) |
+| q09 Format for a program to read? | JSON | Answered: "[1] … JSON, which suits anything that will be read by a program rather than a person." | **Good** | 0.84 s (6 ms) |
+| q10 Can anyone see our data without signing in? | Only the run-outcome summary is public | Answered [1]: "No, anyone cannot see our data without signing in. The run-outcome summary is public, but every other endpoint requires a session…" | **Good** (awkward wording) | 2.39 s (6 ms) |
+| q11 Why no AI explanation? | Reply failed checks, retry, fallback | Answered [1]: copies the right passage | **Good** (verbatim copy) | 3.03 s (6 ms) |
+| q12 A rule fails on almost every row: where to look first? | Suspect the rule or the export; look at sample values | Answered: "[1] … suspect the rule or the export before suspecting the data." | **Partial.** Correct, but leaves out "look at the sample values first". A8's normal prompt refused this question | 0.81 s (8 ms) |
+| q13 Enterprise licence price per seat? (out of scope) | Refuse | **Answered and shown:** "[1] A DataPact enterprise licence costs $100 per seat." | **Poor: invented answer with a valid citation.** No passage mentions a price. Fixed by the number check below | 0.62 s (7 ms) |
+| q14 Weekend support phone number? (out of scope) | Refuse | `not_found`: "I could not find that in the documents." | **Good** (correct refusal) | 0.41 s (7 ms) |
+
+**Summary of the run:**
+* **In scope (12):** 6 Good, 6 Partial, 0 Poor, and 0 wrong refusals.
+* **Citations:** every cited number pointed at a passage the model was given.
+  But 2 answers (q03, q06) cite a passage that does not contain the claim,
+  which shows that a valid citation is not proof of support.
+* **Out of scope:** 1 of 2 refused. q13 was invented and, before the fix,
+  shown.
+* **Failure categories:**
+  * citation failure (q03, q06);
+  * incomplete answer (q05, q12);
+  * padded with off-topic text (q04);
+  * indirect answer (q08);
+  * invented, unsupported answer (q13).
+  * There were no retrieval failures, no wrong refusals and no model errors.
+* **Timing:**
+  * generation 0.41-5.03 s per question, mean 2.40 s;
+  * search 6-20 ms;
+  * loading both models (already cached) took 9.2 s for the embedder and
+    index, and 7.1 s for SmolLM2;
+  * PyTorch's peak GPU allocation was 3,396-3,404 MiB per question.
+* **Compared with A8:** most Good answers are long verbatim copies of a
+  passage, not short answers. The A8 hand-graded scores are not comparable
+  with these: they used a different prompt, model setting and grader.
+
+### Improvement on the real handbook: the number check (A9 Step 3.4)
+
+**The failure.** For q13, an out-of-scope price question, the model wrote
+"[1] A DataPact enterprise licence costs $100 per seat." The citation pointed
+at a real passage, so `check_reply` showed the answer. No passage mentions any
+price. A cutoff would not have stopped it: the passages scored 0.30-0.34, and
+A8 found that no cutoff separates the two kinds of question.
+
+**What changed.**
+* `check_reply` (`data_quality/ai/handbook.py`) now also hides a reply that
+  states a number (outside its `[n]` citations) that none of the passages it
+  was given contains.
+* Numbers are compared as whole numbers, so "100" does not match "1000".
+* The reply is hidden with the same message as other unchecked replies.
+* 3 tests were added first and watched fail: an invented price is hidden; a
+  number copied from a passage is kept; a number matches only as a whole
+  number.
+
+**Before and after.** The check was applied to the same 14 recorded replies,
+without re-running the model:
+
+| | Before | After |
+| --- | --- | --- |
+| q13 (invented price) | Shown | Hidden (`invalid`), with the passages listed |
+| The other 13 replies | Unchanged | Unchanged (no correct answer lost) |
+| Sample-file replies from Phase 3 (`docs/a9/`) | — | No status changed |
+
+In the browser rehearsal, q13 asked live gave the same hidden result.
+
+**Limits.** The check catches invented numbers only, not invented words. q03
+and q06 show that a citation can still point at the wrong passage.
 
 ### Guardrails (A9 Step 1.5)
 
@@ -598,6 +734,7 @@ Only an A9 run can show how A9 does.
 | No passage scores at least `RAG_MIN_SCORE` | "Nothing in the handbook is close enough"; the generator is not called | `answer_question` |
 | Generator fails to load, or generation fails (for example out of memory) | 503 "The local model could not write an answer" | `answer_question`, `local_model` |
 | Empty reply, no citation, a citation to a passage not given, or an unretrieved `.md` name | Reply hidden: "could not be checked against the passages it was given" | `check_reply` |
+| A number (price, count, limit) that none of the given passages contains | Reply hidden, same message (added after the real-handbook run, q13) | `check_reply` |
 | Very long reply | Cut to 1,500 characters | `check_reply` |
 | HTML or script in a reply or a passage | Escaped | Django autoescaping |
 
@@ -609,7 +746,9 @@ Only an A9 run can show how A9 does.
   at a passage the model was actually given. It does not check that the
   passage says what the sentence claims, and one `[1]` can sit next to an
   unsupported sentence. In every sample run, shown answers cited `[1]` once, at
-  the start, never per sentence.
+  the start, never per sentence. On the real handbook, q03 and q06 cited [1]
+  for text that comes from [2]. The number check stops invented numbers, not
+  invented words.
 * **Relevance is not checked.** An answer that just copies a retrieved passage
   passes the check, even when that passage does not answer the question
   (Variant B, q5, below).
@@ -617,14 +756,16 @@ Only an A9 run can show how A9 does.
   refund question's passages scored 0.33-0.36, above the 0.3 threshold, so
   refusing it was the model's job, not the threshold's. A8 saw the same on the
   real handbook: for medium + fixed, out-of-scope questions scored up to 0.42
-  and answerable ones as low as 0.36, so no cutoff can do this job alone.
+  and answerable ones as low as 0.36, so no cutoff can do this job alone. In
+  A9's own real-handbook run, the model refused q14 but invented an answer to
+  q13, which the number check now hides.
 * **The page subtitle overstates.** It says "The answer comes only from the
   handbook passages listed with it", which the code cannot guarantee. A
   rewording is waiting for approval.
 * **Off in production.** `production.py` turns the local model off by default,
   and `requirements-deploy.txt` has neither torch nor sentence-transformers.
 
-### Improvement: the citation instruction (A9 Step 3.4)
+### Earlier improvement: the citation instruction (A9 Step 3.4, sample files)
 
 **Scope.** This is a small experiment on the **sample** files, not the A9
 evaluation:
@@ -692,35 +833,46 @@ seven questions cannot show that.
 These are sample results from 7 questions. They do not establish answer
 quality on the real knowledge base.
 
-### Evaluation (A9 Steps 3.1-3.3)
+### Failure analysis (A9 Step 3.3)
 
-**The real handbook and the A8 query set are on `main`** (merged 8 Nov 2026),
-but **the A9 evaluation on them has not been run yet.** The A8 results above
-come from the A8 notebook. They are not A9 results, and they are not repeated
-here.
+The test inputs, outputs and latencies are in the table under "A9 evaluation
+on the real handbook" above (A9 Steps 3.1-3.2).
 
-The plan:
-1. **Retrieval only, first.** No generation.
-   * Run A9's index over `rag_system/knowledge_base/` with the chosen settings
-     on the 14 queries in `rag_system/test_queries.json`: 12 answerable and 2
-     out of scope, which covers Step 3.1's five realistic inputs.
-   * Compare each query's top 3 passages and scores with A8's
-     `results/retrieved_chunks.csv`.
-2. **Then full generation with Variant A,** through the app's own code
-   (`handbook.answer_question`), in one recorded run.
-3. **For every query, record** the retrieved passages and their scores, the
-   answer status, the raw model reply, the text shown, its citations, the
-   search and generation times, and a manual quality judgement made by reading
-   each statement against the passages.
+**On the real handbook (9 Nov run, A9 code):**
 
-The table stays empty until that run is done. No result below comes from the
-sample files or from A8.
+1. **An invented answer with a valid citation (q13).**
+   * The out-of-scope price question retrieved three loosely related passages
+     (0.30-0.34).
+   * The model wrote a confident price and put `[1]` in front of it, as the
+     Variant A prompt asks.
+   * `check_reply` only checked that `[1]` was a passage it had been given,
+     so the invented answer was shown.
+   * Fixed for numbers by the number check. An invented claim with no number
+     would still pass.
+2. **A citation pointing at the wrong passage (q03, q06).**
+   * The model starts almost every answer with `[1]`, whichever passage the
+     words come from.
+   * Both answers were right, but their text comes from passage [2].
+   * The check confirms only that the number is in range.
+3. **Answers that copy instead of answering (q01, q02, q04, q08).**
+   * The model often pastes a whole passage and keeps going into the next one
+     until the 160-token limit cuts it off.
+   * In q08, "Every row fails one rule" (0.570) outranked the decision-signals
+     section (0.536). The model copied the first passage, and the second was
+     cut off before its three signals, so the either/or question was never
+     answered directly.
+4. **Incomplete answers (q05, q12).** The model gave only the first sentence
+   of the right passage, leaving out "reassign first" and "look at the sample
+   values first".
 
-| Test Input | Expected Behavior | Actual Output | Quality Notes | Latency |
-| --- | --- | --- | --- | --- |
+**Compared with A8:**
+* A8's normal prompt refused q07 and q12 in most setups. A9, with Variant A,
+  answered both, and had no wrong refusals.
+* Hybrid chunking avoided A8's fixed-chunk split of q03.
+* These are different prompts and settings, so this is an observation, not a
+  measured comparison.
 
-**Failure cases seen so far (sample files only, to be confirmed on the real
-knowledge base):**
+**On the sample files (6 Nov, kept for the record):**
 
 1. **Wrong refusal (q3).** Retrieval was right: the Contracts and versions
    passage came first (0.50) and contains "must never be edited". The model
@@ -739,20 +891,17 @@ knowledge base):**
    worked example, the model pasted the Not null passage as its answer. That
    prompt was not adopted.
 
-A8's run on the real handbook showed related failures: wrong refusals (q07,
-q12) and a section split across two chunks (q03). Whether A9 shows them is
-part of the pending run.
 
 ### What was verified, and what was not (A9)
 
 | Check | Result |
 | --- | --- |
-| A9 code and automated tests | Done on the A9 branch (`tejas/a9-rag-integration`). 91 handbook tests, and 576 in the whole `data_quality` suite, passed when run locally on 7 Nov 2026, before the branch was pushed or merged; not run on `main`. The 91 handbook tests passed again on 9 Nov. They use a word-hashing fake embedder and a fake generator, so they prove the Django flow and the checks, not answer quality. Once `main` is merged in, 4 `CopiedFromA8Tests` subtests are expected to fail until the A8 copy is updated. |
+| A9 code and automated tests | Done on the A9 branch (`tejas/a9-rag-integration`), after `main` (with the A8 work) was merged in on 9 Nov 2026. The 94 handbook tests pass, including 3 new number-check tests. The whole `data_quality` suite, 579 tests (`main`'s 485 plus the 94 handbook tests), passed on 9 Nov. They use a word-hashing fake embedder and a fake generator, so they prove the Django flow and the checks, not answer quality. Earlier: 576 passed on 7 Nov, before the merge. |
 | Real models, sample files | The runs above, on an RTX 3050 Ti Laptop GPU (4 GB): PyTorch's peak GPU allocation was 3,272-3,405 MiB per question. Loading both models (already in the Hugging Face cache) took 16.7-20.4 s, and searches took 6-13 ms. MiniLM's download was about 88 MB. |
-| In a browser (Playwright) | On the sample files with the **before** prompt (6 Nov): signed-out redirect to log in, the page opening without loading a model (GPU memory stayed at 9 MiB), an answer with its passages (q1), the no-passages message (t7), and a hidden reply (q4). Variant A has not been checked in a browser. |
+| In a browser, sample files (Playwright) | On the sample files with the **before** prompt (6 Nov): signed-out redirect to log in, the page opening without loading a model (GPU memory stayed at 9 MiB), an answer with its passages (q1), the no-passages message (t7), and a hidden reply (q4). Variant A has not been checked in a browser. |
 | A8 experiment on the real handbook | Done in A8 and merged to `main` (8-9 Nov 2026): Connor's 9-setup run and Hriday's hand grading, summarised above. This is A8 evidence, not a check of A9. |
-| A9 retrieval on the real handbook | **Pending.** Needs the A8 copy updated, the settings chosen and the embedding model downloaded. |
-| A9 answers on the real handbook (real models) | **Pending.** |
-| A9 browser check with the real handbook and Variant A | **Pending.** |
-| A9 settings (embedding model, chunking, cutoff) | **Not decided.** A8 recommends `all-mpnet-base-v2`, top 3 and no cutoff; fixed or hybrid chunking is still open. |
+| A9 retrieval on the real handbook | Done (9 Nov), with MiniLM as a fallback, fixed against hybrid on all 14 questions. Hybrid put the answering text in the top 3 for 12 of 12 answerable questions, fixed for 9. Not run with `all-mpnet-base-v2`. |
+| A9 answers on the real handbook (real models) | Done (9 Nov): 14 of 14 questions, one pass. 6 Good, 6 Partial, 0 wrong refusals; 1 of 2 out-of-scope questions refused; 1 invented answer (q13), now hidden by the number check. Graded by one reader. |
+| A9 browser check with the real handbook and Variant A | Done (9 Nov, Playwright, a fresh scratch database outside the repository). Signed-out redirect to log in. Page opens with no model loaded (GPU 21 MiB). A blank question gives a 400 and "Type a question first.". q04 answered with its 3 passages; q14 refused; q13 hidden by the number check; q08 shows its weak answer. Screenshots in `docs/screenshots/a9/`. |
+| A9 settings | Evaluated: `RAG_EMBEDDING_MODEL_ID=sentence-transformers/all-MiniLM-L6-v2`, `RAG_CHUNKING=hybrid`, `RAG_TOP_K=3`, `RAG_MIN_SCORE=-1`, set in `.env`. Code defaults unchanged (no embedding model, hybrid, 3, 0.3). |
 | Production | Not verified; the feature is off there by design. |
