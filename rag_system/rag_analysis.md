@@ -542,6 +542,27 @@ in the top 3 for 94% of questions, against 89% and 83% for large) *[from run]*, 
 - Scaling numbers above are projections from measured single-query latency, not load-test
   results. We have not run this under concurrency.
 
+
+### Evaluation notes on Part 4 (Hriday)
+
+Three statements in Part 4 were written before the run's results were graded. Where the
+measurements say something different, the measurements in Parts 2 and 3 take precedence:
+
+* **Top-k = 5.** Part 4 expects k = 5 to make answers worse. In our run it did not: on the best
+  setup it kept the hit rate at 100% and raised the manual answer score from 45.8% to 58.3%, mainly
+  by retrieving the second half of a section that fixed chunking had split (Step 3.3). The cost
+  point stands, since every extra chunk lengthens every prompt, so k = 3 with section-aware chunking
+  remains the recommendation.
+* **GPU vs API break-even.** The figure of about 60,000 generations a day does not come from our A7
+  cost tables. Those tables found the hosted API cheaper than a rented T4 machine at every traffic
+  level when one request runs at a time; local hosting won only from about 1 million daily users,
+  and only if each GPU serves 32 requests at once ($28.90 against $39.49 a day at 1 million). At 20,000 queries a day, both point the
+  same way: a hosted API is cheaper.
+* **"Bigger is not reliably better."** The example comes from A6, not A7, and the model whose
+  formatting habit broke its output was H2O-Danube2-1.8B, the second-largest of the 15. The
+  conclusion holds and is confirmed for embeddings in Step 2.3: the largest embedding model
+  retrieved worst.
+
 ---
 
 ## Recommendation for the app (A9)
