@@ -1,0 +1,4 @@
+embedding_model,hit_at_3,mrr_at_3,context_good,answer_score,answer_good,answer_poor,wrong_refusals,search_ms,generate_s,correct_refusals
+small,94.4,0.87,88.9,48.6,30.6,33.3,8,5.1,1.21,6
+medium,97.2,0.87,94.4,48.6,27.8,30.6,8,9.1,1.19,6
+large,88.9,0.829,83.3,50.0,33.3,33.3,8,16.0,1.07,6

@@ -1,0 +1,4 @@
+difficulty,all setups,model: small,model: medium,model: large,chunking: fixed,chunking: hybrid,chunking: overlap
+easy,72.2,72.2,72.2,72.2,50.0,83.3,83.3
+medium,51.4,45.8,50.0,58.3,58.3,45.8,50.0
+hard,33.3,36.7,33.3,30.0,33.3,33.3,33.3
