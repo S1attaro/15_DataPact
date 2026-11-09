@@ -1,0 +1,5 @@
+variant,hit_at_k (auto),answer_score (manual),Good,Partial,Poor,wrong refusals,out-of-scope refused (of 2),generate_s
+baseline,100.0,45.8,3,5,4,3,2,0.86
+top_k_1,75.0,41.7,3,4,5,4,2,0.65
+top_k_5,100.0,58.3,4,6,2,3,2,0.82
+strict_prompt,100.0,62.5,5,5,2,0,2,0.67
