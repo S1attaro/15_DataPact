@@ -1,0 +1,4 @@
+chunking_strategy,context_hit_rate,context_phrase_recall,answer_phrase_recall,avg_search_ms,avg_generate_s,declined_correctly
+fixed,1.0,0.861,0.352,10.239,0.909,1.0
+hybrid,0.944,0.944,0.333,9.767,1.062,1.0
+overlap,0.861,0.861,0.444,10.219,1.5,1.0

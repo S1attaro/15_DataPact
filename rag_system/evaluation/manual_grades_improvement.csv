@@ -1,0 +1,57 @@
+variant,query_id,answer_quality_manual,notes
+baseline,q01,Good,"Correct: empty strings, missing fields and true nulls."
+baseline,q02,Partial,"Right steps (Manage Datasets, name, team, description), but invents button labels and ends with 'I could not find that in the documents', contradicting itself."
+baseline,q03,Poor,"Wrong fact: 'active, history, and draft'. Fixed chunk ends at 'has one of three statuses.'; the statuses are in the next chunk, which was not retrieved. 'Draft' and 'retired' appear only in passing in another chunk."
+baseline,q04,Partial,"Correct 'no', reasoned from the Starting a run chunk; leaves out the new-version step."
+baseline,q05,Good,"Correct: owner is accountable, account must be reassigned first."
+baseline,q06,Good,Correct and complete.
+baseline,q07,Poor,Wrong refusal: the Unique section with the answer was retrieved first.
+baseline,q08,Poor,"Does not answer the either/or: 'the data is out of date', with none of the signals."
+baseline,q09,Partial,"Picks JSON (correct), but credits JSON with CSV's 'no nested structure'."
+baseline,q10,Partial,"Right about sessions, but leaves out the public summary and ends with a contradictory sentence."
+baseline,q11,Partial,"Correct mechanism, then adds the unrelated 'three known limits' text."
+baseline,q12,Poor,Wrong refusal: the Every row fails one rule section was retrieved.
+baseline,q13,Good,Out of scope; correctly refused.
+baseline,q14,Good,Out of scope; correctly refused.
+top_k_1,q01,Good,Correct.
+top_k_1,q02,Partial,"Right steps, invented buttons, ends with the refusal line."
+top_k_1,q03,Poor,"Invents 'unique per dataset, enforced by the database'."
+top_k_1,q04,Partial,"Right section missed at top 1. Correct 'no', no new-version step."
+top_k_1,q05,Partial,Gives the reason but not the reassignment rule.
+top_k_1,q06,Good,Correct and complete.
+top_k_1,q07,Poor,Wrong refusal: the Unique section with the answer was retrieved first.
+top_k_1,q08,Poor,"Does not answer the either/or: 'the data is out of date', with none of the signals."
+top_k_1,q09,Good,Picks JSON with a correct reason.
+top_k_1,q10,Partial,"Opens with 'No, anyone can see our data'; leaves out what is public."
+top_k_1,q11,Poor,Wrong refusal.
+top_k_1,q12,Poor,Wrong refusal: the Every row fails one rule section was retrieved.
+top_k_1,q13,Good,Out of scope; correctly refused.
+top_k_1,q14,Good,Out of scope; correctly refused.
+top_k_5,q01,Good,Correct.
+top_k_5,q02,Partial,"Right steps, invented buttons, ends with the refusal line."
+top_k_5,q03,Good,"Correct: active, retired, draft. Top 5 brings in the second half of the split section."
+top_k_5,q04,Partial,"Correct 'no', no new-version step."
+top_k_5,q05,Good,"Correct, including reassignment."
+top_k_5,q06,Good,Correct and complete.
+top_k_5,q07,Poor,Wrong refusal: the Unique section with the answer was retrieved first.
+top_k_5,q08,Partial,"Mentions a new legitimate category and extending the rule, but still opens with 'the data is likely out of date'."
+top_k_5,q09,Partial,"Picks JSON, but credits it with CSV's 'no nested structure'."
+top_k_5,q10,Partial,"Opens with 'No, anyone can see our data'; leaves out the public summary."
+top_k_5,q11,Partial,Correct but thin: 'failed validation twice'.
+top_k_5,q12,Poor,Wrong refusal: the Every row fails one rule section was retrieved.
+top_k_5,q13,Good,Out of scope; correctly refused.
+top_k_5,q14,Good,Out of scope; correctly refused.
+strict_prompt,q01,Good,Correct.
+strict_prompt,q02,Good,"Correct, including 'unique for the owner'; no invented buttons or refusal line."
+strict_prompt,q03,Poor,"Same wrong fact as baseline: 'active, history, and draft'."
+strict_prompt,q04,Partial,"Correct 'no', no new-version step."
+strict_prompt,q05,Good,"Correct, including reassignment."
+strict_prompt,q06,Good,Correct on both outcomes.
+strict_prompt,q07,Partial,"No longer refuses. Right method, but says the failed rows double instead of the row count."
+strict_prompt,q08,Poor,'The data is likely out of date.'
+strict_prompt,q09,Good,"Picks JSON, nothing false added."
+strict_prompt,q10,Partial,"Opens with 'No, anyone can see our data'; the public summary detail is right."
+strict_prompt,q11,Partial,Mentions the validation check but not the retry or fallback.
+strict_prompt,q12,Partial,"No longer refuses. Suggests checking renamed columns, which is grounded, but not the section's advice to suspect the rule or export and look at sample values."
+strict_prompt,q13,Good,Correctly refused.
+strict_prompt,q14,Good,Correctly refused.

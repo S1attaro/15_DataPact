@@ -1,0 +1,69 @@
+[
+  {"id": "q01", "query": "What does a not null rule check for?",
+   "expected_doc": "rule_types.md", "expected_section": "Not null",
+   "expected_keywords": ["empty strings", "no parameters"],
+   "difficulty": "easy", "note": "Direct keyword overlap with one section."},
+
+  {"id": "q02", "query": "How do I register a new dataset in DataPact?",
+   "expected_doc": "getting_started.md", "expected_section": "Registering a dataset",
+   "expected_keywords": ["Manage Datasets", "unique for the owner"],
+   "difficulty": "easy", "note": "Direct keyword overlap."},
+
+  {"id": "q03", "query": "What are the three statuses a contract version can have?",
+   "expected_doc": "contracts.md", "expected_section": "Activating and retiring a version",
+   "expected_keywords": ["draft", "active", "retired"],
+   "difficulty": "easy", "note": "Enumeration lives in one section."},
+
+  {"id": "q04", "query": "Can I change a contract after it has already been used to check a file?",
+   "expected_doc": "contracts.md", "expected_section": "Editing a contract that has been used",
+   "expected_keywords": ["new version", "never be edited"],
+   "difficulty": "medium", "note": "Paraphrased; competes with 'Contract versions'."},
+
+  {"id": "q05", "query": "Why won't the system let me delete a teammate's account?",
+   "expected_doc": "getting_started.md", "expected_section": "Who owns a dataset",
+   "expected_keywords": ["reassigned", "accountable"],
+   "difficulty": "medium", "note": "No shared vocabulary with the target text."},
+
+  {"id": "q06", "query": "What is the difference between a run that failed and a run that errored?",
+   "expected_doc": "validation_runs.md", "expected_section": "Run outcomes",
+   "expected_keywords": ["could not be evaluated", "never happened"],
+   "difficulty": "medium", "note": "Competes with troubleshooting.md on the same distinction."},
+
+  {"id": "q07", "query": "Duplicate IDs showed up in a key column. How do I tell whether the file was exported twice?",
+   "expected_doc": "rule_types.md", "expected_section": "Unique",
+   "expected_keywords": ["exported twice", "failed rows against the total"],
+   "difficulty": "medium", "note": "Diagnostic question; answer is one clause in a long section."},
+
+  {"id": "q08", "query": "One new code appeared in thousands of rows. Is the data wrong or is our rule out of date?",
+   "expected_doc": "violations.md", "expected_section": "Data issue or contract updated",
+   "expected_keywords": ["new legitimate category", "How many rows failed"],
+   "difficulty": "hard", "note": "Three sections discuss this; only one gives the decision signals."},
+
+  {"id": "q09", "query": "If a program is going to read the download rather than a person, which format should I pick?",
+   "expected_doc": "reports_and_exports.md", "expected_section": "JSON export",
+   "expected_keywords": ["read by a program", "how many records"],
+   "difficulty": "hard", "note": "Directly competes with the CSV export section."},
+
+  {"id": "q10", "query": "Can anyone see our data without signing in?",
+   "expected_doc": "accounts_and_access.md", "expected_section": "Protected and public endpoints",
+   "expected_keywords": ["run-outcome summary", "unauthorised"],
+   "difficulty": "hard", "note": "Competes with 'What anonymous visitors can see'."},
+
+  {"id": "q11", "query": "Why is there no AI explanation showing on this violation?",
+   "expected_doc": "ai_explanations.md", "expected_section": "Why a suggestion may be missing",
+   "expected_keywords": ["retries once", "confident wrong one"],
+   "difficulty": "hard", "note": "Four sections in the same document are topically close."},
+
+  {"id": "q12", "query": "A single rule is failing on almost every row of the file. Where should I look first?",
+   "expected_doc": "troubleshooting.md", "expected_section": "Every row fails one rule",
+   "expected_keywords": ["rule or the export", "renamed or reordered"],
+   "difficulty": "hard", "note": "Hardest: overlaps violations.md and three rule_types sections."},
+
+  {"id": "q13", "query": "How much does a DataPact enterprise licence cost per seat?",
+   "out_of_scope": true,
+   "difficulty": "out of scope", "note": "Pricing is nowhere in the knowledge base. The system should refuse."},
+
+  {"id": "q14", "query": "What phone number do I call for DataPact support at the weekend?",
+   "out_of_scope": true,
+   "difficulty": "out of scope", "note": "Second refusal case, worded like a plausible handbook question."}
+]

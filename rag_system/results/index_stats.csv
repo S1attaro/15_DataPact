@@ -1,0 +1,10 @@
+embedding_model,chunking_strategy,chunks,dimensions,vectors_mb,build_seconds
+small,fixed,40,384,0.061,0.059
+small,overlap,31,384,0.048,0.074
+small,hybrid,40,384,0.061,0.06
+medium,fixed,40,768,0.123,0.258
+medium,overlap,31,768,0.095,0.376
+medium,hybrid,40,768,0.123,0.264
+large,fixed,40,1024,0.164,0.935
+large,overlap,31,1024,0.127,1.46
+large,hybrid,40,1024,0.164,1.013

@@ -1,0 +1,127 @@
+embedding_model,chunking_strategy,query_id,context_quality_manual,answer_quality_manual,notes
+large,fixed,q01,Good,Good,"Correct: empty strings, missing fields and true nulls."
+large,fixed,q02,Good,Partial,"Right steps (Manage Datasets, name, team, description), but invents button labels and ends with 'I could not find that in the documents', contradicting itself."
+large,fixed,q03,Poor,Poor,"Invents 'unique per dataset, version three'. Fixed chunk ends at 'has one of three statuses.'; the statuses are in the next chunk, which was not retrieved."
+large,fixed,q04,Good,Partial,Just 'No'. Correct but leaves out the new-version step.
+large,fixed,q05,Good,Good,"Correct: owner is accountable, account must be reassigned first."
+large,fixed,q06,Good,Good,Correct and complete.
+large,fixed,q07,Good,Poor,Wrong refusal: the Unique section with the answer was retrieved first.
+large,fixed,q08,Good,Poor,"Does not answer the either/or: 'the data is out of date', with none of the signals."
+large,fixed,q09,Good,Partial,"Picks JSON (correct), but credits JSON with CSV's 'no nested structure'."
+large,fixed,q10,Good,Partial,"Opens with the contradictory 'No, anyone can see our data'; the details after it are right."
+large,fixed,q11,Good,Partial,"Correct but thin: 'failed validation twice', with no retry or fallback."
+large,fixed,q12,Partial,Poor,Wrong refusal. The fixed chunk has only the section's first sentence ('suspect the rule or the export'); the causes are in the next chunk.
+large,fixed,q13,N/A,Good,Out of scope; correctly refused.
+large,fixed,q14,N/A,Good,Out of scope; correctly refused.
+large,hybrid,q01,Good,Good,"Correct, but copies the whole chunk word for word."
+large,hybrid,q02,Good,Partial,"Right steps (Manage Datasets, name, team, description), but invents button labels and ends with 'I could not find that in the documents', contradicting itself."
+large,hybrid,q03,Good,Good,"Correct: draft, active, retired."
+large,hybrid,q04,Good,Partial,Correct 'no' with a short reason; leaves out the new-version step.
+large,hybrid,q05,Good,Good,"Correct: owner is accountable, account must be reassigned first."
+large,hybrid,q06,Good,Good,"Correct, from the troubleshooting wording; the extra advice is relevant."
+large,hybrid,q07,Good,Poor,Wrong refusal: the Unique section with the answer was retrieved first.
+large,hybrid,q08,Poor,Poor,Right section missed. Says 'the data is likely out of date'.
+large,hybrid,q09,Poor,Poor,"JSON section missed; recommends CSV, the wrong format."
+large,hybrid,q10,Good,Good,"Correct and complete, including the unauthorised status for data endpoints."
+large,hybrid,q11,Good,Poor,Does not say why: describes what the page still shows instead.
+large,hybrid,q12,Good,Poor,Wrong refusal: the Every row fails one rule section was retrieved.
+large,hybrid,q13,N/A,Good,Out of scope; correctly refused.
+large,hybrid,q14,N/A,Good,Out of scope; correctly refused.
+large,overlap,q01,Good,Good,"Correct: empty strings, missing fields and true nulls."
+large,overlap,q02,Good,Partial,"Right steps (Manage Datasets, name, team, description), but invents button labels and ends with 'I could not find that in the documents', contradicting itself."
+large,overlap,q03,Good,Good,"Correct: draft, active, retired."
+large,overlap,q04,Poor,Poor,"Right section missed. Tells the user to retire the version and then edit it, which the documents forbid."
+large,overlap,q05,Good,Good,"Correct: owner is accountable, account must be reassigned first."
+large,overlap,q06,Good,Partial,"Correct core, then pastes unrelated text about AI explanations until cut off."
+large,overlap,q07,Good,Partial,"Right method (compare failed rows with the total), but says the failed rows double, where the document says the row count doubles."
+large,overlap,q08,Poor,Poor,Right section missed. Calls it an error run and lists causes without deciding.
+large,overlap,q09,Good,Partial,"Picks JSON, but the reasons are general knowledge, not from the documents."
+large,overlap,q10,Good,Partial,"Correct 'no', but only hints at 'the one public endpoint' without saying what it shows."
+large,overlap,q11,Good,Good,"Correct: validation, one retry against a fallback, then no AI text."
+large,overlap,q12,Good,Poor,Wrong refusal: the Every row fails one rule section was retrieved.
+large,overlap,q13,N/A,Good,Out of scope; correctly refused.
+large,overlap,q14,N/A,Good,Out of scope; correctly refused.
+medium,fixed,q01,Good,Good,"Correct: empty strings, missing fields and true nulls."
+medium,fixed,q02,Good,Partial,"Right steps (Manage Datasets, name, team, description), but invents button labels and ends with 'I could not find that in the documents', contradicting itself."
+medium,fixed,q03,Partial,Poor,"Wrong fact: 'active, history, and draft'. Fixed chunk ends at 'has one of three statuses.'; the statuses are in the next chunk, which was not retrieved. 'Draft' and 'retired' appear only in passing in another chunk."
+medium,fixed,q04,Good,Partial,"Correct 'no', reasoned from the Starting a run chunk; leaves out the new-version step."
+medium,fixed,q05,Good,Good,"Correct: owner is accountable, account must be reassigned first."
+medium,fixed,q06,Good,Good,Correct and complete.
+medium,fixed,q07,Good,Poor,Wrong refusal: the Unique section with the answer was retrieved first.
+medium,fixed,q08,Good,Poor,"Does not answer the either/or: 'the data is out of date', with none of the signals."
+medium,fixed,q09,Good,Partial,"Picks JSON (correct), but credits JSON with CSV's 'no nested structure'."
+medium,fixed,q10,Good,Partial,"Right about sessions, but leaves out the public summary and ends with a contradictory sentence."
+medium,fixed,q11,Good,Partial,"Correct mechanism, then adds the unrelated 'three known limits' text."
+medium,fixed,q12,Good,Poor,Wrong refusal: the Every row fails one rule section was retrieved.
+medium,fixed,q13,N/A,Good,Out of scope; correctly refused.
+medium,fixed,q14,N/A,Good,Out of scope; correctly refused.
+medium,hybrid,q01,Good,Good,"Correct, but copies the whole chunk word for word."
+medium,hybrid,q02,Good,Partial,"Right steps (Manage Datasets, name, team, description), but invents button labels and ends with 'I could not find that in the documents', contradicting itself."
+medium,hybrid,q03,Good,Good,"Correct: draft, active, retired."
+medium,hybrid,q04,Good,Partial,"Just 'No, you cannot change it'. Correct but leaves out the new-version step."
+medium,hybrid,q05,Good,Partial,"Gives the reason but not the refusal or the reassignment, and repeats one sentence."
+medium,hybrid,q06,Good,Poor,Wrong: says a failed run means 'every rule passed'.
+medium,hybrid,q07,Good,Poor,Wrong refusal: the Unique section with the answer was retrieved first.
+medium,hybrid,q08,Good,Poor,Wrong: says the data needs updating; it is the contract.
+medium,hybrid,q09,Good,Partial,"Picks JSON, but the reasons (nested structures, pivoting) are invented."
+medium,hybrid,q10,Good,Partial,"Correct 'no', but vague about the public endpoint and partly about account creation."
+medium,hybrid,q11,Good,Good,"Correct: validation, one retry against a fallback, then no AI text."
+medium,hybrid,q12,Good,Poor,Wrong refusal: the Every row fails one rule section was retrieved.
+medium,hybrid,q13,N/A,Good,Out of scope; correctly refused.
+medium,hybrid,q14,N/A,Good,Out of scope; correctly refused.
+medium,overlap,q01,Good,Good,"Correct: empty strings, missing fields and true nulls."
+medium,overlap,q02,Good,Partial,"Right steps and mentions a unique name, but invents button labels and ends with the refusal line."
+medium,overlap,q03,Good,Good,"Correct: draft, active, retired."
+medium,overlap,q04,Poor,Partial,"Right section missed. Correct 'no', then pastes the unrelated 'What a contract is' text until cut off."
+medium,overlap,q05,Good,Good,"Correct: owner is accountable, account must be reassigned first."
+medium,overlap,q06,Good,Partial,"Correct core, then pastes unrelated text about AI explanations until cut off."
+medium,overlap,q07,Good,Partial,"Right method (compare failed rows with the total), but says the failed rows double, where the document says the row count doubles."
+medium,overlap,q08,Good,Poor,"Contradicts itself and claims the context calls it a data problem, which it does not."
+medium,overlap,q09,Good,Poor,Recommends CSV even though the same chunk says JSON suits programs. Auto score said Good.
+medium,overlap,q10,Good,Partial,"Correct 'no', but only hints at 'the one public endpoint' without saying what it shows."
+medium,overlap,q11,Good,Good,"Correct: validation, one retry against a fallback, then no AI text."
+medium,overlap,q12,Good,Poor,Wrong refusal: the Every row fails one rule section was retrieved.
+medium,overlap,q13,N/A,Good,Out of scope; correctly refused.
+medium,overlap,q14,N/A,Good,Out of scope; correctly refused.
+small,fixed,q01,Good,Good,"Correct: empty strings, missing fields and true nulls."
+small,fixed,q02,Good,Partial,"Right steps (Manage Datasets, name, team, description), but invents button labels and ends with 'I could not find that in the documents', contradicting itself."
+small,fixed,q03,Poor,Poor,"Says 'three statuses: one of three statuses'. Fixed chunk ends at 'has one of three statuses.'; the statuses are in the next chunk, which was not retrieved."
+small,fixed,q04,Good,Partial,"Correct 'no', but leaves out that changes are saved as a new version; padded with a definition of a contract."
+small,fixed,q05,Good,Partial,"Correct, but adds an off-topic sentence about submitting files."
+small,fixed,q06,Good,Good,Correct on both outcomes.
+small,fixed,q07,Good,Poor,Wrong refusal: the Unique section with the answer was retrieved first.
+small,fixed,q08,Good,Poor,"Does not answer the either/or: 'the data is out of date', with none of the signals."
+small,fixed,q09,Good,Partial,"Picks JSON (correct), but credits JSON with CSV's 'no nested structure'."
+small,fixed,q10,Good,Good,"Correct: sessions required; only the run-outcome summary is public, with no sensitive data."
+small,fixed,q11,Good,Partial,"Correct but thin: 'failed validation twice', with no retry or fallback."
+small,fixed,q12,Partial,Poor,Wrong refusal. The fixed chunk has only the section's first sentence ('suspect the rule or the export'); the causes are in the next chunk.
+small,fixed,q13,N/A,Good,Out of scope; correctly refused.
+small,fixed,q14,N/A,Good,Out of scope; correctly refused.
+small,hybrid,q01,Good,Good,"Correct, but copies the whole chunk word for word."
+small,hybrid,q02,Good,Partial,"Right steps (Manage Datasets, name, team, description), but invents button labels and ends with 'I could not find that in the documents', contradicting itself."
+small,hybrid,q03,Good,Good,"Correct: draft, active, retired."
+small,hybrid,q04,Good,Good,"Correct and complete: no, the change is saved as a new version and the old one retired."
+small,hybrid,q05,Good,Good,"Correct: owner is accountable, account must be reassigned first."
+small,hybrid,q06,Good,Poor,Wrong: says a failed run means 'every rule passed'.
+small,hybrid,q07,Good,Poor,Wrong refusal: the Unique section with the answer was retrieved first.
+small,hybrid,q08,Good,Partial,"Right conclusion (rule out of date), but reasons from the troubleshooting example instead of the three signals."
+small,hybrid,q09,Good,Partial,"Picks JSON, but the reasons (nested structures, pivoting) are invented."
+small,hybrid,q10,Good,Poor,"Says 'no', then talks about account creation and password strength."
+small,hybrid,q11,Good,Good,"Correct: validation, one retry against a fallback, then no AI text."
+small,hybrid,q12,Good,Poor,Wrong refusal: the Every row fails one rule section was retrieved.
+small,hybrid,q13,N/A,Good,Out of scope; correctly refused.
+small,hybrid,q14,N/A,Good,Out of scope; correctly refused.
+small,overlap,q01,Good,Good,"Correct: empty strings, missing fields and true nulls."
+small,overlap,q02,Good,Partial,"Right steps (Manage Datasets, name, team, description), but invents button labels and ends with 'I could not find that in the documents', contradicting itself."
+small,overlap,q03,Good,Good,"Correct: draft, active, retired."
+small,overlap,q04,Poor,Poor,"Right section missed. Says 'no', then invents a mechanism (a version 'becomes active' when used) and a wrong procedure."
+small,overlap,q05,Good,Partial,"Gives the accountability reason but not the reassignment rule, then drifts into run errors and uploads."
+small,overlap,q06,Good,Partial,"Correct core, then pastes unrelated text about AI explanations until cut off."
+small,overlap,q07,Good,Partial,"Right method (compare failed rows with the total), but says the failed rows double, where the document says the row count doubles."
+small,overlap,q08,Poor,Poor,"Right section missed. Says 'the data is probably wrong', then argues the opposite."
+small,overlap,q09,Good,Poor,Recommends CSV even though the same chunk says JSON suits programs. Auto score said Good.
+small,overlap,q10,Good,Partial,"Correct 'no', but only hints at 'the one public endpoint' without saying what it shows."
+small,overlap,q11,Good,Good,"Correct: validation, one retry against a fallback, then no AI text."
+small,overlap,q12,Good,Poor,Wrong refusal: the Every row fails one rule section was retrieved.
+small,overlap,q13,N/A,Good,Out of scope; correctly refused.
+small,overlap,q14,N/A,Good,Out of scope; correctly refused.
