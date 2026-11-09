@@ -392,7 +392,8 @@ class ViolationExplainViewTests(TestCase):
 class DeploymentRequirementsTests(TestCase):
     """requirements.txt carries the assignment's AI libraries; the deploy file must not."""
 
-    AI_PACKAGES = {"torch", "transformers", "accelerate"}
+    # A9: sentence-transformers (handbook Q&A retrieval) needs torch, so it stays local-only too.
+    AI_PACKAGES = {"torch", "transformers", "accelerate", "sentence-transformers"}
 
     def pins(self, name):
         lines = (Path(settings.BASE_DIR) / name).read_text(encoding="utf-8").splitlines()
@@ -403,7 +404,7 @@ class DeploymentRequirementsTests(TestCase):
 
     def test_requirements_txt_keeps_the_ai_libraries_the_assignment_asks_for(self):
         names = {self.package(p) for p in self.pins("requirements.txt")}
-        self.assertTrue({"torch", "transformers", "python-dotenv"} <= names, names)
+        self.assertTrue({"torch", "transformers", "sentence-transformers", "python-dotenv"} <= names, names)
 
     def test_the_deploy_file_is_everything_else_with_the_same_pins(self):
         main = {p for p in self.pins("requirements.txt") if self.package(p) not in self.AI_PACKAGES}

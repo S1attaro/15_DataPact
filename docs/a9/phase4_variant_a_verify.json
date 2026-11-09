@@ -1,0 +1,281 @@
+{
+  "active_system_prompt": "You answer questions about DataPact, a data quality tool. Use only the context below. If the context does not contain the answer, say: I could not find that in the documents. Rules: Use only the numbered context passages. Put the number of the passage that supports each sentence right after that sentence, like [1]. Do not add assumptions, general knowledge or details that are not in the passages. If the passages do not establish the answer, say only: I could not find that in the documents. Never invent passage numbers or document names.",
+  "settings": {
+    "RAG_EMBEDDING_MODEL_ID": "sentence-transformers/all-MiniLM-L6-v2",
+    "RAG_KB_DIR": "rag_system/sample_kb",
+    "RAG_CHUNKING": "hybrid",
+    "RAG_EMBEDDING_DEVICE": "cpu",
+    "RAG_TOP_K": "3",
+    "RAG_MIN_SCORE": "0.3",
+    "AI_LOCAL_MODEL_ID": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+    "AI_LOCAL_DEVICE": "auto",
+    "AI_MAX_NEW_TOKENS": "160"
+  },
+  "generator_device": "cuda",
+  "load_s": 17.77,
+  "runs": [
+    {
+      "id": "q1",
+      "question": "What should I do when a column has blank values?",
+      "same_retrieval_as_phase3": true,
+      "raw_reply": "[1] A NOT_NULL rule says a column must have a value in every row. It takes no parameters. A blank cell counts as a failure. This rule fits columns such as a student ID, where a missing value makes the whole row useless to the team that receives the file. When a NOT_NULL rule fails, DataPact records how many rows were blank. The usual causes are a broken export or a new optional field in the source system. The owner of the dataset should ask the source team whether the blanks are expected before changing the contract.",
+      "same_raw_reply_as_phase3": true,
+      "same_status_as_phase3": true,
+      "phase3_generate_s": 4.25,
+      "hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.5352
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Allowed values",
+          "score": 0.2812
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Range",
+          "score": 0.2809
+        }
+      ],
+      "status": "answered",
+      "shown_text": "[1] A NOT_NULL rule says a column must have a value in every row. It takes no parameters. A blank cell counts as a failure. This rule fits columns such as a student ID, where a missing value makes the whole row useless to the team that receives the file. When a NOT_NULL rule fails, DataPact records how many rows were blank. The usual causes are a broken export or a new optional field in the source system. The owner of the dataset should ask the source team whether the blanks are expected before changing the contract.",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 8.3,
+      "generate_s": 4.29,
+      "gpu_peak_mb": 3345
+    },
+    {
+      "id": "q2",
+      "question": "Why would a key column have duplicate values?",
+      "same_retrieval_as_phase3": true,
+      "raw_reply": "[1] A UNIQUE rule says no value may appear twice in a column. It takes no parameters. It is the rule to use for keys such as an order number. A failed UNIQUE rule usually means the file was exported twice or two batches were joined together. Duplicates can also come from a legitimate change. If a student can now hold two enrollments in one term, the key is no longer the student ID alone. In that case the contract should change, and the change should be saved as a new contract version.",
+      "same_raw_reply_as_phase3": true,
+      "same_status_as_phase3": true,
+      "phase3_generate_s": 4.05,
+      "hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Unique",
+          "score": 0.4875
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.2723
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Allowed values",
+          "score": 0.2183
+        }
+      ],
+      "status": "answered",
+      "shown_text": "[1] A UNIQUE rule says no value may appear twice in a column. It takes no parameters. It is the rule to use for keys such as an order number. A failed UNIQUE rule usually means the file was exported twice or two batches were joined together. Duplicates can also come from a legitimate change. If a student can now hold two enrollments in one term, the key is no longer the student ID alone. In that case the contract should change, and the change should be saved as a new contract version.",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 6.8,
+      "generate_s": 3.27,
+      "gpu_peak_mb": 3343
+    },
+    {
+      "id": "q3",
+      "question": "Can I edit a contract that was already used?",
+      "same_retrieval_as_phase3": true,
+      "raw_reply": "I could not find that in the documents.",
+      "same_raw_reply_as_phase3": true,
+      "same_status_as_phase3": true,
+      "phase3_generate_s": 0.46,
+      "hits": [
+        {
+          "rank": 1,
+          "doc": "validation_process.md",
+          "section": "Contracts and versions",
+          "score": 0.4995
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Unique",
+          "score": 0.2846
+        },
+        {
+          "rank": 3,
+          "doc": "validation_process.md",
+          "section": "Reviewing violations",
+          "score": 0.1417
+        }
+      ],
+      "status": "not_found",
+      "shown_text": "",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 6.2,
+      "generate_s": 0.31,
+      "gpu_peak_mb": 3328
+    },
+    {
+      "id": "q4",
+      "question": "When does a validation run count as failed?",
+      "same_retrieval_as_phase3": true,
+      "raw_reply": "A validation run counts as failed when at least one rule fails, and each failed rule produces one aggregated violation rather than one record per bad row.",
+      "same_raw_reply_as_phase3": true,
+      "same_status_as_phase3": true,
+      "phase3_generate_s": 1.21,
+      "hits": [
+        {
+          "rank": 1,
+          "doc": "validation_process.md",
+          "section": "Validation runs",
+          "score": 0.7149
+        },
+        {
+          "rank": 2,
+          "doc": "validation_process.md",
+          "section": "Reviewing violations",
+          "score": 0.5703
+        },
+        {
+          "rank": 3,
+          "doc": "validation_process.md",
+          "section": "Contracts and versions",
+          "score": 0.4098
+        }
+      ],
+      "status": "invalid",
+      "shown_text": "",
+      "passages_sent": [
+        1,
+        2,
+        3
+      ],
+      "search_ms": 6.2,
+      "generate_s": 0.89,
+      "gpu_peak_mb": 3364
+    },
+    {
+      "id": "q5",
+      "question": "What is the refund policy for paid DataPact plans?",
+      "same_retrieval_as_phase3": true,
+      "raw_reply": "I could not find that in the documents.",
+      "same_raw_reply_as_phase3": true,
+      "same_status_as_phase3": true,
+      "phase3_generate_s": 0.57,
+      "hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.364
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Range",
+          "score": 0.341
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Unique",
+          "score": 0.3298
+        }
+      ],
+      "status": "not_found",
+      "shown_text": "",
+      "passages_sent": [
+        1,
+        2,
+        3
+      ],
+      "search_ms": 7.1,
+      "generate_s": 0.43,
+      "gpu_peak_mb": 3386
+    },
+    {
+      "id": "t6",
+      "question": "What parameters does a RANGE rule take?",
+      "same_retrieval_as_phase3": true,
+      "raw_reply": "[1] A RANGE rule takes two parameters: a minimum and a maximum.",
+      "same_raw_reply_as_phase3": true,
+      "same_status_as_phase3": true,
+      "phase3_generate_s": 0.81,
+      "hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Range",
+          "score": 0.5776
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Allowed values",
+          "score": 0.3856
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.2142
+        }
+      ],
+      "status": "answered",
+      "shown_text": "[1] A RANGE rule takes two parameters: a minimum and a maximum.",
+      "passages_sent": [
+        1,
+        2
+      ],
+      "search_ms": 6.2,
+      "generate_s": 0.6,
+      "gpu_peak_mb": 3349
+    },
+    {
+      "id": "t7",
+      "question": "How do I reset my DataPact password?",
+      "same_retrieval_as_phase3": true,
+      "raw_reply": null,
+      "same_raw_reply_as_phase3": true,
+      "same_status_as_phase3": true,
+      "phase3_generate_s": 0.0,
+      "hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.2807
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Unique",
+          "score": 0.2584
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Range",
+          "score": 0.196
+        }
+      ],
+      "status": "no_passages",
+      "shown_text": "",
+      "passages_sent": [],
+      "search_ms": 6.5,
+      "generate_s": 0.0,
+      "gpu_peak_mb": 3272
+    }
+  ],
+  "total_s": 27.67
+}

@@ -1,0 +1,267 @@
+{
+  "settings": {
+    "RAG_EMBEDDING_MODEL_ID": "sentence-transformers/all-MiniLM-L6-v2",
+    "RAG_KB_DIR": "rag_system/sample_kb",
+    "RAG_CHUNKING": "hybrid",
+    "RAG_EMBEDDING_DEVICE": "cpu",
+    "RAG_TOP_K": "3",
+    "RAG_MIN_SCORE": "0.3",
+    "AI_LOCAL_MODEL_ID": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+    "AI_LOCAL_DEVICE": "auto",
+    "AI_MAX_NEW_TOKENS": "160"
+  },
+  "env": {
+    "torch": "2.14.1+cu132",
+    "cuda": true,
+    "gpu": "NVIDIA GeForce RTX 3050 Ti Laptop GPU",
+    "hf_offline": "1"
+  },
+  "status": null,
+  "results": [
+    {
+      "id": "q1",
+      "question": "What should I do when a column has blank values?",
+      "expected": "rule_types.md / Not null",
+      "all_hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.5352
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Allowed values",
+          "score": 0.2812
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Range",
+          "score": 0.2809
+        }
+      ],
+      "status": "answered",
+      "shown_text": "[1] When a column has blank values, you should check if the blanks are expected or if they are due to a broken export or a new optional field in the source system. If the blanks are expected, you should ask the source team whether the blanks are expected before changing the contract. If the blanks are not expected, you should change the contract to NOT_NULL rule to ensure that the column must have a value in every row.",
+      "raw_reply": "[1] When a column has blank values, you should check if the blanks are expected or if they are due to a broken export or a new optional field in the source system. If the blanks are expected, you should ask the source team whether the blanks are expected before changing the contract. If the blanks are not expected, you should change the contract to NOT_NULL rule to ensure that the column must have a value in every row.",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 13.4,
+      "generate_s": 4.2,
+      "gpu_peak_mb": 3335
+    },
+    {
+      "id": "q2",
+      "question": "Why would a key column have duplicate values?",
+      "expected": "rule_types.md / Unique",
+      "all_hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Unique",
+          "score": 0.4875
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.2723
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Allowed values",
+          "score": 0.2183
+        }
+      ],
+      "status": "invalid",
+      "shown_text": "",
+      "raw_reply": "A key column would have duplicate values if it is used for a UNIQUE rule and a legitimate change occurs, such as a student being able to hold two enrollments in one term. In this case, the change should be saved as a new contract version.",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 6.9,
+      "generate_s": 1.6,
+      "gpu_peak_mb": 3325
+    },
+    {
+      "id": "q3",
+      "question": "Can I edit a contract that was already used?",
+      "expected": "validation_process.md / Contracts and versions",
+      "all_hits": [
+        {
+          "rank": 1,
+          "doc": "validation_process.md",
+          "section": "Contracts and versions",
+          "score": 0.4995
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Unique",
+          "score": 0.2846
+        },
+        {
+          "rank": 3,
+          "doc": "validation_process.md",
+          "section": "Reviewing violations",
+          "score": 0.1417
+        }
+      ],
+      "status": "not_found",
+      "shown_text": "",
+      "raw_reply": "I could not find that in the documents.",
+      "passages_sent": [
+        1
+      ],
+      "search_ms": 6.7,
+      "generate_s": 0.36,
+      "gpu_peak_mb": 3312
+    },
+    {
+      "id": "q4",
+      "question": "When does a validation run count as failed?",
+      "expected": "validation_process.md / Validation runs",
+      "all_hits": [
+        {
+          "rank": 1,
+          "doc": "validation_process.md",
+          "section": "Validation runs",
+          "score": 0.7149
+        },
+        {
+          "rank": 2,
+          "doc": "validation_process.md",
+          "section": "Reviewing violations",
+          "score": 0.5703
+        },
+        {
+          "rank": 3,
+          "doc": "validation_process.md",
+          "section": "Contracts and versions",
+          "score": 0.4098
+        }
+      ],
+      "status": "invalid",
+      "shown_text": "",
+      "raw_reply": "A validation run counts as failed when at least one rule fails, and each failed rule produces one aggregated violation rather than one record per bad row.",
+      "passages_sent": [
+        1,
+        2,
+        3
+      ],
+      "search_ms": 8.2,
+      "generate_s": 0.97,
+      "gpu_peak_mb": 3354
+    },
+    {
+      "id": "q5",
+      "question": "What is the refund policy for paid DataPact plans?",
+      "expected": "out of scope",
+      "all_hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.364
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Range",
+          "score": 0.341
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Unique",
+          "score": 0.3298
+        }
+      ],
+      "status": "not_found",
+      "shown_text": "",
+      "raw_reply": "I could not find that in the documents.",
+      "passages_sent": [
+        1,
+        2,
+        3
+      ],
+      "search_ms": 10.4,
+      "generate_s": 0.42,
+      "gpu_peak_mb": 3369
+    },
+    {
+      "id": "t6",
+      "question": "What parameters does a RANGE rule take?",
+      "expected": "rule_types.md / Range (section test)",
+      "all_hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Range",
+          "score": 0.5776
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Allowed values",
+          "score": 0.3856
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.2142
+        }
+      ],
+      "status": "invalid",
+      "shown_text": "",
+      "raw_reply": "A RANGE rule takes two parameters: a minimum and a maximum.",
+      "passages_sent": [
+        1,
+        2
+      ],
+      "search_ms": 8.1,
+      "generate_s": 0.53,
+      "gpu_peak_mb": 3332
+    },
+    {
+      "id": "t7",
+      "question": "How do I reset my DataPact password?",
+      "expected": "out of scope (near domain)",
+      "all_hits": [
+        {
+          "rank": 1,
+          "doc": "rule_types.md",
+          "section": "Not null",
+          "score": 0.2807
+        },
+        {
+          "rank": 2,
+          "doc": "rule_types.md",
+          "section": "Unique",
+          "score": 0.2584
+        },
+        {
+          "rank": 3,
+          "doc": "rule_types.md",
+          "section": "Range",
+          "score": 0.196
+        }
+      ],
+      "status": "no_passages",
+      "shown_text": "",
+      "raw_reply": null,
+      "passages_sent": [],
+      "search_ms": 9.6,
+      "generate_s": 0.0,
+      "gpu_peak_mb": 3272
+    }
+  ],
+  "embedder_load_and_index_s": 9.68,
+  "chunks": 7,
+  "embedder_device": "cpu",
+  "generator_load_s": 6.98
+}

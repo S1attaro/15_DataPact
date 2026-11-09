@@ -1,0 +1,87 @@
+{% extends "data_quality/base.html" %}
+{% comment %}
+=============================================================================
+Ask the DataPact handbook - A9, Tejas Jaggi
+Context (supplied by handbook_views.handbook_ask):
+    form       HandbookQuestionForm (the question is kept after a POST)
+    models     {"generator": local model name, "embedder": embedding model id}
+    status     None when this server can answer; otherwise "off",
+               "not_configured" or "missing_kb" (retrieval.handbook_status)
+    attempted  True after a valid POST
+    failure    why a valid POST could not be answered: a status above,
+               "empty_kb", "retrieval_error" or "error" (the page is then a 503)
+    answer     handbook.HandbookAnswer: status "answered", "not_found",
+               "no_passages" or "invalid" (no valid [n] citation, one to a
+               passage or document it was not given, or a number none of
+               the passages contains), the checked text, and
+               the passages the model was given
+Sources listed here are the passages the model was actually shown, never
+names the model wrote. Everything the model or the knowledge base wrote is
+escaped by Django's autoescaping (linebreaksbr escapes too); nothing here
+uses |safe.
+=============================================================================
+{% endcomment %}
+{% block title %}Ask the handbook - DataPact{% endblock %}
+{% block breadcrumbs %}
+    <p class="breadcrumbs"><a href="{% url 'data_quality:home' %}">Home</a> / Ask the handbook</p>
+{% endblock %}
+{% block page_title %}Ask the DataPact handbook{% endblock %}
+{% block page_subtitle %}
+    <p class="page__subtitle">Ask how DataPact works. The model uses the retrieved handbook passages shown below as context. Check them before acting on the answer.</p>
+{% endblock %}
+{% block content %}
+    <div class="panel">
+        <div class="panel__head"><h2 class="panel__title">Your question</h2></div>
+        <div class="panel__body">
+            {% if status %}
+                <p class="message message--warning">{% include "data_quality/includes/_handbook_unavailable.html" with kind=status only %}</p>
+            {% else %}
+                <form id="handbook-form" method="post" action="{% url 'data_quality:handbook-ask' %}#handbook-answer">
+                    {% csrf_token %}
+                    <label for="{{ form.question.id_for_label }}">{{ form.question.label }}</label>
+                    {{ form.question }}
+                    {{ form.question.errors }}
+                    <p class="card__note">Up to {{ max_chars }} characters. Questions are not saved.</p>
+                    <div class="engines">
+                        <div class="engine">
+                            <button type="submit" class="btn btn--primary">Ask the handbook</button>
+                            <span class="engine__note">Searched with {{ models.embedder }}, answered by {{ models.generator }}, a local model on this server. The first answer after the server starts can take a minute or more while the models load.</span>
+                        </div>
+                    </div>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if attempted %}
+        <section class="panel" id="handbook-answer" tabindex="-1" aria-labelledby="handbook-answer-title">
+            <div class="panel__head"><h2 class="panel__title" id="handbook-answer-title">Answer</h2></div>
+            <div class="panel__body">
+                {% if failure %}
+                    <p class="message message--warning">{% include "data_quality/includes/_handbook_unavailable.html" with kind=failure only %}</p>
+                {% elif answer.status == "answered" %}
+                    <p id="handbook-answer-text">{{ answer.text|linebreaksbr }}</p>
+                    <p class="card__note">Written by {{ models.generator }} from the passages below, in {{ answer.generate_s|floatformat:1 }} s (search {{ answer.search_ms|floatformat:0 }} ms). Check the passages before acting on it.</p>
+                {% elif answer.status == "not_found" %}
+                    <p class="message">The passages below were the closest matches, but the model found no answer in them.</p>
+                {% elif answer.status == "no_passages" %}
+                    <p class="message">Nothing in the handbook is close enough to this question, so no answer was written. Try asking about rules, contracts, validation runs or violations.</p>
+                {% else %}
+                    <p class="message">The model's reply could not be checked against the passages it was given, so it is not shown. Try rewording the question.</p>
+                {% endif %}
+
+                {% if answer.passages %}
+                    <h3>Handbook passages used</h3>
+                    <ol class="handbook-sources">
+                        {% for p in answer.passages %}
+                            <li>
+                                <p><strong>[{{ p.rank }}] {{ p.title }}, {{ p.section }}</strong> <span class="card__note">({{ p.doc }}, similarity {{ p.score|floatformat:2 }})</span></p>
+                                <blockquote>{{ p.text }}</blockquote>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                {% endif %}
+            </div>
+        </section>
+    {% endif %}
+{% endblock %}
