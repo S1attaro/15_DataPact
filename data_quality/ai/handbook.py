@@ -14,14 +14,18 @@ test still holds) does not ask for citations, so A9 adds its own rules,
 CITATION_INSTRUCTION, after it here, through build_messages' system_prompt
 argument; the passages and question are sent exactly as A8 sends them.
 check_reply() then only shows a reply that cites at least one passage it was
-given, as [1] or [1, 2], and cites no other number and names no other .md
-file.
+given, as [1] or [1, 2], cites no other number, names no other .md file, and
+states no number (a price, a count, a limit) that none of those passages
+contains. The number rule came from the A9 real-KB run (9 Nov 2026), where the
+model answered an out-of-scope price question with an invented "$100 per seat"
+and a valid citation.
 
 Limitation: this checks that each citation points at a passage the model was
 actually shown. It does not check that the passage says what the sentence
 claims (that would need entailment checking, which A9 does not do), and a
-reply can cite [1] once and still add an unsupported sentence. That is why the
-page lists the passages under every answer and asks the reader to check them.
+reply can cite [1] once and still add an unsupported sentence. The number rule
+catches only invented numbers, not invented words. That is why the page lists
+the passages under every answer and asks the reader to check them.
 
 provider and generator can be passed in (the tests do); the page uses the
 shared ones.
@@ -54,6 +58,7 @@ CITATION_INSTRUCTION = (
 SYSTEM_PROMPT = handbook_a8.SYSTEM_PROMPT + " " + CITATION_INSTRUCTION
 _CITATION = re.compile(r"\[\s*(\d+(?:\s*,\s*\d+)*)\s*\]")  # [1] or [1, 2]
 _DOC_NAME = re.compile(r"\b[\w-]+\.md\b", re.IGNORECASE)
+_NUMBER = re.compile(r"\d+(?:[.,]\d+)*")  # 24, 1000, 3.5, 5,000 (citations are removed first)
 _CONTROL = re.compile(r"[\x00-\x09\x0b-\x1f\x7f]")  # every ASCII control character except \n
 
 
@@ -79,7 +84,18 @@ def check_reply(reply, passages):
     docs = {p.doc.lower() for p in passages}
     if any(name.lower() not in docs for name in _DOC_NAME.findall(text)):
         return "invalid", ""
+    if _unsupported_number(text, passages):
+        return "invalid", ""  # e.g. a price or count that no passage states (A9 real-KB run, q13)
     return "answered", text
+
+
+def _unsupported_number(text, passages):
+    """True if the reply, outside its [n] citations, states a number no passage contains."""
+    source = " ".join(p.text for p in passages)
+    for number in _NUMBER.findall(_CITATION.sub(" ", text)):
+        if not re.search(rf"(?<![\d.,]){re.escape(number)}(?!\d|[.,]\d)", source):
+            return True
+    return False
 
 
 def answer_question(question, provider=None, generator=None):

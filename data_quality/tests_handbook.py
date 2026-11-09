@@ -441,6 +441,25 @@ class AnswerTests(SimpleTestCase):
     def test_an_invented_number_inside_a_citation_list_is_invalid(self):
         self.assertEqual(self.ask(generator=FakeGenerator("Check both rules [1, 4].")).status, "invalid")
 
+    # A9 real-KB run (9 Nov 2026), q13: the model answered an out-of-scope price question with
+    # "[1] A DataPact enterprise licence costs $100 per seat." The citation was valid, so it was
+    # shown. A number the passages never state is now treated like an invented citation.
+    def test_a_number_that_no_passage_states_is_invalid(self):
+        answer = self.ask(generator=FakeGenerator("[1] A DataPact enterprise licence costs $100 per seat."))
+        self.assertEqual((answer.status, answer.text), ("invalid", ""))
+
+    def test_a_number_copied_from_a_passage_is_kept(self):
+        provider = FakeProvider([passage(1, text="A credit hours column might use a range of 0 to 24.")])
+        answer = self.ask(provider=provider, generator=FakeGenerator("Use a range of 0 to 24 [1]."))
+        self.assertEqual(answer.status, "answered")
+
+    def test_a_number_matches_only_as_a_whole_number(self):
+        provider = FakeProvider([passage(1, text="The file had 1000 rows and 3.5 percent failed.")])
+        for reply, status in (("It had 100 rows [1].", "invalid"), ("It had 1000 rows [1].", "answered"),
+                              ("About 3 percent failed [1].", "invalid"), ("3.5 percent failed [1].", "answered")):
+            with self.subTest(reply):
+                self.assertEqual(self.ask(provider=provider, generator=FakeGenerator(reply)).status, status)
+
     def test_weak_passages_are_dropped_before_the_model_sees_them(self):
         provider = FakeProvider([passage(1, 0.9), passage(2, 0.1)])
         answer = self.ask(provider=provider)
@@ -683,12 +702,13 @@ class AskTests(HandbookPageTestCase):
         self.assertNotContains(response, "whether the blanks are expected.")
 
     def test_model_text_and_passages_are_escaped(self):
-        self.generator.reply = "<script>alert(1)</script> Ask the owner [1]."
+        # No digits in the reply's script: a number the passages do not contain would hide the reply.
+        self.generator.reply = "<script>alert(document.cookie)</script> Ask the owner [1]."
         self.provider.passages = [passage(1, text="<img src=x onerror=alert(2)> blank values")]
         html = self.ask().content.decode()
-        self.assertNotIn("<script>alert(1)", html)
+        self.assertNotIn("<script>alert(document.cookie)", html)
         self.assertNotIn("<img src=x", html)
-        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", html)
+        self.assertIn("&lt;script&gt;alert(document.cookie)&lt;/script&gt;", html)
         self.assertIn("&lt;img src=x onerror=alert(2)&gt;", html)
 
 
