@@ -285,6 +285,17 @@ GROQ_API_KEY = os.getenv('GROQ_API_KEY', '').strip()
 GROQ_MODEL = os.getenv('GROQ_MODEL', '').strip() or 'openai/gpt-oss-20b'
 GROQ_TIMEOUT_SECONDS = 20
 
+# A10: analytics dashboard (data_quality/analytics/). Prices used to work out
+# cost_usd when a request is logged. Groq's published price for gpt-oss-20b is
+# $0.075 per million input tokens and $0.30 per million output tokens. A local
+# request has no bill, so its cost is the electricity it used: GPU watts x time
+# x price per kWh. 355 W is an RX 7900 XTX under load; 0.15 $/kWh is an
+# assumed Illinois home rate. All four can be changed in .env.
+ANALYTICS_GROQ_INPUT_PER_M = float(os.getenv('ANALYTICS_GROQ_INPUT_PER_M', '').strip() or 0.075)
+ANALYTICS_GROQ_OUTPUT_PER_M = float(os.getenv('ANALYTICS_GROQ_OUTPUT_PER_M', '').strip() or 0.30)
+ANALYTICS_GPU_WATTS = float(os.getenv('ANALYTICS_GPU_WATTS', '').strip() or 355)
+ANALYTICS_KWH_PRICE = float(os.getenv('ANALYTICS_KWH_PRICE', '').strip() or 0.15)
+
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '').strip()
 GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '').strip()
 GOOGLE_OAUTH_CONFIGURED = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)

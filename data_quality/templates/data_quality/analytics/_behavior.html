@@ -1,0 +1,25 @@
+{% comment %}
+User behavior section. OWNER: Ashok. data = analytics.behavior.behavior_context(qs).
+Starter version: summary numbers only. Add charts to data.charts in
+behavior.py and they render below automatically.
+{% endcomment %}
+<div class="panel">
+    <div class="panel__body">
+        <dl class="factlist factlist--stats">
+            <div><dt>AI requests</dt><dd>{{ data.requests }}</dd></div>
+            <div><dt>Distinct users</dt><dd>{{ data.users }}</dd></div>
+            {% for row in data.by_feature %}
+                <div><dt>{{ row.feature|capfirst }} requests</dt><dd>{{ row.n }}</dd></div>
+            {% endfor %}
+        </dl>
+    </div>
+</div>
+{% if data.charts %}
+    <div class="analytics__grid" style="margin-top: 1.25rem;">
+        {% for chart in data.charts %}
+            {% with spec_id="spec-"|add:chart.id %}
+                {% include "data_quality/analytics/_chart.html" with chart=chart spec_id=spec_id only %}
+            {% endwith %}
+        {% endfor %}
+    </div>
+{% endif %}

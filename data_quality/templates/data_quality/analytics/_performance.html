@@ -1,0 +1,23 @@
+{% comment %}
+Performance section. OWNER: Ashok. data = analytics.performance.performance_context(qs).
+Starter version: summary numbers only. Add charts to data.charts in
+performance.py and they render below automatically.
+{% endcomment %}
+<div class="panel">
+    <div class="panel__body">
+        <dl class="factlist factlist--stats">
+            <div><dt>Mean latency</dt><dd>{{ data.mean_ms|floatformat:0 }} ms</dd></div>
+            <div><dt>Median latency</dt><dd>{{ data.median_ms|floatformat:0 }} ms</dd></div>
+            <div><dt>95th percentile</dt><dd>{{ data.p95_ms|floatformat:0 }} ms</dd></div>
+        </dl>
+    </div>
+</div>
+{% if data.charts %}
+    <div class="analytics__grid" style="margin-top: 1.25rem;">
+        {% for chart in data.charts %}
+            {% with spec_id="spec-"|add:chart.id %}
+                {% include "data_quality/analytics/_chart.html" with chart=chart spec_id=spec_id only %}
+            {% endwith %}
+        {% endfor %}
+    </div>
+{% endif %}

@@ -1,0 +1,116 @@
+{% extends "data_quality/base.html" %}
+{% comment %}
+A10 - AI analytics dashboard (Connor Slattery; performance and behavior
+sections by Ashok Chacko).
+
+Context (analytics_views.analytics_dashboard):
+    filters, day_choices, engine_choices, source_choices  the filter bar
+    row_count, all_count                                  rows shown / stored
+    performance, behavior, cost                           one dict per section
+
+Each section is its own partial so its owner can change it without touching
+this file. Charts are Vega-Lite specs with inline data, drawn by vegaEmbed
+from the same CDN the A4 charts page uses.
+{% endcomment %}
+
+{% block title %}AI Analytics - DataPact{% endblock %}
+
+{% block extra_head %}
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+    <style>
+        .analytics__filters { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: flex-end; }
+        .analytics__filters label { display: block; font-size: 0.85rem; margin-bottom: 0.25rem; }
+        .analytics__section { margin-top: 1.5rem; }
+        .analytics__section > h2 { font-size: 1.25rem; margin: 0 0 0.75rem; }
+        .analytics__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.25rem; }
+        .analytics__grid .panel { margin: 0; }
+        .vega-chart { width: 100%; min-height: 240px; }
+        .chart__caption { color: var(--ink-soft); font-size: 0.88rem; margin: 0.6rem 0 0; }
+        .chart__fallback { color: var(--fail-ink); margin: 0; }
+    </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+    <p class="breadcrumbs"><a href="{% url 'data_quality:home' %}">Home</a> / AI Analytics</p>
+{% endblock %}
+
+{% block page_title %}AI Analytics{% endblock %}
+
+{% block page_subtitle %}
+    <p class="page__subtitle">
+        How DataPact's two AI features perform, how people use them, and what they cost.
+        Showing {{ row_count }} of {{ all_count }} logged requests.
+    </p>
+{% endblock %}
+
+{% block content %}
+    <div class="panel">
+        <div class="panel__body">
+            <form method="get" class="analytics__filters" aria-label="Filter the dashboard">
+                <div>
+                    <label for="f-days">Time range</label>
+                    <select id="f-days" name="days">
+                        {% for value, label in day_choices %}
+                            <option value="{{ value }}"{% if filters.days == value %} selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="f-engine">Engine</label>
+                    <select id="f-engine" name="engine">
+                        <option value="">All engines</option>
+                        {% for value, label in engine_choices %}
+                            <option value="{{ value }}"{% if filters.engine == value %} selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="f-source">Data source</label>
+                    <select id="f-source" name="source">
+                        <option value="">All sources</option>
+                        {% for value, label in source_choices %}
+                            <option value="{{ value }}"{% if filters.source == value %} selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div><button type="submit" class="btn btn--primary btn--sm">Apply</button></div>
+            </form>
+            <p class="chart__caption">
+                The time range counts back from the newest logged request. "Live site" rows come from
+                real use of the explain and handbook pages; "Benchmark run" rows come from our
+                collect_ai_logs runs.
+            </p>
+        </div>
+    </div>
+
+    {% if not row_count %}
+        {% include "data_quality/includes/_empty_state.html" with headline="No AI requests logged yet." message="Use Explain with AI or the Handbook, or load data/ai_logs.csv with manage.py load_ai_logs." only %}
+    {% else %}
+        <section class="analytics__section" aria-labelledby="sec-performance">
+            <h2 id="sec-performance">System performance</h2>
+            {% include "data_quality/analytics/_performance.html" with data=performance only %}
+        </section>
+
+        <section class="analytics__section" aria-labelledby="sec-behavior">
+            <h2 id="sec-behavior">User behavior</h2>
+            {% include "data_quality/analytics/_behavior.html" with data=behavior only %}
+        </section>
+
+        <section class="analytics__section" aria-labelledby="sec-cost">
+            <h2 id="sec-cost">Cost</h2>
+            {% include "data_quality/analytics/_cost.html" with data=cost only %}
+        </section>
+    {% endif %}
+
+    <script>
+        document.querySelectorAll(".vega-chart").forEach(function (el) {
+            var spec = JSON.parse(document.getElementById(el.dataset.specId).textContent);
+            vegaEmbed(el, spec, {actions: {export: true, source: true, editor: false, compiled: false}})
+                .catch(function (error) {
+                    el.innerHTML = '<p class="chart__fallback">Chart failed to load: ' + error + "</p>";
+                });
+        });
+    </script>
+{% endblock %}
