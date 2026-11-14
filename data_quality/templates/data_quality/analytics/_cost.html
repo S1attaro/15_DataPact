@@ -1,0 +1,48 @@
+{% comment %}Cost section (Connor). data = analytics.cost.cost_context(qs).{% endcomment %}
+<div class="panel">
+    <div class="panel__body">
+        <dl class="factlist factlist--stats">
+            <div><dt>Total cost</dt><dd>${{ data.total_cost|floatformat:4 }}</dd></div>
+            <div><dt>Groq, per 1,000 requests</dt><dd>${{ data.groq_per_1000|floatformat:4 }}</dd></div>
+            <div><dt>Local, per 1,000 requests</dt><dd>${{ data.local_per_1000|floatformat:4 }}</dd></div>
+            <div><dt>Projected 30 days</dt><dd>${{ data.projected_month|floatformat:4 }}</dd></div>
+        </dl>
+    </div>
+</div>
+
+<div class="analytics__grid" style="margin-top: 1.25rem;">
+    {% for chart in data.charts %}
+        {% with spec_id="spec-"|add:chart.id %}
+            {% include "data_quality/analytics/_chart.html" with chart=chart spec_id=spec_id only %}
+        {% endwith %}
+    {% endfor %}
+
+    <div class="panel" style="grid-column: 1 / -1;">
+        <div class="panel__head"><h3 class="panel__title">Top cost drivers</h3></div>
+        <table class="datatable">
+            <thead>
+                <tr>
+                    <th scope="col">Feature / type</th>
+                    <th scope="col">Engine</th>
+                    <th scope="col" class="num">Requests</th>
+                    <th scope="col" class="num">Avg tokens</th>
+                    <th scope="col" class="num">Total cost</th>
+                    <th scope="col" class="num">Share of cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data.drivers %}
+                    <tr>
+                        <th scope="row">{{ row.feature }}: {{ row.query_type }}</th>
+                        <td>{{ row.engine }}</td>
+                        <td class="num">{{ row.requests }}</td>
+                        <td class="num">{{ row.avg_tokens }}</td>
+                        <td class="num">${{ row.total_cost|floatformat:5 }}</td>
+                        <td class="num">{{ row.share }}%</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="panel__body"><p class="chart__caption">C2. Where the money goes: request types ranked by their share of total cost in this range.</p></div>
+    </div>
+</div>

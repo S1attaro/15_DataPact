@@ -253,3 +253,62 @@ class Violation(models.Model):
 
     def __str__(self):
         return f"{self.rule.column_name} - {self.rule.get_rule_type_display()} ({self.failed_row_count} rows)"
+
+
+class AIRequestLog(models.Model):
+    """
+    One AI request, for the A10 analytics dashboard (Connor Slattery).
+
+    A row is written for every call to the two AI features (explain a
+    violation, ask the handbook), whether it worked or not. Rows also come
+    from data/ai_logs.csv through load_ai_logs, which is how benchmark runs
+    reach the dashboard.
+
+    Nothing here holds the user's text: no question, no sample value, no
+    answer. Only sizes, timings, token counts and a coarse topic label.
+    Token counts from the live pages are estimates (characters / 4); the
+    benchmark command records real counts. cost_usd is worked out when the
+    row is written (see data_quality/analytics/pricing.py).
+    """
+
+    class Feature(models.TextChoices):
+        EXPLAIN = "explain", "Explain a violation"
+        HANDBOOK = "handbook", "Handbook Q&A"
+
+    class Engine(models.TextChoices):
+        LOCAL = "local", "Local model"
+        GROQ = "groq", "Groq API"
+        OLLAMA = "ollama", "Ollama (benchmark)"
+
+    class Status(models.TextChoices):
+        OK = "ok", "Answered"
+        NOT_FOUND = "not_found", "Not in handbook"
+        NO_PASSAGES = "no_passages", "No relevant passages"
+        INVALID = "invalid", "Reply failed checks"
+        ERROR = "error", "Engine unavailable"
+
+    class Source(models.TextChoices):
+        LIVE = "live", "Live site"
+        BENCHMARK = "benchmark", "Benchmark run"
+        SIMULATED = "simulated", "Simulated"
+
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    feature = models.CharField(max_length=20, choices=Feature.choices)
+    engine = models.CharField(max_length=20, choices=Engine.choices)
+    model_name = models.CharField(max_length=100)
+    user_label = models.CharField(max_length=40, blank=True)
+    query_type = models.CharField(max_length=40, blank=True)
+    input_chars = models.PositiveIntegerField(default=0)
+    prompt_tokens = models.PositiveIntegerField(default=0)
+    completion_tokens = models.PositiveIntegerField(default=0)
+    retrieval_ms = models.FloatField(default=0)
+    latency_ms = models.FloatField(default=0)
+    status = models.CharField(max_length=20, choices=Status.choices)
+    cost_usd = models.DecimalField(max_digits=12, decimal_places=8, default=0)
+    source = models.CharField(max_length=20, choices=Source.choices, default=Source.LIVE)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.feature} via {self.engine} ({self.status}, {self.latency_ms:.0f} ms)"

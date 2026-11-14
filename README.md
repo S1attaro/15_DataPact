@@ -225,6 +225,49 @@ Notes:
 * **Tests.** `python manage.py test data_quality.tests_handbook` runs the 94 handbook tests with fake models; it downloads nothing.
 * **Known weak spots** (from the real-handbook run): answers often copy whole passages, a `[1]` citation can point at the wrong passage, and the model invented a price for an out-of-scope question (now hidden by a number check, which catches invented numbers in digits only and does not show that an answer is supported). The passages under each answer are there so the reader can check it.
 
+## AI Analytics (A10)
+
+`/analytics/` (signed-in users) monitors the two AI features. Every request to
+**Explain with AI** and the **Handbook** writes one `AIRequestLog` row: time,
+feature, engine, model, user as `user-<id>`, topic, input size, tokens,
+retrieval time, latency, outcome and cost. The user's text is never stored.
+The page has three sections (performance, user behavior, cost) and filters
+for time range, engine and data source. The design (questions, widgets,
+statistics) is in [`docs/a10/analytics_design.md`](docs/a10/analytics_design.md).
+
+Load the dashboard data:
+
+```
+python manage.py migrate
+python manage.py load_ai_logs            # data/ai_logs.csv, replaces old rows
+python manage.py load_ai_logs --keep-live   # keeps rows from real use
+```
+
+Make new data (`data/ai_logs.csv`):
+
+```
+python manage.py collect_ai_logs --engines local,groq,ollama:qwen2.5:14b,ollama:smollm2:1.7b --groq-gap 6 --load
+python manage.py collect_ai_logs --simulate --load    # no models needed
+```
+
+`collect_ai_logs` runs the 68 questions in `data/a10_handbook_questions.json`
+and every seeded violation through each engine and measures real latency and
+token counts. The handbook part needs the A9 settings above
+(`RAG_EMBEDDING_MODEL_ID`), the Groq part needs `GROQ_API_KEY` (capped by
+`--groq-limit`, default 100) and Ollama models must be pulled first. The
+timestamps and user labels are spread over 3 weeks afterwards; rows are
+marked `benchmark` (or `simulated`). Cost settings (`ANALYTICS_*`) are in
+`datapact_project/settings/base.py`. Poster charts: `python
+docs/poster/make_poster_charts.py`.
+
+`collect_ai_logs` overwrites `data/ai_logs.csv`, so copy it first if you want
+to keep the old rows. In Django, `local` (SmolLM2) runs on the CPU, because
+PyTorch has no AMD GPU support on Windows. Ollama runs models on the GPU, so
+`ollama:smollm2:1.7b` is the same model on the GPU. The current
+`data/ai_logs.csv` has 308 benchmark rows across all four setups.
+
+Tests: `python manage.py test data_quality.tests_analytics` (26 tests, no models).
+
 ## Pages
 
 | URL | View | Kind |
@@ -250,6 +293,7 @@ Notes:
 | `/api/lookup/` | `dataset_lookup_api` | Function-based, JsonResponse (external API) |
 | `/violations/<id>/explain/` | `violation_explain` | Function-based, render() (A6 AI; GET shows, POST explains with the local model or the Groq API) |
 | `/handbook/` | `handbook_ask` | Function-based, render() (A9 AI; GET shows the form, POST searches the handbook and answers with the local model) |
+| `/analytics/` | `analytics_dashboard` | Function-based, render() (A10 AI analytics dashboard) |
 | `/reports/` | `reports_view` | Function-based, render() |
 | `/reports/export/validation-runs.csv` | `export_validation_runs_csv` | Function-based, CSV via HttpResponse |
 | `/reports/export/validation-runs.json` | `export_validation_runs_json` | Function-based, JsonResponse |

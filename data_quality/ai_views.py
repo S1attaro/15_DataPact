@@ -16,6 +16,7 @@ logged.
 """
 
 import logging
+import time
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -25,7 +26,8 @@ from django.views.decorators.http import require_http_methods
 
 from .ai import explain, groq_client, prompts
 from .ai.local_model import AIUnavailable
-from .models import Violation
+from .analytics import recorder
+from .models import AIRequestLog, Violation
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +92,39 @@ def engine_choices():
     return choices
 
 
+def log_explain(request, violation, engine, result, started, failed=False):
+    """One AIRequestLog row for this request (A10, Connor). Never raises.
+
+    Token counts are estimates (characters / 4) from the prompt this engine
+    was sent and the fields of the answer; nothing from the file is stored.
+    """
+    latency_ms = (time.perf_counter() - started) * 1000
+    try:
+        if engine == "groq":
+            messages = groq_client.build_messages(violation)
+            model_name = settings.GROQ_MODEL
+        else:
+            messages = prompts.build_messages(prompts.violation_to_case(violation), prompts.DEFAULT_SHOTS)
+            model_name = settings.AI_LOCAL_MODEL_ID
+        prompt_text = recorder.messages_text(messages)
+        answer_text = " ".join((result.explanation, result.likely_cause, result.suggested_action)) if result else ""
+        if failed:
+            status = AIRequestLog.Status.ERROR
+        elif result is None:
+            status = AIRequestLog.Status.INVALID
+        else:
+            status = AIRequestLog.Status.OK
+        recorder.record(
+            AIRequestLog.Feature.EXPLAIN, engine, model_name, status=status, latency_ms=latency_ms,
+            user=request.user, query_type=violation.rule.rule_type,
+            input_chars=len(prompt_text),
+            prompt_tokens=0 if failed else recorder.estimate_tokens(prompt_text),
+            completion_tokens=recorder.estimate_tokens(answer_text),
+        )
+    except Exception:
+        logger.warning("Could not log the explain request", exc_info=True)
+
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def violation_explain(request, pk):
@@ -114,16 +149,19 @@ def violation_explain(request, pk):
             return HttpResponseBadRequest("Unknown engine.")
         context.update(attempted=True, engine=engine, engine_label=engine_label(engine))
         retry = False
+        started = time.perf_counter()
         try:
             run = explain.explain_violation if engine == "local" else groq_client.explain_violation
             result = run(violation)
         except AIUnavailable as exc:
+            log_explain(request, violation, engine, None, started, failed=True)
             logger.warning("%s unavailable for violation %s: %s", context["engine_label"], violation.pk, exc)
             context["unavailable"] = True
             context["failure"] = exc.kind
             retry = exc.kind in RETRY_KINDS
             status = 503
         else:
+            log_explain(request, violation, engine, result, started)
             context["result"] = result
             context["cause_label"] = CAUSE_LABELS.get(result.likely_cause) if result else None
         # What the answer panel offers next: the same engine again (first) only

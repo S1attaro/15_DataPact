@@ -1,0 +1,14 @@
+{% comment %}
+One Vega-Lite chart in a panel. Pass chart={"id", "title", "caption", "spec"}
+(see data_quality/analytics/charts.py: chart()). chart.wide spans the whole row.
+{% endcomment %}
+<div class="panel"{% if chart.wide %} style="grid-column: 1 / -1;"{% endif %}>
+    <div class="panel__head"><h3 class="panel__title">{{ chart.title }}</h3></div>
+    <div class="panel__body">
+        <div class="vega-chart" id="chart-{{ chart.id }}" data-spec-id="spec-{{ chart.id }}">
+            <p class="chart__fallback">This chart needs JavaScript and the Vega-Lite library.</p>
+        </div>
+        {{ chart.spec|json_script:spec_id }}
+        <p class="chart__caption">{{ chart.caption }}</p>
+    </div>
+</div>
