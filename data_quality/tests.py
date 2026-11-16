@@ -161,7 +161,7 @@ class DatasetDetailViewTests(SignedInClientMixin, TestCase):
 
 # ---------------------------------------------------------------
 # Section 3 - Templates / UI
-# Author: Ashok Chacko (aschacko)
+# Author: Ashok Chacko (achac)
 #
 # These tests cover the template layer rather than the views: that
 # every page really does inherit the shell from base.html, that the
@@ -1108,7 +1108,7 @@ class DatasetManageViewPostTests(SignedInClientMixin, TestCase):
 
 # ---------------------------------------------------------------
 # A3 Section 3 - Static Files & UI Styling
-# Author: Ashok Chacko (aschacko)
+# Author: Ashok Chacko (achac)
 #
 # The stylesheet moved out of base.html into data_quality/static/ for
 # A3. These tests pin down the three things that would silently break
@@ -1962,7 +1962,7 @@ class ChartsPageTests(SignedInClientMixin, TestCase):
 
 # ---------------------------------------------------------------
 # A4 Part 4.1 - navigation safety
-# Author: Ashok Chacko (aschacko)
+# Author: Ashok Chacko (achac)
 # ---------------------------------------------------------------
 
 
@@ -2314,7 +2314,7 @@ class AccountsUrlOrderTests(TestCase):
 
 # ---------------------------------------------------------------
 # A5.1 Part 1.5 / 2.4 - authentication UI
-# Author: Ashok Chacko (aschacko)
+# Author: Ashok Chacko (achac)
 #
 # The nav, the login and signup pages, and the Google button. These
 # cover presentation only: the access control itself is Tejas's
