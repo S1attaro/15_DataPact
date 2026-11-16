@@ -115,9 +115,14 @@ def retrieval_vs_generation(rows):
 
 
 def size_vs_latency(rows):
+    """
+    Handbook rows only. input_chars is the question's length for a handbook
+    row but the whole few-shot prompt's length (~1,700 characters) for an
+    explain row, so the two cannot share one "input size" axis.
+    """
     return [{"input_chars": row["input_chars"], "latency_ms": round(row["latency_ms"], 1),
-             "engine": row["engine"], "feature": row["feature"]}
-            for row in rows if row["input_chars"]]
+             "engine": row["engine"], "model": model_label(row["engine"], row["model_name"])}
+            for row in rows if row["feature"] == "handbook" and row["input_chars"]]
 
 
 def performance_context(qs):
@@ -177,13 +182,12 @@ def performance_context(qs):
     scatter_spec.update({
         "mark": {"type": "point", "tooltip": True, "filled": True, "opacity": 0.55, "size": 45},
         "encoding": {
-            "x": {"field": "input_chars", "type": "quantitative", "title": "Input size (characters)"},
+            "x": {"field": "input_chars", "type": "quantitative",
+                  "title": "Handbook question length (characters)"},
             "y": {"field": "latency_ms", "type": "quantitative",
                   "title": "Total time (ms, log scale)", "scale": {"type": "log"}},
             "color": engine_color(),
-            "shape": {"field": "feature", "type": "nominal", "title": "Feature"},
-            "tooltip": [{"field": "engine"}, {"field": "feature"},
-                        {"field": "input_chars", "title": "Characters"},
+            "tooltip": [{"field": "model"}, {"field": "input_chars", "title": "Characters"},
                         {"field": "latency_ms", "title": "ms"}],
         },
     })
@@ -198,26 +202,32 @@ def performance_context(qs):
         "charts": [
             chart("latency-histogram", "How long a request takes",
                   f"P1. Each bucket is twice as wide as the one before it, because the engines are "
-                  f"orders of magnitude apart. The shape is three clusters, one per hardware tier: "
-                  f"the API under a second, the GPU at 2-4 s, our own CPU from 8 s upwards. Nothing "
-                  f"lands between 1 and 2 s. {skipped} requests the retriever rejected before the "
-                  f"model ran are left out, here and in the three numbers above.",
+                  f"orders of magnitude apart. In the benchmark run the Groq API answers in under a "
+                  f"second, Ollama on our GPU mostly in 2-4 s, and SmolLM2 on our CPU mostly in 8 s "
+                  f"or more (56 of its 72 timed requests; the fastest took 3.4 s). Nothing lands "
+                  f"between 1 and 2 s. {skipped} requests the retriever rejected before the model "
+                  f"ran are left out, here and in the numbers above.",
                   histogram_spec, wide=True),
             chart("latency-by-engine", "Median time by setup and feature",
                   "P2. Medians, not means, because a few very slow requests would drag a mean. "
                   "The axis is logarithmic, each gridline ten times the last, because the "
                   "setups are two orders of magnitude apart. Dots rather than bars: a bar on a "
-                  "log axis has no zero to start from, so its length would mean nothing.",
+                  "log axis has no zero to start from, so its length would mean nothing. "
+                  "SmolLM2 on the CPU splits by reply length (short replies under 13 s, full "
+                  "answers over 22 s), so its handbook median sits between two groups. CPU and "
+                  "GPU rows also differ in software (transformers vs Ollama), not only hardware.",
                   median_spec),
             chart("retrieval-vs-generation", "Where handbook time goes",
                   "P3. Retrieval is the sliver you can barely see: about 5 ms on three of the "
-                  "four setups, against 0.4 s to 19 s of generation. A faster embedding model "
-                  "would buy almost nothing - the generator is the only thing worth optimising.",
+                  "four setups, against 0.4 s to 19 s of generation. Ollama-SmolLM2's average "
+                  "retrieval is 93 ms only because one search took 5.5 s; its median is 5 ms. "
+                  "The generator, not the search, is what to optimise.",
                   stage_spec),
-            chart("size-vs-latency", "Does a longer question take longer?",
-                  "P3. Input size barely predicts time within a setup; the horizontal bands are "
-                  "the engines. What the model writes back, and the hardware it runs on, "
-                  "decide the wait far more than what the user typed.",
+            chart("size-vs-latency", "Does a longer handbook question take longer?",
+                  "P3. Handbook questions only: an explain request sends a ~1,700-character "
+                  "prompt, a different kind of input, so it is left out. Question length barely "
+                  "predicts time within a setup; the horizontal bands are the engines. Reply "
+                  "length and the setup decide the wait far more than what the user typed.",
                   scatter_spec),
         ],
     }

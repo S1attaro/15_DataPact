@@ -26,12 +26,12 @@ from data_quality.ai.handbook import HandbookAnswer
 from data_quality.ai.local_model import AIUnavailable
 from data_quality.analytics import pricing, recorder
 from data_quality.analytics.charts import percentile
-from data_quality.analytics.behavior import (behavior_context, out_of_scope_handling,
-                                             requests_per_day)
+from data_quality.analytics.behavior import (OUT_OF_SCOPE_LABELS, behavior_context,
+                                             out_of_scope_handling, requests_per_day)
 from data_quality.analytics.cost import cost_context
 from data_quality.analytics.performance import (median_by_engine_feature, model_label,
                                                 performance_context, retrieval_vs_generation,
-                                                timed_rows)
+                                                size_vs_latency, timed_rows)
 from data_quality.analytics_views import filtered_logs
 from data_quality.management.commands.load_ai_logs import CSV_FIELDS
 from data_quality.models import AIRequestLog, Violation
@@ -332,8 +332,25 @@ class PerformanceAndBehaviorChartTests(TestCase):
         rows = out_of_scope_handling(AIRequestLog.objects.all())
         groq = {row["outcome"]: row["requests"] for row in rows
                 if row["model"] == model_label("groq", "openai/gpt-oss-20b")}
-        self.assertEqual(groq["Refused"], 1)
-        self.assertEqual(groq["Answered anyway"], 1)
+        self.assertEqual(groq[OUT_OF_SCOPE_LABELS["not_found"]], 1)
+        self.assertEqual(groq[OUT_OF_SCOPE_LABELS["ok"]], 1)
+
+    def test_out_of_scope_keeps_retrieval_misses_apart_from_model_refusals(self):
+        # A no_passages row never reached a model, so it must not be counted as
+        # the model declining; every row lands in exactly one outcome.
+        rows = out_of_scope_handling(AIRequestLog.objects.all())
+        cpu = {row["outcome"]: row["requests"] for row in rows
+               if row["model"] == model_label("local", "HuggingFaceTB/SmolLM2-1.7B-Instruct")}
+        self.assertEqual(cpu, {OUT_OF_SCOPE_LABELS["no_passages"]: 1})
+        logged = AIRequestLog.objects.filter(feature="handbook", query_type="out_of_scope").count()
+        self.assertEqual(sum(row["requests"] for row in rows), logged)
+
+    def test_size_vs_latency_uses_handbook_questions_only(self):
+        make_log(feature="explain", engine="groq", model_name="openai/gpt-oss-20b", status="ok",
+                 latency_ms=500, input_chars=1700, query_type="RANGE")
+        points = size_vs_latency(timed_rows(AIRequestLog.objects.all()))
+        self.assertTrue(points)
+        self.assertTrue(all(point["input_chars"] < 1000 for point in points))
 
     def test_both_sections_build_every_chart_with_data(self):
         qs = AIRequestLog.objects.all()
