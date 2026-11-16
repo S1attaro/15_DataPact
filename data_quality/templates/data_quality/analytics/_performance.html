@@ -9,7 +9,16 @@ performance.py and they render below automatically.
             <div><dt>Mean latency</dt><dd>{{ data.mean_ms|floatformat:0 }} ms</dd></div>
             <div><dt>Median latency</dt><dd>{{ data.median_ms|floatformat:0 }} ms</dd></div>
             <div><dt>95th percentile</dt><dd>{{ data.p95_ms|floatformat:0 }} ms</dd></div>
+            <div><dt>Requests timed</dt><dd>{{ data.timed_requests }}</dd></div>
         </dl>
+        {% if data.skipped_requests %}
+            <p class="panel__note">
+                Measured over {{ data.timed_requests }} requests that reached the model.
+                {{ data.skipped_requests }} more were turned down by retrieval before the model
+                ran, in about 5 ms each; counting those as answers would pull every number here
+                towards zero.
+            </p>
+        {% endif %}
     </div>
 </div>
 {% if data.charts %}

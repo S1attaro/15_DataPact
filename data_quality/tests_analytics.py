@@ -26,7 +26,12 @@ from data_quality.ai.handbook import HandbookAnswer
 from data_quality.ai.local_model import AIUnavailable
 from data_quality.analytics import pricing, recorder
 from data_quality.analytics.charts import percentile
+from data_quality.analytics.behavior import (behavior_context, out_of_scope_handling,
+                                             requests_per_day)
 from data_quality.analytics.cost import cost_context
+from data_quality.analytics.performance import (median_by_engine_feature, model_label,
+                                                performance_context, retrieval_vs_generation,
+                                                timed_rows)
 from data_quality.analytics_views import filtered_logs
 from data_quality.management.commands.load_ai_logs import CSV_FIELDS
 from data_quality.models import AIRequestLog, Violation
@@ -253,3 +258,95 @@ class DashboardTests(TestCase):
     def test_nav_link(self):
         self.client.force_login(self.user)
         self.assertContains(self.client.get(reverse("data_quality:home")), 'href="/analytics/"')
+
+
+class PerformanceAndBehaviorChartTests(TestCase):
+    """
+    The performance and behavior sections. Author: Ashok Chacko.
+
+    These pin the judgement calls in the two sections, not just that a chart
+    appears: which rows count as answer times, that medians are medians, and
+    that a quiet day is drawn as zero rather than skipped.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        day = timezone.now() - timedelta(days=2)
+        # Three real handbook answers on the CPU, 1 s / 3 s / 20 s.
+        for latency in (1000, 3000, 20000):
+            make_log(feature="handbook", engine="local",
+                     model_name="HuggingFaceTB/SmolLM2-1.7B-Instruct", status="ok",
+                     latency_ms=latency, retrieval_ms=5, input_chars=100,
+                     query_type="rules", created_at=day)
+        # One question retrieval turned down before the model ran.
+        make_log(feature="handbook", engine="local",
+                 model_name="HuggingFaceTB/SmolLM2-1.7B-Instruct", status="no_passages",
+                 latency_ms=5, retrieval_ms=5, input_chars=100,
+                 query_type="out_of_scope", created_at=day)
+        # Two out-of-scope questions: one correctly refused, one answered anyway.
+        make_log(feature="handbook", engine="groq", model_name="openai/gpt-oss-20b",
+                 status="not_found", latency_ms=300, retrieval_ms=5, input_chars=80,
+                 query_type="out_of_scope", created_at=day)
+        make_log(feature="handbook", engine="groq", model_name="openai/gpt-oss-20b",
+                 status="ok", latency_ms=400, retrieval_ms=5, input_chars=80,
+                 query_type="out_of_scope", created_at=day)
+
+    def test_rows_that_never_reached_the_model_are_left_out_of_latency(self):
+        data = performance_context(AIRequestLog.objects.all())
+        # 6 rows logged, but the 5 ms no_passages row is not an answer time.
+        self.assertEqual(AIRequestLog.objects.count(), 6)
+        self.assertEqual(data["timed_requests"], 5)
+        self.assertEqual(data["skipped_requests"], 1)
+        # Median of 300/400/1000/3000/20000, not of those plus a 5 ms row.
+        self.assertEqual(data["median_ms"], 1000)
+
+    def test_median_is_a_median_not_a_mean(self):
+        rows = [row for row in median_by_engine_feature(timed_rows(AIRequestLog.objects.all()))
+                if row["engine"] == "local"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["median_ms"], 3000)  # mean would be 8000
+
+    def test_the_two_smollm2_setups_get_different_labels(self):
+        cpu = model_label("local", "HuggingFaceTB/SmolLM2-1.7B-Instruct")
+        gpu = model_label("ollama", "smollm2:1.7b")
+        self.assertIn("CPU", cpu)
+        self.assertIn("GPU", gpu)
+        self.assertNotEqual(cpu, gpu)
+
+    def test_generation_time_is_total_minus_retrieval_and_never_negative(self):
+        rows = retrieval_vs_generation(timed_rows(AIRequestLog.objects.all()))
+        by_stage = {(row["model"], row["stage"]): row["ms"] for row in rows}
+        cpu = model_label("local", "HuggingFaceTB/SmolLM2-1.7B-Instruct")
+        self.assertEqual(by_stage[(cpu, "Retrieval")], 5)
+        self.assertEqual(by_stage[(cpu, "Generation")], 7995)  # mean of 995/2995/19995
+        self.assertTrue(all(row["ms"] >= 0 for row in rows))
+
+    def test_quiet_days_are_drawn_as_zero_and_totals_are_unchanged(self):
+        make_log(feature="handbook", engine="groq", model_name="openai/gpt-oss-20b",
+                 status="ok", latency_ms=300, created_at=timezone.now())
+        rows = requests_per_day(AIRequestLog.objects.all())
+        self.assertTrue(any(row["requests"] == 0 for row in rows))
+        self.assertEqual(sum(row["requests"] for row in rows), AIRequestLog.objects.count())
+
+    def test_answering_an_out_of_scope_question_counts_as_a_guardrail_failure(self):
+        rows = out_of_scope_handling(AIRequestLog.objects.all())
+        groq = {row["outcome"]: row["requests"] for row in rows
+                if row["model"] == model_label("groq", "openai/gpt-oss-20b")}
+        self.assertEqual(groq["Refused"], 1)
+        self.assertEqual(groq["Answered anyway"], 1)
+
+    def test_both_sections_build_every_chart_with_data(self):
+        qs = AIRequestLog.objects.all()
+        for data in (performance_context(qs), behavior_context(qs)):
+            self.assertTrue(data["has_data"])
+            self.assertEqual(len(data["charts"]), 4)
+            for chart_dict in data["charts"]:
+                self.assertTrue(chart_dict["caption"])
+                self.assertTrue(chart_dict["spec"]["data"]["values"])
+
+    def test_sections_survive_an_empty_range(self):
+        AIRequestLog.objects.all().delete()
+        qs = AIRequestLog.objects.all()
+        self.assertFalse(performance_context(qs)["has_data"])
+        self.assertFalse(behavior_context(qs)["has_data"])
+        self.assertEqual(behavior_context(qs)["failure_rate"], 0.0)

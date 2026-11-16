@@ -11,6 +11,7 @@ behavior.py and they render below automatically.
             {% for row in data.by_feature %}
                 <div><dt>{{ row.feature|capfirst }} requests</dt><dd>{{ row.n }}</dd></div>
             {% endfor %}
+            <div><dt>Handbook did not answer</dt><dd>{{ data.failure_rate|floatformat:1 }}%</dd></div>
         </dl>
     </div>
 </div>
