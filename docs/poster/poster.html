@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>DataPact poster 22x36</title>
+<!--
+  DataPact conference poster, 22" x 36" portrait. Layout: Ashok Chacko.
+  Content from poster_content.md; figures are the SVGs in this folder, so
+  everything except the dashboard screenshot stays vector and prints sharp.
+
+  Build:  python docs/poster/make_poster_pdf.py
+-->
+<style>
+  @page { size: 22in 36in; margin: 0; }
+
+  :root {
+    --ink:        #11212f;
+    --ink-soft:   #44566a;
+    --rule:       #cfdae4;
+    --navy:       #1d3f63;
+    --blue:       #2f5d8a;
+    --orange:     #c2662d;
+    --green:      #3f7a3f;
+    --paper:      #ffffff;
+    --wash:       #eef3f8;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    width: 22in; height: 36in;
+    padding: 0.62in 0.7in 0.5in;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 20pt;
+    line-height: 1.32;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---------- header ---------- */
+  header {
+    border-bottom: 10px solid var(--navy);
+    padding-bottom: 0.2in;
+    margin-bottom: 0.3in;
+  }
+  h1 {
+    font-size: 112pt; line-height: 0.95; letter-spacing: -0.02em;
+    margin: 0; color: var(--navy); font-weight: 800;
+  }
+  .tagline {
+    font-size: 40pt; color: var(--blue); margin: 0.1in 0 0.18in;
+    font-weight: 400;
+  }
+  .people { font-size: 21pt; color: var(--ink-soft); margin: 0; }
+  .course { font-size: 19pt; color: var(--ink-soft); margin: 0.07in 0 0; }
+
+  /* ---------- three columns ---------- */
+  .columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.42in;
+    align-items: start;
+  }
+  .col { display: flex; flex-direction: column; gap: 0.3in; }
+
+  section {
+    background: var(--paper);
+    border: 2px solid var(--rule);
+    border-radius: 10px;
+    padding: 0.26in 0.3in 0.3in;
+    break-inside: avoid;
+  }
+  section.tinted { background: var(--wash); border-color: #c3d3e2; }
+
+  h2 {
+    font-size: 32pt; margin: 0 0 0.15in; color: var(--navy);
+    font-weight: 800; line-height: 1.08;
+    display: flex; align-items: baseline; gap: 0.14in;
+  }
+  h2 .n {
+    font-size: 23pt; color: var(--paper); background: var(--navy);
+    border-radius: 7px; padding: 0.04in 0.13in; font-weight: 800;
+    flex: none;
+  }
+  h3 {
+    font-size: 22pt; margin: 0.19in 0 0.07in; color: var(--blue);
+    font-weight: 700;
+  }
+  h3:first-of-type { margin-top: 0.06in; }
+
+  ul { margin: 0; padding-left: 0.28in; }
+  li { margin-bottom: 0.07in; }
+  li:last-child { margin-bottom: 0; }
+  p { margin: 0 0 0.1in; }
+  b, strong { color: var(--navy); }
+
+  /* ---------- figures ---------- */
+  figure { margin: 0.16in 0 0; }
+  figure img { width: 100%; display: block; margin: 0 auto; }
+  /* Figures are sized so the three columns finish at about the same height. */
+  .fig-arch img   { width: 100%; }
+  .fig-latency img{ width: 97%; }
+  .fig-rag img    { width: 100%; }
+  .fig-cost img   { width: 100%; }
+  .shot img       { width: 100%; }
+  figcaption {
+    font-size: 15pt; color: var(--ink-soft); margin-top: 0.07in;
+    line-height: 1.26;
+  }
+  .shot img { border: 2px solid var(--rule); border-radius: 6px; }
+
+  /* ---------- table ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 16.5pt; margin-top: 0.12in; }
+  th, td { padding: 0.055in 0.07in; text-align: right; border-bottom: 1px solid var(--rule);
+           white-space: nowrap; }
+  th:first-child, td:first-child { white-space: normal; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    background: var(--navy); color: var(--paper); font-size: 15pt;
+    border-bottom: none; font-weight: 700;
+  }
+  tbody tr:nth-child(even) { background: #f6f9fc; }
+  td.best { color: var(--green); font-weight: 700; }
+  .tnote { font-size: 14pt; color: var(--ink-soft); margin-top: 0.08in; line-height: 1.25; }
+
+  /* ---------- key results ---------- */
+  .results li { margin-bottom: 0.11in; }
+  .results .lead { color: var(--navy); font-weight: 800; }
+
+  .limits h3.bad { color: var(--orange); }
+
+  /* ---------- footer ---------- */
+  footer {
+    margin-top: 0.34in; padding-top: 0.22in;
+    border-top: 6px solid var(--navy);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.5in;
+  }
+  .qr { display: flex; align-items: center; gap: 0.18in; }
+  .qr img { width: 1.5in; height: 1.5in; display: block; }
+  .qr .label { font-size: 19pt; line-height: 1.3; }
+  .qr .label b { display: block; font-size: 21pt; }
+  .qr .label span { color: var(--ink-soft); font-size: 17pt; }
+  .footmark { font-size: 20pt; color: var(--ink-soft); text-align: center; }
+  .footmark b { display: block; font-size: 28pt; color: var(--navy); }
+</style>
+
+<body>
+
+<header>
+  <h1>DataPact</h1>
+  <p class="tagline">Know when your data breaks the rules, and why.</p>
+  <p class="people">
+    Hriday Agarwal (hda3@illinois.edu) &middot; Ashok Chacko (achac@illinois.edu) &middot;
+    Tejas Jaggi (tejasj2@illinois.edu) &middot; Connor Slattery (cslat@illinois.edu)
+  </p>
+  <p class="course">INFO 490: Advanced AI Web-Apps Development &middot; Team 15 &middot; Fall 2026</p>
+</header>
+
+<div class="columns">
+
+  <!-- ============ COLUMN 1 ============ -->
+  <div class="col">
+
+    <section>
+      <h2><span class="n">1</span> Problem &amp; Motivation</h2>
+      <ul>
+        <li>Teams get the same data file every week or month &mdash; enrollment, sales, logs.</li>
+        <li>When a file changes shape (a new status code, blank columns, bad types), reports
+            break <b>quietly</b>.</li>
+        <li>Finding <i>which</i> rows broke and <i>why</i> is slow, manual work.</li>
+        <li>The hardest call: is the <b>data wrong</b>, or is our <b>rule out of date</b>?</li>
+      </ul>
+      <h3>Our solution</h3>
+      <ul>
+        <li>Write the rules once as a versioned <b>data contract</b>.</li>
+        <li>DataPact checks every new file and points to the exact rows and values that failed.</li>
+        <li><b>AI explains each failure:</b> likely cause (data issue vs outdated contract)
+            and the next step.</li>
+        <li><b>Handbook Q&amp;A (RAG)</b> answers "how do I&hellip;" questions from our own
+            docs, with sources.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2><span class="n">2</span> System Architecture</h2>
+      <figure class="fig-arch">
+        <img src="architecture.svg" alt="DataPact system architecture: browser to Django to the two AI paths">
+      </figure>
+      <h3>Stack</h3>
+      <ul>
+        <li>Django 5.2, SQLite, Vega-Lite charts, Google OAuth (allauth)</li>
+        <li>Hosted on PythonAnywhere</li>
+      </ul>
+      <h3>AI path 1 &mdash; explain a violation</h3>
+      <ul>
+        <li>Input: rule, column, failed-row count, up to 3 <b>safe</b> sample values.
+            No names or IDs leave the server.</li>
+        <li>Few-shot prompt &rarr; <b>SmolLM2-1.7B</b> (local, chosen from our 15-model
+            benchmark) or <b>Groq gpt-oss-20b</b> (API).</li>
+        <li>Output must parse as JSON with an allowed cause, or nothing is shown.</li>
+      </ul>
+      <h3>AI path 2 &mdash; handbook Q&amp;A (RAG)</h3>
+      <ul>
+        <li>Question &rarr; <b>MiniLM</b> embedding &rarr; top-3 passages from 9 handbook
+            docs (score &ge; 0.3).</li>
+        <li>SmolLM2 answers from those passages only.</li>
+        <li>Guardrails: the answer must cite a passage it was shown, and may not state a
+            number the passages do not contain.</li>
+      </ul>
+      <h3>Monitoring</h3>
+      <ul>
+        <li>Every AI request logs latency, tokens, cost and outcome &mdash; never the user's
+            text &mdash; to the <b>/analytics/</b> dashboard.</li>
+      </ul>
+      <figure class="shot">
+        <img src="../a10/a10_dashboard_overview.png" alt="The DataPact analytics dashboard">
+        <figcaption>The <b>/analytics/</b> dashboard: filters, summary metrics and eleven
+          charts across performance, user behavior and cost.</figcaption>
+      </figure>
+    </section>
+
+  </div>
+
+  <!-- ============ COLUMN 2 ============ -->
+  <div class="col">
+
+    <section>
+      <h2><span class="n">3</span> Evaluation &amp; Analytics</h2>
+      <h3>What we evaluated, and how</h3>
+      <ul>
+        <li><b>Model choice (A6):</b> 15 small models &times; 8 fixed inputs, scored for
+            accuracy and speed &rarr; SmolLM2-1.7B.</li>
+        <li><b>RAG quality (A8):</b> 14 test questions &times; 3 embedding models &times; 3
+            chunking strategies; hit@3, MRR and hand-graded answers.</li>
+        <li><b>Live system (A10):</b> every request logged; the dashboard tracks performance,
+            user behavior and cost.</li>
+      </ul>
+
+      <figure class="fig-latency">
+        <img src="fig_latency_by_engine.svg" alt="Median latency by feature and engine">
+        <figcaption>Median latency by feature and engine. The same SmolLM2 model is shown on
+          the CPU and on our GPU through Ollama.</figcaption>
+      </figure>
+
+      <figure class="fig-rag">
+        <img src="fig_rag_improvement.svg" alt="RAG answer quality by setup">
+        <figcaption>A8: a stricter prompt beat retrieving more passages. Fetching only one
+          passage made answers worse.</figcaption>
+      </figure>
+
+      <figure class="fig-cost">
+        <img src="fig_cost_per_1000.svg" alt="Cost per 1,000 requests by engine">
+        <figcaption>Cost per 1,000 requests. Electricity only for the local engines;
+          counting hosting reverses the ranking (see Key Results).</figcaption>
+      </figure>
+
+      <h3>Engines compared</h3>
+      <table>
+        <thead>
+          <tr><th>Engine</th><th>Feature</th><th>Median</th><th>p95</th><th>$ / 1,000</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Groq gpt-oss-20b</td><td>explain</td><td class="best">0.36 s</td><td>0.50 s</td><td>$0.061</td></tr>
+          <tr><td>SmolLM2 1.7B (GPU)</td><td>explain</td><td>2.66 s</td><td>2.74 s</td><td class="best">$0.037</td></tr>
+          <tr><td>Qwen2.5 14B (GPU)</td><td>explain</td><td>4.11 s</td><td>4.31 s</td><td>$0.043</td></tr>
+          <tr><td>SmolLM2 1.7B (CPU)</td><td>explain</td><td>14.23 s</td><td>16.34 s</td><td>$0.110</td></tr>
+          <tr><td>Groq gpt-oss-20b</td><td>handbook</td><td class="best">0.34 s</td><td>0.62 s</td><td>$0.061</td></tr>
+          <tr><td>SmolLM2 1.7B (GPU)</td><td>handbook</td><td>2.55 s</td><td>2.75 s</td><td class="best">$0.037</td></tr>
+          <tr><td>Qwen2.5 14B (GPU)</td><td>handbook</td><td>2.73 s</td><td>3.57 s</td><td>$0.043</td></tr>
+          <tr><td>SmolLM2 1.7B (CPU)</td><td>handbook</td><td>12.84 s</td><td>35.62 s</td><td>$0.110</td></tr>
+        </tbody>
+      </table>
+      <p class="tnote">308 benchmark requests (68 handbook + 9 explain per engine). In Django,
+        SmolLM2 runs on the CPU &mdash; PyTorch has no AMD GPU support on Windows &mdash; so we
+        ran the same model on our GPU through Ollama for comparison. Local cost counts
+        electricity only (150 W CPU, 355 W GPU), not hardware or hosting.</p>
+
+    </section>
+
+  </div>
+
+  <!-- ============ COLUMN 3 ============ -->
+  <div class="col">
+
+    <section class="tinted results">
+      <h2><span class="n">4</span> Key Results</h2>
+      <ul>
+        <li><span class="lead">Hardware, not model size, decides speed.</span> The same
+            SmolLM2 took <b>12.84 s</b> on our CPU and <b>2.55 s</b> on our GPU &mdash;
+            5&times; faster. Groq's hosted API answers in <b>0.34 s</b>.</li>
+        <li><span class="lead">On a GPU, a bigger model is almost free &mdash; and safer.</span>
+            Qwen2.5 14B is ~8&times; larger than SmolLM2 but only 0.2 s slower. It produced
+            <b>no</b> invalid answers (SmolLM2: 7) and refused all 40 out-of-scope questions;
+            the SmolLM2 setups answered 5 they should have declined.</li>
+        <li><span class="lead">Hosting, not electricity, decides cost.</span> On electricity
+            alone the GPU looks cheapest ($0.037 per 1,000 vs Groq's $0.061). Once servers are
+            counted the API wins at every traffic level we modelled &mdash; <b>$2/day against
+            $29/day</b> at 1,000 daily users.</li>
+        <li><span class="lead">Prompting beat retrieving more, and retrieval was never the
+            bottleneck.</span> A stricter prompt lifted the answer score from 45.8% to
+            <b>62.5%</b> and cut wrong refusals from 3 to <b>0</b>; fetching only one passage
+            made answers worse (41.7%). Search costs ~5 ms &mdash; under 1% of handbook
+            latency. Generation is the whole cost.</li>
+      </ul>
+    </section>
+
+    <section class="limits">
+      <h2><span class="n">5</span> Limitations &amp; Future Work</h2>
+      <h3 class="bad">What does not work well</h3>
+      <ul>
+        <li>SmolLM2 gave invalid handbook answers &mdash; 6 of 68 on the CPU, 7 of 68 on the
+            GPU. Qwen2.5 and Groq gave none.</li>
+        <li>The local model does not fit on our host's disk, so production depends on Groq.</li>
+        <li>The handbook cannot answer pricing or support questions (14.7% of handbook
+            traffic; 88% of those went unanswered), and once invented a price
+            ("$100 per seat") until we added the number check.</li>
+        <li>Our checks catch invented citations and numbers, but not every unsupported
+            sentence.</li>
+        <li>Token counts on live pages are estimates (characters &divide; 4).</li>
+        <li>"Answered" means the reply passed our checks, not that a person judged it
+            correct. Only the A8 scores are graded by hand.</li>
+      </ul>
+      <h3>Next steps</h3>
+      <ul>
+        <li>Move hosting to <b>AWS Lightsail</b> so we control the server.</li>
+        <li>Serve the model with <b>vLLM</b> for many users at once, benchmarked against
+            Ollama on our own GPU.</li>
+        <li>Move pricing, support and legal information to <b>static pages</b> and point
+            those questions there.</li>
+        <li><b>Split-screen view:</b> the AI explanation beside the violations table.</li>
+      </ul>
+    </section>
+
+  </div>
+</div>
+
+<footer>
+  <div class="qr">
+    <img src="qr_github.svg" alt="QR code to the GitHub repository">
+    <span class="label"><b>Source code</b><span>github.com/S1attaro/15_DataPact</span></span>
+  </div>
+  <div class="footmark">
+    <b>DataPact</b>
+    Django + RAG + local and hosted LLMs &middot; Team 15
+  </div>
+  <div class="qr">
+    <img src="qr_app.svg" alt="QR code to the live application">
+    <span class="label"><b>Live app</b><span>tjaggi.pythonanywhere.com</span></span>
+  </div>
+</footer>
+
+</body>
+</html>

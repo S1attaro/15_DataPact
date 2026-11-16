@@ -12,8 +12,8 @@ the benchmark run and copy the new numbers in.
 **DataPact**
 *Know when your data breaks the rules, and why.*
 
-Hriday Agarwal · Ashok Chacko · Tejas Jaggi · Connor Slattery
-(add each person's `@illinois.edu` email)
+Hriday Agarwal (hda3@illinois.edu) · Ashok Chacko (achac@illinois.edu) ·
+Tejas Jaggi (tejasj2@illinois.edu) · Connor Slattery (cslat@illinois.edu)
 INFO 490: Advanced AI Web-Apps Development · Team 15 · Fall 2026
 
 ---
@@ -107,7 +107,7 @@ Cost counts electricity only (150 W CPU, 355 W GPU) for local engines.
 **What does not work well**
 - SmolLM2 gave invalid handbook answers (6 of 68 on CPU, 7 of 68 on GPU). Qwen2.5 and Groq gave none.
 - The local model does not fit on our host (PythonAnywhere disk), so production relies on Groq.
-- The handbook can't answer pricing or support questions (14.7% of handbook traffic; 93% of those went unanswered), and once made up a price ("$100 per seat") until we added the number check.
+- The handbook can't answer pricing or support questions (14.7% of handbook traffic; 88% of those went unanswered), and once made up a price ("$100 per seat") until we added the number check.
 - Our checks catch invented citations and numbers, but not every unsupported sentence.
 - Token counts on live pages are estimates (characters ÷ 4).
 - "Answered" means the reply passed our checks, not that a person graded it correct. Only the A8 scores are graded by hand.
