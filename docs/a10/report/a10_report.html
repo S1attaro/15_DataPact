@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DataPact A10 Analytics</title>
+<style>
+  @page { size: Letter; margin: 0.5in 0.55in; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 9pt; line-height: 1.3; color: #1a1f2b; margin: 0; }
+  h1 { font-size: 15pt; margin: 0 0 2pt; letter-spacing: -0.2px; }
+  .sub { color: #4a5568; font-size: 8.8pt; margin-bottom: 7pt; }
+  h2 { break-after: avoid; font-size: 10.4pt; margin: 7pt 0 3pt; color: #1f3a8a; border-bottom: 1px solid #d6dbe6; padding-bottom: 1.5pt; }
+  p { margin: 0 0 4pt; }
+  table { border-collapse: collapse; width: 100%; margin: 2pt 0 4pt; font-size: 8.5pt; }
+  th { text-align: left; background: #eef1f7; font-weight: 600; padding: 2.5pt 4pt; border-bottom: 1px solid #c9d0de; }
+  td { padding: 2.2pt 4pt; border-bottom: 1px solid #e6e9f0; vertical-align: top; }
+  td.id { font-weight: 700; color: #1f3a8a; white-space: nowrap; }
+  td.area { font-weight: 600; white-space: nowrap; color: #4a5568; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  ul { margin: 0 0 4pt; padding-left: 13pt; }
+  li { margin: 0 0 1.5pt; }
+  code { font-family: Menlo, monospace; font-size: 8pt; background: #f2f4f8; padding: 0 2px; border-radius: 2px; }
+  .figs { display: flex; gap: 8pt; margin: 4pt auto 0; width: 88%; align-items: flex-start; }
+  .keep { break-inside: avoid; }
+  .figs figure { margin: 0; flex: 1; }
+  .figs img { width: 100%; border: 1px solid #d6dbe6; border-radius: 3px; }
+  figcaption { font-size: 7.8pt; color: #4a5568; margin-top: 2pt; }
+  .note { font-size: 8pt; color: #4a5568; }
+  .two { display: flex; gap: 12pt; }
+  .two > div { flex: 1; }
+</style>
+</head>
+<body>
+
+<h1>DataPact: AI System Evaluation &amp; Analytics Dashboard (A10)</h1>
+<div class="sub">INFO 490, Team 15 &middot; Hriday Agarwal, Ashok Chacko, Tejas Jaggi, Connor Slattery &middot;
+Dashboard: <code>/analytics/</code> on the deployed site (sign-in required; link and test login are in the submission comment)</div>
+
+<h2>What we monitor</h2>
+<p>DataPact has two AI features: <b>Explain a violation</b> (local SmolLM2-1.7B or the Groq <code>gpt-oss-20b</code> API decides whether a failed check is a data issue or an out-of-date contract) and <b>Handbook Q&amp;A</b> (RAG: MiniLM embeddings retrieve 3 handbook passages, then the model answers from them). Every request writes one <code>AIRequestLog</code> row: time, feature, engine, model, user (as <code>user-&lt;id&gt;</code>), request type, input size, prompt and completion tokens, retrieval time, total latency, outcome and cost. <b>The user's text is never stored.</b></p>
+
+<h2>Analytics questions and dashboard plan</h2>
+<table>
+  <tr><th>Area</th><th>ID</th><th>Question</th><th>Widget on the dashboard</th><th>Fields used</th></tr>
+  <tr><td class="area" rowspan="3">Performance</td><td class="id">P1</td><td>How does latency vary: mean, median, 95th percentile?</td><td>KPI cards + latency histogram</td><td><code>latency_ms</code></td></tr>
+  <tr><td class="id">P2</td><td>Which engine is faster, local SmolLM2 or Groq, for each feature?</td><td>Bar: median latency by engine and feature</td><td><code>engine</code>, <code>feature</code></td></tr>
+  <tr><td class="id">P3</td><td>Where does handbook time go (retrieval vs generation)? Do longer inputs answer slower?</td><td>Stacked bar + scatter (input size vs latency)</td><td><code>retrieval_ms</code>, <code>input_chars</code></td></tr>
+  <tr><td class="area" rowspan="3">Behavior</td><td class="id">B1</td><td>How often are the AI features used per day, and is use growing?</td><td>KPI cards + line: requests per day</td><td><code>created_at</code>, <code>user_label</code></td></tr>
+  <tr><td class="id">B2</td><td>Which feature and topics do users ask about most?</td><td>Bar: requests by feature and topic</td><td><code>feature</code>, <code>query_type</code></td></tr>
+  <tr><td class="id">B3</td><td>How often does the handbook fail to answer?</td><td>Bar: handbook outcome breakdown</td><td><code>status</code></td></tr>
+  <tr><td class="area" rowspan="3">Cost</td><td class="id">C1</td><td>What does one request cost on each engine and model?</td><td>KPI cards + bar: cost per 1,000 by model</td><td><code>engine</code>, <code>cost_usd</code></td></tr>
+  <tr><td class="id">C2</td><td>Which request types use the most tokens and drive cost?</td><td>Stacked bar: prompt vs completion tokens + top-cost table</td><td><code>prompt_tokens</code>, <code>completion_tokens</code></td></tr>
+  <tr><td class="id">C3</td><td>How does daily cost change, and what would a month cost?</td><td>Line: cost per day by engine + projected 30-day card</td><td><code>created_at</code>, <code>cost_usd</code></td></tr>
+</table>
+<p class="note">Filters: time range (7 / 30 / 90 days / all), engine, and data source (live use vs benchmark run). Cost: Groq = tokens &times; Groq's price ($0.075 per 1M input, $0.30 per 1M output tokens); local and Ollama = electricity only (watts &times; time &times; $0.15/kWh), which leaves out hardware and hosting.</p>
+
+<div class="two">
+<div>
+<h2>Statistical thinking</h2>
+<ul>
+  <li><b>Median and p95, not just the mean.</b> Latency is right-skewed: mean 5,850 ms, but median 2,618 ms and p95 29,660 ms, because a few slow CPU requests pull the mean up.</li>
+  <li><b>Distributions:</b> the histogram shows the skew and any cold-start bump.</li>
+  <li><b>Group comparisons use medians</b> (by engine, model, feature) because of the skew.</li>
+  <li><b>Rates and shares:</b> handbook failure rate; each request type's share of cost.</li>
+  <li><b>Normalizing:</b> cost per 1,000 requests, so engines with different volumes compare fairly.</li>
+  <li><b>Projection:</b> monthly cost = average daily cost in the range &times; 30.</li>
+</ul>
+</div>
+<div>
+<h2>Data</h2>
+<ul>
+  <li><b>308 logged requests</b> from a benchmark run: 68 handbook questions and 9 violation explanations through each of 4 setups, with real latency and token counts.</li>
+  <li>Timestamps and 9 user labels were spread over 3 weeks so trend charts have a realistic shape; rows are marked <code>benchmark</code>.</li>
+  <li><b>Live</b> rows are added by real use of the two pages (tokens estimated as characters &divide; 4). The data-source filter separates them.</li>
+</ul>
+</div>
+</div>
+
+<div class="keep">
+<h2>Key results (benchmark, 308 requests)</h2>
+<table>
+  <tr><th>Setup</th><th class="num">Handbook median</th><th class="num">Explain median</th><th class="num">Handbook answered</th><th class="num">Invalid replies</th><th class="num">$ per 1,000</th></tr>
+  <tr><td>Groq <code>gpt-oss-20b</code> (API)</td><td class="num">0.34 s</td><td class="num">0.36 s</td><td class="num">52 / 68</td><td class="num">0</td><td class="num">$0.061</td></tr>
+  <tr><td>SmolLM2-1.7B on CPU (Django)</td><td class="num">12.8 s</td><td class="num">14.2 s</td><td class="num">53 / 68</td><td class="num">6</td><td class="num">$0.110</td></tr>
+  <tr><td>SmolLM2-1.7B on GPU (Ollama)</td><td class="num">2.5 s</td><td class="num">2.7 s</td><td class="num">54 / 68</td><td class="num">7</td><td class="num">$0.037</td></tr>
+  <tr><td>Qwen2.5 14B on GPU (Ollama)</td><td class="num">2.7 s</td><td class="num">4.1 s</td><td class="num">54 / 68</td><td class="num">0</td><td class="num">$0.043</td></tr>
+</table>
+</div>
+<ul>
+  <li><b>P1/P2:</b> Groq is fastest by far. On our own machine, the GPU makes SmolLM2 about 5&times; faster than the CPU.</li>
+  <li><b>P3:</b> retrieval takes about 5 ms, under 1% of handbook time; generation is the bottleneck, so model serving matters more than search.</li>
+  <li><b>B3:</b> 78.3% of handbook requests were answered (213 of 272). Pricing, support and legal questions were 14.7% of traffic and 88% went unanswered, so that content belongs on static pages. SmolLM2 answered 2&ndash;3 out-of-scope questions it should have refused; Groq and Qwen2.5 refused all 10.</li>
+  <li><b>C1&ndash;C3:</b> counting electricity only, slow models cost most (SmolLM2 on CPU). With hosting included, the Groq API stays cheapest at every traffic level we modeled in A7, which is why production uses Groq.</li>
+</ul>
+<p class="note">Limits: "answered" means the reply passed our checks, not that a person graded it correct; local costs exclude hardware and hosting.</p>
+
+<div class="figs">
+  <figure><img src="kpis.png" alt="Dashboard KPI cards for performance, user behavior and cost"><figcaption>Dashboard KPI cards (P1, B1, C1, C3).</figcaption></figure>
+  <figure><img src="cost_charts.png" alt="Cost per 1,000 requests by model, and average tokens by request type"><figcaption>Cost per 1,000 requests by model (C1) and tokens by request type (C2).</figcaption></figure>
+</div>
+
+</body>
+</html>
