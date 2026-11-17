@@ -85,16 +85,48 @@ Every request to either feature writes one row to `AIRequestLog`: time, feature,
 
 Each setup ran the same 68 handbook questions and 9 violation explanations.
 
-| Setup | Handbook median | Explain median | Handbook answered | Invalid replies | $ per 1,000 |
-|---|---|---|---|---|---|
-| Groq gpt-oss-20b (API) | 0.34 s | 0.36 s | 52/68 | 0 | $0.061 |
-| SmolLM2 on CPU (Django) | 12.8 s | 14.2 s | 53/68 | 6 | $0.110 |
-| SmolLM2 on GPU (Ollama) | 2.5 s | 2.7 s | 54/68 | 7 | $0.037 |
-| Qwen2.5 14B on GPU (Ollama) | 2.7 s | 4.1 s | 54/68 | 0 | $0.043 |
+Two populations, never mixed without a label:
 
-- **P1/P2:** Groq is fastest by far. On our own machine, the GPU makes SmolLM2 about 5x faster than the CPU.
-- **P3:** retrieval takes about 5 ms, under 1% of handbook time. Generation is the bottleneck.
-- **B3:** 10 of the 68 questions are out of scope. Groq and Qwen2.5 refused all 10. SmolLM2 answered 2 to 3 of them, so its answered count is too high. A bigger model, or static pages for pricing and support, would fix this.
-- **C1:** counting electricity only, slow models cost the most, so SmolLM2 on CPU is the most expensive setup. With hosting included, Groq is still cheapest (A7).
+- **All 308 requests:** used for outcomes, answered counts and cost.
+- **The 288 that reached the model:** used for every latency figure. The other 20 are
+  retrieval-only (`no_passages`): no passage scored above 0.3, so the model was never
+  called and the request ended in about 5 ms. Counting them as answer times would pull
+  every latency number down.
+
+Overall latency (288): mean 6,256 ms, median 2,674 ms, p95 32,004 ms. (Over all 308 the
+same figures would be 5,850 / 2,618 / 29,660 ms; the dashboard reports the 288.)
+
+| Setup | Handbook median (n=63) | Explain median (n=9) | Handbook answered (of 68) | Invalid replies | $ per 1,000 (all 77) |
+|---|---|---|---|---|---|
+| Groq gpt-oss-20b (API) | 0.36 s | 0.36 s | 52 | 0 | $0.061 |
+| SmolLM2 on CPU (transformers in Django) | 22.6 s* | 14.2 s | 53 | 6 | $0.110 |
+| SmolLM2 on GPU (Ollama) | 2.55 s | 2.66 s | 54 | 7 | $0.037 |
+| Qwen2.5 14B on GPU (Ollama) | 2.77 s | 4.11 s | 54 | 0 | $0.043 |
+
+\* SmolLM2 on the CPU splits by reply length: 30 handbook requests with short replies
+(median 25 tokens) took under 13 s, 32 full answers (median 130 tokens) took over 22 s.
+The median falls between the groups, so read it as "13-23 s depending on reply length".
+
+- **P1/P2:** Groq is fastest by far. SmolLM2 through Ollama on our GPU was about 9x faster
+  than SmolLM2 through transformers on our CPU for the handbook (22.6 s vs 2.55 s) and about
+  5x for explanations (14.2 s vs 2.66 s). The two runs differ in software (runtime and
+  model packaging) as well as hardware, so this is not a pure CPU-vs-GPU measurement.
+- **P2:** Qwen2.5 14B is 0.22 s slower than SmolLM2 on the GPU for handbook questions, but
+  1.45 s slower for explanations (4.11 s vs 2.66 s).
+- **P3:** a search takes about 5 ms (median) on every setup. As a share of total handbook
+  time that is 0.02% (SmolLM2 CPU), 0.18% (Qwen2.5), 1.3% (Groq) and 3.5% (Ollama SmolLM2,
+  whose share comes from one 5.5 s search). Generation is the bottleneck.
+- **B3:** each setup was asked the same 10 out-of-scope questions (40 requests in all).
+  35 of 40 went unanswered (87.5%, about 88%): 20 never reached a model because no passage
+  matched, 13 the model declined ("not in the documents"), 2 were replies our checks
+  rejected. The 5 answered anyway were all SmolLM2 (2 on the CPU, 3 on the GPU); Groq and
+  Qwen2.5 answered none of their 10. A bigger model, or static pages for pricing and
+  support, would fix this.
+- **C1:** counting electricity only, slow models cost the most, so SmolLM2 on CPU is the
+  most expensive setup. Once hosting is included, a hosted API was cheaper at every traffic
+  level in our A7 model (that model priced a Hugging Face-hosted API, not Groq itself).
+- **B1/B2 data caveat:** benchmark timestamps and the 9 user labels are synthetic, and
+  every question was asked once per setup, so daily trends and topic counts describe our
+  test set, not real users.
 - "Answered" means the reply passed our checks, not that a person graded it correct.
 

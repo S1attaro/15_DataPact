@@ -39,14 +39,16 @@ Figure: `architecture.svg`
 
 **Stack**
 - Django 5.2, SQLite, Vega-Lite charts, Google OAuth (allauth)
-- Hosted on PythonAnywhere
+- Hosted on PythonAnywhere. The local models (SmolLM2, MiniLM) do not fit there, so in
+  production they are switched off: Explain uses Groq, and the handbook runs only on a
+  team laptop.
 
 **AI path 1: explain a violation**
 - Input: rule, column, failed-row count, up to 3 *safe* sample values (no names or IDs leave the server)
-- Few-shot prompt → **SmolLM2-1.7B** (local, picked from our 15-model benchmark) or **Groq gpt-oss-20b** (API)
+- Few-shot prompt → **Groq gpt-oss-20b** (API, production) or **SmolLM2-1.7B** (local only, picked from our 15-model benchmark)
 - Output must parse as JSON with an allowed cause, or nothing is shown
 
-**AI path 2: handbook Q&A (RAG)**
+**AI path 2: handbook Q&A (RAG) - local only, off in production**
 - Question → **MiniLM** embedding → top-3 passages from 9 handbook docs (score ≥ 0.3)
 - SmolLM2 answers from those passages only
 - Guardrails: answer must cite a passage it was shown, and may not state a number the passages don't contain
@@ -69,36 +71,41 @@ Figure: `architecture.svg`
 - (optional third) `fig_cost_per_1000.svg`: cost per 1,000 requests
 - Screenshot of the `/analytics/` dashboard (take at full width)
 
-**Table: engines compared** (fill from `key_numbers.md`)
+**Table: engines compared** (from `key_numbers.md`; latency = the 288 requests that
+reached the model, so 63 handbook + 9 explain per setup; $ per 1,000 = all 77 requests
+of that setup, both features together)
 
-| Engine | Median latency | p95 | $ per 1,000 requests |
-|---|---|---|---|
-| Local SmolLM2, CPU (explain) | 14.2 s | 16.3 s | $0.110 |
-| SmolLM2, GPU via Ollama (explain) | 2.7 s | 2.7 s | $0.037 |
-| Ollama qwen2.5:14b, GPU (explain) | 4.1 s | 4.3 s | $0.043 |
-| Groq gpt-oss-20b (explain) | 0.36 s | 0.50 s | $0.061 |
-| Local SmolLM2, CPU (handbook) | 12.8 s | 35.6 s | (same as local) |
-| SmolLM2, GPU via Ollama (handbook) | 2.5 s | 2.8 s | (same as above) |
-| Ollama qwen2.5:14b, GPU (handbook) | 2.7 s | 3.6 s | (same as above) |
-| Groq gpt-oss-20b (handbook) | 0.34 s | 0.62 s | (same as Groq) |
+| Engine | Feature | Median latency | p95 | $ per 1,000 requests (setup) |
+|---|---|---|---|---|
+| Groq gpt-oss-20b | explain | 0.36 s | 0.50 s | $0.061 |
+| SmolLM2, GPU via Ollama | explain | 2.66 s | 2.74 s | $0.037 |
+| Ollama qwen2.5:14b, GPU | explain | 4.11 s | 4.31 s | $0.043 |
+| SmolLM2, CPU via transformers | explain | 14.23 s | 16.34 s | $0.110 |
+| Groq gpt-oss-20b | handbook | 0.36 s | 0.66 s | $0.061 |
+| SmolLM2, GPU via Ollama | handbook | 2.55 s | 2.75 s | $0.037 |
+| Ollama qwen2.5:14b, GPU | handbook | 2.77 s | 3.60 s | $0.043 |
+| SmolLM2, CPU via transformers | handbook | 22.59 s* | 35.76 s | $0.110 |
 
-Benchmark: 308 requests (68 handbook + 9 explain per engine). In Django,
-SmolLM2 runs on the CPU (no AMD GPU support for PyTorch on Windows). We also
-ran the same SmolLM2 on our GPU through Ollama.
-Cost counts electricity only (150 W CPU, 355 W GPU) for local engines.
+\* Two groups by reply length: short replies under 13 s, full answers over 22 s.
+
+Benchmark: 308 requests (68 handbook + 9 explain per setup); 20 handbook requests
+never reached a model (no passage matched) and are left out of latency. In Django,
+SmolLM2 runs on the CPU through transformers (no AMD GPU support for PyTorch on
+Windows); we also ran it on our GPU through Ollama, a different runtime. Cost counts
+electricity only (150 W CPU, 355 W GPU) for local engines.
 
 ---
 
 ## 4. KEY RESULTS (column 3)
 
-- **Groq is fastest** at explaining violations (0.36 s median vs 4.1 s for Ollama on our GPU and 14.2 s for SmolLM2 on CPU).
-- **The GPU makes SmolLM2 5x faster.** The same model took 12.8 s on the CPU and 2.5 s on our GPU (handbook median).
-- **On the GPU, a bigger model is almost free.** Qwen2.5 14B is about 8x larger than SmolLM2 but only 0.2 s slower, with no invalid answers (SmolLM2 had 7).
-- **Bigger models know when to refuse.** On 10 out-of-scope questions (pricing, support, legal), Qwen2.5 and Groq refused all 10. SmolLM2 answered 2 to 3 of them, which it should not have.
+- **Groq is fastest** at explaining violations (0.36 s median vs 2.66 s for SmolLM2 and 4.11 s for Qwen2.5 through Ollama on our GPU, and 14.2 s for SmolLM2 on our CPU).
+- **How a model is served matters most for speed.** The same SmolLM2 took 22.6 s (handbook) and 14.2 s (explain) through transformers on our CPU, against 2.55 s and 2.66 s through Ollama on our GPU: about 9x and 5x. The runtime differs as well as the hardware, so this is not a pure CPU-vs-GPU result.
+- **On the GPU, a bigger model costs little time.** Qwen2.5 14B is about 8x larger than SmolLM2 but only 0.22 s slower on handbook questions (1.45 s slower on explanations), with no invalid answers (SmolLM2 had 7).
+- **Bigger models declined out-of-scope questions.** Each setup got the same 10 pricing, support and legal questions. Across all four, 35 of 40 went unanswered (88%): 20 never reached a model (no passage matched), 13 the model declined, 2 our checks caught. The 5 answered anyway were all SmolLM2; Groq and Qwen2.5 answered none.
 - **Speed drives local cost.** Counting only electricity, SmolLM2 on the GPU was cheapest ($0.037 per 1,000 requests), then Qwen2.5 on the GPU ($0.043), Groq ($0.061), and SmolLM2 on CPU ($0.110), because it runs so long.
-- **Hosting decides cost.** Counting servers, the API was cheaper at every traffic level we modeled (A7: $2/day vs $29/day at 1,000 daily users).
+- **Hosting decides cost.** Counting servers, a hosted API was cheaper at every traffic level we modeled (A7: $2/day vs $29/day at 1,000 daily users; A7 priced a Hugging Face-hosted API).
 - **A strict prompt beat retrieving more.** Answer score went from 45.8% to 62.5% and wrong refusals from 3 to 0 (A8). Retrieving only 1 passage made answers worse (41.7%).
-- **Retrieval is nearly free:** under 1% of handbook latency (about 5 ms per search). Generation is the bottleneck, so a faster model server matters more than a faster search.
+- **Retrieval is nearly free:** about 5 ms per search (median, every setup), 0.02-1.3% of handbook time (3.5% for Ollama-SmolLM2 because of one 5.5 s search). Generation is the bottleneck, so a faster model server matters more than a faster search.
 
 ---
 
@@ -107,7 +114,8 @@ Cost counts electricity only (150 W CPU, 355 W GPU) for local engines.
 **What does not work well**
 - SmolLM2 gave invalid handbook answers (6 of 68 on CPU, 7 of 68 on GPU). Qwen2.5 and Groq gave none.
 - The local model does not fit on our host (PythonAnywhere disk), so production relies on Groq.
-- The handbook can't answer pricing or support questions (14.7% of handbook traffic; 88% of those went unanswered), and once made up a price ("$100 per seat") until we added the number check.
+- The handbook can't answer pricing or support questions (14.7% of benchmark handbook requests; 35 of 40, 88%, went unanswered), and once made up a price ("$100 per seat") until we added the number check.
+- Benchmark dates and user labels are synthetic and each question was asked once per setup, so the usage and topic charts describe our test set, not real users.
 - Our checks catch invented citations and numbers, but not every unsupported sentence.
 - Token counts on live pages are estimates (characters ÷ 4).
 - "Answered" means the reply passed our checks, not that a person graded it correct. Only the A8 scores are graded by hand.

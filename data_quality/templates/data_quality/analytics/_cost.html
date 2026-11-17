@@ -4,7 +4,7 @@
         <dl class="factlist factlist--stats">
             <div><dt>Total cost</dt><dd>${{ data.total_cost|floatformat:4 }}</dd></div>
             <div><dt>Groq, per 1,000 requests</dt><dd>${{ data.groq_per_1000|floatformat:4 }}</dd></div>
-            <div><dt>Local, per 1,000 requests</dt><dd>${{ data.local_per_1000|floatformat:4 }}</dd></div>
+            <div><dt>Local + Ollama, per 1,000 (electricity only)</dt><dd>${{ data.local_per_1000|floatformat:4 }}</dd></div>
             <div><dt>Projected 30 days</dt><dd>${{ data.projected_month|floatformat:4 }}</dd></div>
         </dl>
     </div>

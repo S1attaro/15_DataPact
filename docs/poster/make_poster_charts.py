@@ -58,10 +58,16 @@ def pct(values, p):
     return data[low] + (data[high] - data[low]) * (k - low)
 
 
+# Requests that never reached a model: retrieval found no passage (~5 ms), or the
+# engine was down. Latency statistics use only requests that reached the model,
+# the same population as the dashboard's performance section.
+NOT_TIMED = ("no_passages", "error")
+
+
 def latency_chart(rows):
     groups = defaultdict(list)
     for row in rows:
-        if row["status"] != "error":
+        if row["status"] not in NOT_TIMED:
             groups[(row["feature"], engine_key(row))].append(row["latency_ms"] / 1000)
     keys = sorted(groups, key=lambda k: (k[0], list(ENGINE_COLORS).index(k[1])))
     fig, ax = plt.subplots(figsize=(9, 7))
@@ -130,15 +136,22 @@ def main():
     for r in handbook:
         by_status[r["status"]] += 1
     out_scope = [r for r in handbook if r["query_type"] == "out_of_scope"]
-    handbook_local = [r for r in handbook if r["engine"] == "local" and r["status"] != "error" and r["retrieval_ms"]]
-    retrieval_share = (statistics.median(r["retrieval_ms"] / r["latency_ms"] for r in handbook_local) * 100
-                       if handbook_local else 0)
+    timed = [r for r in rows if r["status"] not in NOT_TIMED]
+    timed_ms = [r["latency_ms"] for r in timed]
     sources = sorted({r["source"] for r in rows})
 
     lines = ["# Poster key numbers", "",
              f"Generated from data/ai_logs.csv ({len(rows)} requests, source: {', '.join(sources)}).",
              "Re-run make_poster_charts.py after a new collect_ai_logs run.", "",
-             "## Latency (seconds, answered requests)", "",
+             "## Populations", "",
+             f"- All benchmark requests: {len(rows)} (cost and outcome figures use these).",
+             f"- Requests that reached the model: {len(timed)} (every latency figure uses these).",
+             f"- Retrieval-only requests (no passage matched, model never called): "
+             f"{sum(1 for r in rows if r['status'] == 'no_passages')}.", "",
+             f"Overall latency, {len(timed)} requests that reached the model: mean "
+             f"{statistics.mean(timed_ms):,.0f} ms, median {pct(timed_ms, 50):,.0f} ms, "
+             f"p95 {pct(timed_ms, 95):,.0f} ms.", "",
+             "## Latency (seconds, requests that reached the model)", "",
              "| Feature | Engine | Median | p95 | Requests |", "|---|---|---|---|---|"]
     for (feature, engine), (median, p95, n) in sorted(latency.items()):
         lines.append(f"| {feature} | {ENGINE_NAMES[engine]} | {median:.2f} | {p95:.2f} | {n} |")
@@ -147,12 +160,25 @@ def main():
     lines += ["", "## Handbook outcomes", "", "| Outcome | Requests | Share |", "|---|---|---|"]
     lines += [f"| {status} | {n} | {n / len(handbook) * 100:.1f}% |" for status, n in sorted(by_status.items())]
     if out_scope:
-        failed = sum(1 for r in out_scope if r["status"] != "ok")
+        oos = defaultdict(int)
+        for r in out_scope:
+            oos[r["status"]] += 1
+        failed = len(out_scope) - oos["ok"]
         lines += ["", f"Out-of-scope (pricing/support/legal) questions: {len(out_scope)} "
                       f"({len(out_scope) / len(handbook) * 100:.1f}% of handbook traffic); "
-                      f"{failed / len(out_scope) * 100:.0f}% not answered."]
-    lines += ["", f"Retrieval is {retrieval_share:.1f}% of handbook latency (median); generation is the rest.",
-              "", "## A8 RAG improvement (manual grades)", "",
+                      f"{failed} of {len(out_scope)} not answered ({failed / len(out_scope) * 100:.1f}%, "
+                      f"rounded {failed / len(out_scope) * 100:.0f}%): {oos['no_passages']} no passage "
+                      f"matched (model not called), {oos['not_found']} model said it did not know, "
+                      f"{oos['invalid']} reply failed our checks; {oos['ok']} answered anyway."]
+    lines += ["", "## Retrieval share of handbook time (requests that reached the model)", "",
+              "| Engine | Median search | Share of total handbook time |", "|---|---|---|"]
+    for engine in ENGINE_COLORS:
+        group = [r for r in timed if r["feature"] == "handbook" and engine_key(r) == engine]
+        if group:
+            share = sum(r["retrieval_ms"] for r in group) / sum(r["latency_ms"] for r in group) * 100
+            lines.append(f"| {ENGINE_NAMES[engine]} | {statistics.median(r['retrieval_ms'] for r in group):.1f} ms "
+                         f"| {share:.2f}% (slowest search {max(r['retrieval_ms'] for r in group):,.0f} ms) |")
+    lines += ["", "## A8 RAG improvement (manual grades)", "",
               "| Setup | Answer score | Wrong refusals |", "|---|---|---|"]
     lines += [f"| {r['variant']} | {r['answer_score (manual)']} | {r['wrong refusals']} |" for r in rag]
     (HERE / "key_numbers.md").write_text("\n".join(lines) + "\n", encoding="utf-8")

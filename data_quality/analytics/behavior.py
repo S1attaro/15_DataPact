@@ -75,26 +75,35 @@ def handbook_outcomes(qs):
             for (engine, model, status), n in sorted(counts.items())]
 
 
+# Out-of-scope outcomes, kept apart because they are different things: only
+# not_found is the model declining. no_passages never reached a model, and
+# invalid is a reply the model did write that our checks then threw out.
+OUT_OF_SCOPE_OUTCOMES = (
+    ("no_passages", "Not answered: no passage matched (model not called)"),
+    ("not_found", "Not answered: model said it did not know"),
+    ("invalid", "Not answered: reply failed our checks"),
+    ("ok", "Answered anyway (should have declined)"),
+)
+OUT_OF_SCOPE_LABELS = dict(OUT_OF_SCOPE_OUTCOMES)
+
+
 def out_of_scope_handling(qs):
     """
-    Questions the handbook is meant to refuse, split into refused and answered.
+    Questions the handbook should decline, split by how each one ended.
 
     An answered out-of-scope question is the guardrail failing, so this is the
-    one chart where a tall "Answered" bar is the bad outcome.
+    one chart where the "Answered anyway" bar is the bad outcome.
     """
-    counts = defaultdict(lambda: {"Refused": 0, "Answered anyway": 0})
+    counts = defaultdict(int)
     for row in qs.filter(feature="handbook", query_type="out_of_scope").values(
             "engine", "model_name", "status"):
-        bucket = "Refused" if row["status"] in FAILURE_STATUSES else "Answered anyway"
-        counts[(row["engine"], row["model_name"])][bucket] += 1
-    values = []
-    for (engine, model), group in sorted(counts.items()):
-        label = model_label(engine, model)
-        values.append({"model": label, "outcome": "Refused", "order": 0,
-                       "requests": group["Refused"]})
-        values.append({"model": label, "outcome": "Answered anyway", "order": 1,
-                       "requests": group["Answered anyway"]})
-    return values
+        counts[(row["engine"], row["model_name"], row["status"])] += 1
+    order = [status for status, _ in OUT_OF_SCOPE_OUTCOMES]
+    return [{"model": model_label(engine, model),
+             "outcome": OUT_OF_SCOPE_LABELS.get(status, status),
+             "order": order.index(status) if status in order else len(order),
+             "requests": n}
+            for (engine, model, status), n in sorted(counts.items())]
 
 
 def failure_rate(qs):
@@ -158,8 +167,9 @@ def behavior_context(qs):
             "x": {"field": "requests", "type": "quantitative", "title": "Out-of-scope questions",
                   "stack": "zero"},
             "color": {"field": "outcome", "type": "nominal", "title": "Outcome",
-                      "scale": {"domain": ["Refused", "Answered anyway"],
-                                "range": ["#3f7a3f", "#b3462f"]}},
+                      "scale": {"domain": [label for _, label in OUT_OF_SCOPE_OUTCOMES],
+                                "range": ["#c9a227", "#3f7a3f", "#7f93a6", "#b3462f"]},
+                      "legend": {"orient": "bottom", "direction": "vertical", "labelLimit": 420}},
             "order": {"field": "order", "type": "quantitative"},
             "tooltip": [{"field": "model"}, {"field": "outcome"}, {"field": "requests"}],
         },
@@ -173,23 +183,30 @@ def behavior_context(qs):
         "failure_rate": failure_rate(qs),
         "charts": [
             chart("requests-per-day", "Requests per day",
-                  "B1. Daily volume over the logged period, split by feature. The handbook "
-                  "carries most of the traffic; explaining a violation is occasional.",
+                  "B1. Requests per day, split by feature. Benchmark rows have synthetic dates: "
+                  "the measured requests ran in one sitting and were then spread over three weeks "
+                  "(with nine made-up user labels) so this chart has a realistic shape. Their "
+                  "dates say nothing about real adoption or growth. Live-site rows have real "
+                  "dates; pick \"Live site\" under Data source to see them alone.",
                   daily_spec, wide=True),
-            chart("requests-by-topic", "What people ask about",
-                  "B2. Handbook rows are labelled with a topic, explain rows with the rule "
-                  "type that failed. Rules are the most asked-about topic, which is where "
-                  "better documentation would pay off first.",
+            chart("requests-by-topic", "Requests by topic",
+                  "B2. Handbook rows are labelled with a topic, explain rows with the rule type "
+                  "that failed. For benchmark rows this is the mix of our own test questions "
+                  "(68 handbook questions and 9 explanations, each run once on each of the four "
+                  "setups), not what real users ask. Live-site rows show real use.",
                   topic_spec),
             chart("handbook-outcomes", "How handbook requests end, by setup",
                   "B3. Shares, not counts: every setup answered the same questions, so counts "
                   "would be four identical bars. 'No passage matched' is retrieval declining "
                   "before the model runs; 'Reply failed checks' is our guardrail catching a bad answer.",
                   outcome_spec),
-            chart("out-of-scope", "Questions the handbook should refuse",
-                  "B3. These are deliberately out-of-scope questions, so refusing is the correct "
-                  "behaviour and a red bar is a guardrail failure. The bigger model refuses every "
-                  "one; the 1.7B model answers some of them anyway.",
+            chart("out-of-scope", "Out-of-scope questions: how each ended",
+                  "B3. Pricing, support and legal questions the handbook should not answer, so "
+                  "the red \"Answered anyway\" bar is the guardrail failing. In the benchmark "
+                  "run 35 of 40 went unanswered (87.5%): 20 never reached a model because "
+                  "retrieval found no passage, 13 the model declined, and 2 were replies our "
+                  "checks rejected. The 5 answered anyway were all SmolLM2 (2 on the CPU, 3 on "
+                  "the GPU).",
                   guardrail_spec),
         ],
     }
