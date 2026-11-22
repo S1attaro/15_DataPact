@@ -1,0 +1,25 @@
+{% load allauth %}
+{% comment %}
+UX Stage 3J: allauth's form fields written out like DataPact's own Sign up
+page, instead of {{ form.as_p }}. as_p put a field's help (the password rules,
+a <ul>) inside a <p>, which the browser breaks apart: the list landed outside
+the help text, and the input's aria-describedby pointed at an empty span. Here
+the help is a <div> with the id Django's widget already points at
+(<id>_helptext), labels lose Django's colon, and every error stays under its
+field. Hidden fields and form-wide errors render as before. Help text is
+marked safe exactly as Django's own form templates do.
+{% endcomment %}
+{{ attrs.form.non_field_errors }}
+{% for field in attrs.form.hidden_fields %}{{ field }}{% endfor %}
+{% for field in attrs.form.visible_fields %}
+    <div class="authform__field">
+        {% if field.widget_type == "checkbox" %}
+            {{ field }} <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {% else %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {% if field.help_text %}<div class="helptext" id="{{ field.auto_id }}_helptext">{{ field.help_text|safe }}</div>{% endif %}
+            {{ field }}
+        {% endif %}
+        {{ field.errors }}
+    </div>
+{% endfor %}

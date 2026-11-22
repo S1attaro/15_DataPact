@@ -33,7 +33,8 @@ def detail_url(dataset):
 def violation_rows(html):
     """The <tr> elements of the dataset page's violations table, as raw HTML."""
     panel = html.split('id="violations"', 1)[1]
-    body = panel.split("<tbody>", 1)[1].split("</tbody>", 1)[0]
+    # Stage 3D: the tbody carries role="rowgroup" now, so match it with any attributes.
+    body = re.split(r"<tbody\b[^>]*>", panel, maxsplit=1)[1].split("</tbody>", 1)[0]
     return re.findall(r"<tr\b.*?</tr>", body, flags=re.S)
 
 
@@ -118,23 +119,26 @@ class DatasetViolationsTests(DiscoveryData):
         self.assertEqual(len(rows), 2)
         self.assertNotEqual(rows[0], rows[1])
 
-    def test_each_row_links_to_the_explain_page_with_a_name_of_its_own(self):
+    def test_each_row_links_to_the_investigate_page_with_a_name_of_its_own(self):
         rows = violation_rows(self.page().content.decode())
         self.assertIn(f'href="{reverse("data_quality:violation-explain", args=[self.may_credit.pk])}"', rows[0])
         self.assertIn(f'href="{reverse("data_quality:violation-explain", args=[self.april_credit.pk])}"', rows[1])
         names = [name for row in rows for name in link_names(row)]
         self.assertEqual(names, [
-            "Explain credit_hours Type match in enrollment_2026_05.csv, 2026-05-31",
-            "Explain credit_hours Type match in enrollment_2026_04.csv, 2026-04-30",
+            "Investigate credit_hours Type match in enrollment_2026_05.csv, 2026-05-31",
+            "Investigate credit_hours Type match in enrollment_2026_04.csv, 2026-04-30",
         ])
-        self.assertTrue(visible_text(rows[0]).endswith("Explain"))
+        self.assertTrue(visible_text(rows[0]).endswith("Investigate"))
 
     def test_the_table_headers(self):
         response = self.page()
-        for header in ("Validation run", "Column / rule", "Failed rows", "Resolution", "AI explanation"):
+        # Stage 3D: the action column is "Next step", and each header keeps its
+        # column role for the phone layout.
+        for header in ("Validation run", "Column / rule", "Failed rows", "Resolution", "Next step"):
             with self.subTest(header=header):
-                self.assertContains(response, f'<th scope="col">{header}</th>' if header != "Failed rows"
-                                    else '<th scope="col" class="num">Failed rows</th>', html=True)
+                self.assertContains(response, f'<th scope="col" role="columnheader">{header}</th>' if header != "Failed rows"
+                                    else '<th scope="col" role="columnheader" class="num">Failed rows</th>', html=True)
+        self.assertNotContains(response, "AI explanation")
 
     def test_the_summary_counts_violations_and_says_how_they_are_ordered(self):
         self.assertContains(self.page(), "2 violations recorded, newest run first.")
@@ -194,7 +198,9 @@ class DatasetPageHeaderTests(DiscoveryData):
         self.assertNotContains(response, 'class="viewchip"')
         # The page itself is unchanged: still the DetailView's template.
         self.assertTemplateUsed(response, "data_quality/dataset_detail.html")
-        self.assertContains(response, "<h2 class=\"panel__title\">Dataset</h2>", html=True)
+        # Stage 3G replaced the "Dataset" facts panel with "Where it stands"
+        # (tests_dataset_detail.py); the page still opens with that panel.
+        self.assertContains(response, '<h2 class="panel__title" id="standing-title">Where it stands</h2>', html=True)
 
 
 class DatasetViolationsEmptyTests(DiscoveryData):

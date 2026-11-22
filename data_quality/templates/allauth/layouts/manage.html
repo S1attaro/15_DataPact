@@ -1,0 +1,20 @@
+{% extends "allauth/layouts/base.html" %}
+{% comment %}
+UX Stage 3J: the signed-in account pages (email addresses, password, connected
+accounts). allauth's own layout linked them from a "Menu:" list that also held
+"Sign Out", a plain link to a logout that only accepts POST; DataPact's bar
+already has a Log out button, so this keeps only the three account pages.
+{% endcomment %}
+
+{% block breadcrumbs %}
+    {% url 'account_email' as email_url %}
+    {% url 'account_change_password' as password_url %}
+    {% url 'socialaccount_connections' as connections_url %}
+    <nav class="account-nav" aria-label="Account settings">
+        <ul>
+            <li><a href="{{ email_url }}"{% if request.path == email_url %} aria-current="page"{% endif %}>Email addresses</a></li>
+            <li><a href="{{ password_url }}"{% if request.path == password_url %} aria-current="page"{% endif %}>Password</a></li>
+            <li><a href="{{ connections_url }}"{% if request.path == connections_url %} aria-current="page"{% endif %}>Connected accounts</a></li>
+        </ul>
+    </nav>
+{% endblock %}

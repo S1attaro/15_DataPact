@@ -188,8 +188,9 @@ class BaseTemplateInheritanceTests(SignedInClientMixin, TestCase):
             with self.subTest(url=url):
                 response = self.client.get(url)
                 self.assertTemplateUsed(response, "data_quality/base.html")
-                # Shell pieces that only base.html provides.
-                self.assertContains(response, "DATA<span>PACT</span>", html=False)
+                # Shell pieces that only base.html provides. The wordmark
+                # became "Data<span>Pact</span>" in the product redesign.
+                self.assertContains(response, "Data<span>Pact</span>", html=False)
                 self.assertContains(response, "INFO 490 Team 15")
 
     def test_title_block_is_overridden_per_page(self):
@@ -259,7 +260,13 @@ class TemplateReuseTests(SignedInClientMixin, TestCase):
         self.assertIn("Monthly Enrollment Export", html)
         self.assertIn("Registrar", html)
 
-    def test_view_label_is_overridable_and_defaults_to_the_listview(self):
+    def test_the_page_never_prints_the_view_that_rendered_it(self):
+        """
+        Product redesign, Stage 3A. This test used to check the "Rendered by:"
+        caption (an A2 grading aid) named the view. The caption is gone, as the
+        dataset page's went in UX Stage 4; the template still renders from any
+        view's context, and a view_label passed to it is simply not printed.
+        """
         html = render_to_string(
             "data_quality/dataset_list.html",
             {
@@ -267,10 +274,13 @@ class TemplateReuseTests(SignedInClientMixin, TestCase):
                 "view_label": "Function-based view - render()",
             },
         )
-        self.assertIn("Function-based view - render()", html)
+        self.assertIn("Monthly Enrollment Export", html)
+        self.assertNotIn("Function-based view - render()", html)
+        self.assertNotIn("Rendered by", html)
 
         response = self.client.get(reverse("data_quality:dataset-list"))
-        self.assertContains(response, "Generic CBV - ListView")
+        self.assertNotContains(response, "Generic CBV - ListView")
+        self.assertNotContains(response, "Rendered by")
 
     def test_empty_state_still_fires_without_a_view(self):
         html = render_to_string("data_quality/dataset_list.html", {"datasets": []})
@@ -392,12 +402,14 @@ class DatasetRenderViewTests(SignedInClientMixin, TestCase):
             self.assertContains(response, owner.username)
 
     def test_view_label_names_the_render_fbv(self):
-        # The template's caption defaults to the ListView, so the FBV has to
-        # pass view_label itself for /datasets/render/ to be identifiable.
+        # The FBV still identifies itself, in its context (the A2 record of
+        # which view rendered /datasets/render/). Since Stage 3A the page no
+        # longer prints view names, so neither label reaches the screen.
         response = self.client.get(reverse("data_quality:dataset-render"))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "data_quality/dataset_list.html")
-        self.assertContains(response, "Function-based view - render()")
+        self.assertEqual(response.context["view_label"], "Function-based view - render()")
+        self.assertNotContains(response, "Function-based view - render()")
         self.assertNotContains(response, "Generic CBV - ListView (DatasetListView)")
 
 
@@ -499,10 +511,12 @@ class EmptyStateActionTests(SignedInClientMixin, TestCase):
         )
         # UX Stage 4 added a second empty state to this page (its violations
         # panel); that one has no action, and the contract one keeps its own.
-        contracts_action, violations_action = self.actions_on(
+        # Stage 3G added a third (Recorded runs), which has no action either.
+        contracts_action, runs_action, violations_action = self.actions_on(
             reverse("data_quality:dataset-detail", args=[dataset.pk]))
-        self.assertNotIn("btn", violations_action)
-        self.assertNotIn("href=", violations_action)
+        for empty_action in (runs_action, violations_action):
+            self.assertNotIn("btn", empty_action)
+            self.assertNotIn("href=", empty_action)
         action = contracts_action
         self.assertIn("+ New contract version", action)
         self.assertIn("btn--disabled", action)
@@ -1130,7 +1144,8 @@ class StaticAssetTests(SignedInClientMixin, TestCase):
     def test_logo_is_served_from_static_too(self):
         response = self.client.get(reverse("data_quality:dataset-list"))
         self.assertContains(
-            response, f'{settings.STATIC_URL}data_quality/img/datapact-logo.svg', html=False
+            # The product redesign replaced the logo with the answer-sheet mark.
+            response, f'{settings.STATIC_URL}data_quality/img/datapact-mark.svg', html=False
         )
 
     def test_no_inline_stylesheet_is_left_in_the_page(self):
@@ -1146,7 +1161,10 @@ class StaticAssetTests(SignedInClientMixin, TestCase):
         """
         for asset in (
             "data_quality/css/datapact.css",
-            "data_quality/img/datapact-logo.svg",
+            "data_quality/img/datapact-mark.svg",
+            # Product redesign: the self-hosted typefaces the stylesheet loads.
+            "data_quality/fonts/archivo-var.woff2",
+            "data_quality/fonts/source-serif-4-var.woff2",
         ):
             with self.subTest(asset=asset):
                 located = finders.find(asset)

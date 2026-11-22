@@ -1,106 +1,119 @@
 {% extends "data_quality/base.html" %}
-{% comment %} Section 2 - Hriday {% endcomment %}
+{% comment %}
+=============================================================================
+Contracts - Section 2 (Hriday Agarwal); product redesign, Stage 3F
+
+Context (ContractSearchView): total_contracts, status_breakdown (counts by
+status), filtered_contracts (the versions matching ?q and ?status, each with
+dataset_active_version: the number of its dataset's ACTIVE version, or None),
+query, status, status_choices, and the violation lookup's own keys.
+
+Stage 3F: the breakdown is a one-line summary in the search panel, and the
+matching versions are grouped by dataset in one table: one <tbody> per
+dataset, its heading row a rowgroup header that names the version in force,
+then every matching version, newest first (the model's ordering). Nothing is
+hidden. Each cell names its dataset, version and column through headers="...".
+A status filter other than Active can leave the active version out of a
+group; the heading then says so instead of implying a shown version is in
+force. (?q filters by dataset name, so it always keeps a dataset's versions
+together.) The violation lookup below is Stage 3D's, unchanged.
+=============================================================================
+{% endcomment %}
 
 {% block title %}Contracts - DataPact{% endblock %}
+
+{% block main_attrs %} data-surface="contracts"{% endblock %}
 
 {% block page_title %}Contracts{% endblock %}
 
 {% block page_subtitle %}
     <p class="page__subtitle">
         {{ total_contracts }} contract version{{ total_contracts|pluralize }} across every dataset.
+        This page also holds the violation lookup:
+        <a href="#violation-lookup">look up recorded violations</a> further down.
     </p>
 {% endblock %}
 
 {% block content %}
-    <p class="viewchip">Rendered by: <code>ContractSearchView (django.views.View, GET + POST)</code></p>
 
-    <div class="panel">
+    <section class="panel contracts-search" aria-labelledby="contracts-search-title">
         <div class="panel__head">
-            <h2 class="panel__title">Contract status breakdown</h2>
+            <h2 class="panel__title" id="contracts-search-title">Search contracts</h2>
         </div>
         <div class="panel__body">
-            <table class="datatable">
-                <thead>
-                    <tr>
-                        <th scope="col">Status</th>
-                        <th scope="col" class="num">Contracts</th>
-                    </tr>
-                </thead>
-                <tbody>
+            {% if status_breakdown %}
+                <p class="contracts-summary">
+                    <span class="visually-hidden">All contract versions, by status:</span>
                     {% for row in status_breakdown %}
-                        <tr>
-                            <td>{% include "data_quality/includes/_status_badge.html" with status=row.status only %}</td>
-                            <td class="num">{{ row.total }}</td>
-                        </tr>
-                    {% empty %}
-                        <tr class="is-emptyrow">
-                            <td colspan="2">
-                                {% include "data_quality/includes/_empty_state.html" with headline="No contracts exist yet." message="Aggregations have nothing to summarize until a contract is created." only %}
-                            </td>
-                        </tr>
+                        <span class="contracts-summary__item">{% include "data_quality/includes/_status_badge.html" with status=row.status only %} <span class="contracts-summary__count">{{ row.total }}</span></span>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="panel">
-        <div class="panel__head">
-            <h2 class="panel__title">Search contracts</h2>
-        </div>
-        <div class="panel__body">
-            <form method="get" action="{% url 'data_quality:contract-search' %}">
-                <label for="q">Dataset name contains</label>
-                <input type="text" id="q" name="q" value="{{ query }}" placeholder="e.g. Enrollment">
-
-                <label for="status">Status</label>
-                <select id="status" name="status">
-                    <option value="">Any</option>
-                    {% for value, label in status_choices %}
-                        <option value="{{ value }}" {% if value == status %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-
+                </p>
+            {% else %}
+                {% include "data_quality/includes/_empty_state.html" with headline="No contracts exist yet." message="Aggregations have nothing to summarize until a contract is created." only %}
+            {% endif %}
+            <form method="get" class="contracts-search__form" action="{% url 'data_quality:contract-search' %}">
+                <div class="contracts-search__field">
+                    <label for="q">Dataset name contains</label>
+                    <input type="text" id="q" name="q" value="{{ query }}" placeholder="e.g. Enrollment">
+                </div>
+                <div class="contracts-search__field">
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <option value="">Any</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if value == status %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <button type="submit" class="btn btn--primary">Search</button>
             </form>
         </div>
-    </div>
+    </section>
 
-    <div class="panel">
+    <section class="panel contracts-results" aria-labelledby="contracts-results-title">
+        {% regroup filtered_contracts by dataset as groups %}
         <div class="panel__head">
-            <h2 class="panel__title">Matching contracts</h2>
+            <h2 class="panel__title" id="contracts-results-title">Matching contracts</h2>
+            {% if groups %}
+                <p class="contracts-results__count">{{ filtered_contracts|length }} version{{ filtered_contracts|length|pluralize }} in {{ groups|length }} dataset{{ groups|length|pluralize }}</p>
+            {% endif %}
         </div>
-        <table class="datatable">
-            {% if filtered_contracts %}
-                <thead>
-                    <tr>
-                        <th scope="col">Dataset</th>
-                        <th scope="col">Version</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Change note</th>
+        {% if groups %}
+            <table class="datatable ctable" role="table">
+                <caption class="visually-hidden">Contract versions, grouped by dataset, newest version first</caption>
+                <thead role="rowgroup">
+                    <tr role="row">
+                        <th scope="col" role="columnheader" id="ct-version">Version</th>
+                        <th scope="col" role="columnheader" id="ct-status">Status</th>
+                        <th scope="col" role="columnheader" id="ct-note">Change note</th>
                     </tr>
                 </thead>
-            {% endif %}
-            <tbody>
-                {% for contract in filtered_contracts %}
-                    <tr>
-                        <td>
-                            <a href="{{ contract.dataset.get_absolute_url }}">{{ contract.dataset.name }}</a>
-                        </td>
-                        <td>v{{ contract.version_number }}</td>
-                        <td>{% include "data_quality/includes/_status_badge.html" with status=contract.status only %}</td>
-                        <td class="muted">{{ contract.change_note|default:"—" }}</td>
-                    </tr>
-                {% empty %}
-                    <tr class="is-emptyrow">
-                        <td colspan="4">
-                            {% include "data_quality/includes/_empty_state.html" with headline="No contracts match that search." message="Try a different dataset name or clear the status filter." only %}
-                        </td>
-                    </tr>
+                {% for group in groups %}
+                    {% with dataset=group.grouper active=group.list.0.dataset_active_version %}
+                    <tbody role="rowgroup" class="ctable__group">
+                        <tr role="row" class="ctable__dataset">
+                            <th scope="rowgroup" role="rowheader" colspan="3" id="ct-ds-{{ dataset.pk }}">
+                                <a href="{{ dataset.get_absolute_url }}">{{ dataset.name }}</a>
+                                <span class="ctable__active">{% if active %}Active version: v{{ active }}{% if status and status != "ACTIVE" %} (not in these results){% endif %}{% else %}No active version{% endif %}</span>
+                            </th>
+                        </tr>
+                        {% for contract in group.list %}
+                            <tr role="row">
+                                <th scope="row" role="rowheader" id="ct-{{ contract.pk }}" headers="ct-ds-{{ dataset.pk }} ct-version" data-label="Version">v{{ contract.version_number }}</th>
+                                <td role="cell" headers="ct-ds-{{ dataset.pk }} ct-{{ contract.pk }} ct-status" data-label="Status">{% include "data_quality/includes/_status_badge.html" with status=contract.status only %}</td>
+                                <td role="cell" headers="ct-ds-{{ dataset.pk }} ct-{{ contract.pk }} ct-note" data-label="Change note" class="muted">{{ contract.change_note|default:"—" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% endwith %}
                 {% endfor %}
-            </tbody>
-        </table>
-    </div>
+            </table>
+        {% else %}
+            <div class="panel__body">
+                {% include "data_quality/includes/_empty_state.html" with headline="No contracts match that search." message="Try a different dataset name or clear the status filter." only %}
+            </div>
+        {% endif %}
+    </section>
 
     {% comment %}
         UX Stage 3: Home links straight here (#violation-lookup), and the form
@@ -112,6 +125,7 @@
             <h2 class="panel__title" id="violation-lookup-title">Look up violations</h2>
         </div>
         <div class="panel__body">
+            <p class="lookup__intro">Find recorded violations by dataset and resolution, then investigate one to see what failed and how its decision is recorded.</p>
             {% if violation_resolution_label and violation_results is None %}
                 {# Arrived from a link that chose the resolution; the lookup has not run. #}
                 <p class="lookup__hint">{{ violation_resolution_label }} is selected. Press Look up violations to see them.</p>
@@ -140,7 +154,9 @@
             on #violation-results, so a screen reader starts at the answer.
             Each row names its validation run: the same rule can fail in
             several files, and without the run those rows read the same. The
-            hidden part of each Explain link gives it a name of its own.
+            hidden part of each Investigate link gives it a name of its own.
+            Stage 3D: below 40em each row becomes a labelled block, as on the
+            dataset page; the explicit roles keep each cell's column name.
         {% endcomment %}
         <section class="panel" id="violation-results" tabindex="-1" aria-labelledby="violation-results-title">
             <div class="panel__head">
@@ -151,28 +167,28 @@
                     {{ violation_results|length }} violation{{ violation_results|length|pluralize }}{% if violation_query %} in datasets whose name contains “{{ violation_query }}”{% endif %}{% if violation_resolution_label %} with resolution {{ violation_resolution_label }}{% endif %}, most failed rows first.
                 </p>
             {% endif %}
-            <table class="datatable">
+            <table class="datatable vtable vtable--lookup"{% if violation_results %} role="table"{% endif %}>
                 {% if violation_results %}
-                    <thead>
-                        <tr>
-                            <th scope="col">Dataset</th>
-                            <th scope="col">Column / rule</th>
-                            <th scope="col">Validation run</th>
-                            <th scope="col" class="num">Failed rows</th>
-                            <th scope="col">Resolution</th>
-                            <th scope="col">AI explanation</th>
+                    <thead role="rowgroup">
+                        <tr role="row">
+                            <th scope="col" role="columnheader">Dataset</th>
+                            <th scope="col" role="columnheader">Column / rule</th>
+                            <th scope="col" role="columnheader">Validation run</th>
+                            <th scope="col" role="columnheader" class="num">Failed rows</th>
+                            <th scope="col" role="columnheader">Resolution</th>
+                            <th scope="col" role="columnheader">Next step</th>
                         </tr>
                     </thead>
                 {% endif %}
-                <tbody>
+                <tbody{% if violation_results %} role="rowgroup"{% endif %}>
                     {% for violation in violation_results %}
-                        <tr>
-                            <td><a href="{{ violation.rule.contract.dataset.get_absolute_url }}">{{ violation.rule.contract.dataset.name }}</a></td>
-                            <td>{{ violation.rule.column_name }} - {{ violation.rule.get_rule_type_display }}</td>
-                            <td>{{ violation.run.file_name }}<span class="cell__sub">{{ violation.run.started_at|date:"Y-m-d" }}</span></td>
-                            <td class="num">{{ violation.failed_row_count }}</td>
-                            <td>{% include "data_quality/includes/_status_badge.html" with status=violation.resolution label=violation.get_resolution_display only %}</td>
-                            <td><a href="{% url 'data_quality:violation-explain' violation.pk %}">Explain<span class="visually-hidden"> {{ violation.rule.column_name }} {{ violation.rule.get_rule_type_display }} in {{ violation.run.file_name }}, {{ violation.run.started_at|date:"Y-m-d" }}</span></a></td>
+                        <tr role="row">
+                            <td role="cell" data-label="Dataset" class="vtable__dataset"><a href="{{ violation.rule.contract.dataset.get_absolute_url }}">{{ violation.rule.contract.dataset.name }}</a></td>
+                            <td role="cell" data-label="Column / rule" class="vtable__rule">{{ violation.rule.column_name }} - {{ violation.rule.get_rule_type_display }}</td>
+                            <td role="cell" data-label="Validation run" class="vtable__run">{{ violation.run.file_name }}<span class="cell__sub">{{ violation.run.started_at|date:"Y-m-d" }}</span></td>
+                            <td role="cell" data-label="Failed rows" class="num">{{ violation.failed_row_count|floatformat:"0g" }}</td>
+                            <td role="cell" data-label="Resolution">{% include "data_quality/includes/_status_badge.html" with status=violation.resolution label=violation.get_resolution_display only %}</td>
+                            <td role="cell" data-label="Next step" class="vtable__next"><a href="{% url 'data_quality:violation-explain' violation.pk %}">Investigate<span class="visually-hidden"> {{ violation.rule.column_name }} {{ violation.rule.get_rule_type_display }} in {{ violation.run.file_name }}, {{ violation.run.started_at|date:"Y-m-d" }}</span></a></td>
                         </tr>
                     {% empty %}
                         <tr class="is-emptyrow">

@@ -1,18 +1,26 @@
 {% extends "data_quality/base.html" %}
-{% comment %} A4 Part 3 - Reports (Hriday) {% endcomment %}
+{% comment %}
+A4 Part 3 - Reports (Hriday)
+
+Stage 3E (Insight pages): the record of every validation run. The 1200px
+frame; the totals as figures in the serif (DESIGN.md's Statement rule: the
+numbers a table exists to show); the two breakdowns side by side on a wide
+screen; and a subtitle that says what the exports hold. Totals, tables and
+both exports are unchanged.
+{% endcomment %}
 
 {% block title %}Reports - DataPact{% endblock %}
 
-{% block breadcrumbs %}
-    <p class="breadcrumbs">
-        <a href="{% url 'data_quality:home' %}">Home</a> / Reports
-    </p>
-{% endblock %}
+{% block main_attrs %} data-surface="insight"{% endblock %}
 
 {% block page_title %}Reports{% endblock %}
 
 {% block page_subtitle %}
-    <p class="page__subtitle">Validation run summaries, with CSV and JSON exports.</p>
+    <p class="page__subtitle">
+        The record of every validation run, totalled and broken down by outcome and by
+        dataset. The exports hold every run, one row each, newest first. For the outcomes
+        as a chart, see <a href="{% url 'data_quality:quality-history' %}">Quality History</a>.
+    </p>
 {% endblock %}
 
 {% block page_actions %}
@@ -43,6 +51,7 @@
         </div>
     </div>
 
+    <div class="insight-grid insight-grid--pair">
     <div class="panel">
         <div class="panel__head">
             <h2 class="panel__title">Runs by outcome</h2>
@@ -100,4 +109,5 @@
             </tbody>
         </table>
     </div>
+    </div>{# /.insight-grid #}
 {% endblock %}

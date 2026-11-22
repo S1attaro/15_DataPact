@@ -10,35 +10,42 @@
     </div>
 </div>
 
-<div class="analytics__grid" style="margin-top: 1.25rem;">
+<div class="analytics__grid">
     {% for chart in data.charts %}
         {% with spec_id="spec-"|add:chart.id %}
             {% include "data_quality/analytics/_chart.html" with chart=chart spec_id=spec_id only %}
         {% endwith %}
     {% endfor %}
 
-    <div class="panel" style="grid-column: 1 / -1;">
+    {% comment %}
+        Stage 3I: the drivers table follows Dataset detail's table (Stage 3G): the
+        request type heads its row, every cell carries its column name, and below
+        40em each row becomes a labelled block instead of scrolling sideways. The
+        explicit roles keep the cells tied to their headers once the display changes.
+    {% endcomment %}
+    <div class="panel panel--wide">
         <div class="panel__head"><h3 class="panel__title">Top cost drivers</h3></div>
-        <table class="datatable">
-            <thead>
-                <tr>
-                    <th scope="col">Feature / type</th>
-                    <th scope="col">Engine</th>
-                    <th scope="col" class="num">Requests</th>
-                    <th scope="col" class="num">Avg tokens</th>
-                    <th scope="col" class="num">Total cost</th>
-                    <th scope="col" class="num">Share of cost</th>
+        <table class="datatable dtable dtable--drivers" role="table">
+            <caption class="visually-hidden">Top cost drivers: request types ranked by their share of total cost</caption>
+            <thead role="rowgroup">
+                <tr role="row">
+                    <th scope="col" role="columnheader">Feature / type</th>
+                    <th scope="col" role="columnheader">Engine</th>
+                    <th scope="col" role="columnheader" class="num">Requests</th>
+                    <th scope="col" role="columnheader" class="num">Avg tokens</th>
+                    <th scope="col" role="columnheader" class="num">Total cost</th>
+                    <th scope="col" role="columnheader" class="num">Share of cost</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup">
                 {% for row in data.drivers %}
-                    <tr>
-                        <th scope="row">{{ row.feature }}: {{ row.query_type }}</th>
-                        <td>{{ row.engine }}</td>
-                        <td class="num">{{ row.requests }}</td>
-                        <td class="num">{{ row.avg_tokens }}</td>
-                        <td class="num">${{ row.total_cost|floatformat:5 }}</td>
-                        <td class="num">{{ row.share }}%</td>
+                    <tr role="row">
+                        <th scope="row" role="rowheader" data-label="Feature / type">{{ row.feature }}: {{ row.query_type }}</th>
+                        <td role="cell" data-label="Engine">{{ row.engine }}</td>
+                        <td role="cell" data-label="Requests" class="num">{{ row.requests }}</td>
+                        <td role="cell" data-label="Avg tokens" class="num">{{ row.avg_tokens }}</td>
+                        <td role="cell" data-label="Total cost" class="num">${{ row.total_cost|floatformat:5 }}</td>
+                        <td role="cell" data-label="Share of cost" class="num">{{ row.share }}%</td>
                     </tr>
                 {% endfor %}
             </tbody>

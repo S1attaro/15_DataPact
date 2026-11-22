@@ -12,10 +12,21 @@ is where the password-validator messages ("too common", "too short") come
 out. If you replace as_p with hand-written fields, render
 {{ field.errors }} per field or those messages disappear and a rejected
 signup looks like nothing happened.
+
+UX Stage 3J (product redesign), presentation only: the fields are written out
+(each with {{ field.errors }}, per the note above), labels lose Django's colon,
+and Django's long default help (the four password rules as a bulleted list) is
+replaced by one short line per field. Each line keeps the id Django's widget
+already points aria-describedby at (<id>_helptext), so it is read with its
+input. Every validator still runs and every message it raises is shown, under
+its field and in one summary (role="alert"). The view, the form, CSRF and the
+Google block are unchanged.
 =============================================================================
 {% endcomment %}
 
 {% block title %}Sign up - DataPact{% endblock %}
+
+{% block main_attrs %} data-surface="auth"{% endblock %}
 
 {% block page_title %}Create an account{% endblock %}
 
@@ -26,17 +37,38 @@ signup looks like nothing happened.
 {% block content %}
     <div class="panel panel--auth">
         <div class="panel__body">
-            {% if form.non_field_errors %}
-                <div class="form__errors" role="alert">
-                    {% for error in form.non_field_errors %}
-                        <p>{{ error }}</p>
-                    {% endfor %}
+            {% if form.errors %}
+                <div class="form-errors" id="auth-errors" role="alert" tabindex="-1">
+                    <p class="form-errors__title">Your account was not created.</p>
+                    <ul class="form-errors__list">
+                        {% for error in form.non_field_errors %}
+                            <li><a href="#{{ form.username.id_for_label }}">{{ error }}</a></li>
+                        {% endfor %}
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
                 </div>
             {% endif %}
 
-            <form method="post" novalidate>
+            <form method="post" class="authform" novalidate>
                 {% csrf_token %}
-                {{ form.as_p }}
+                {% for field in form %}
+                    <div class="authform__field">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {% if field.name == "username" %}
+                            <p class="helptext" id="{{ field.auto_id }}_helptext">Letters, digits and @ . + - _ only, up to 150 characters.</p>
+                        {% elif field.name == "password1" %}
+                            <p class="helptext" id="{{ field.auto_id }}_helptext">At least 8 characters, not a common password, not only numbers, and not too close to your username.</p>
+                        {% elif field.name == "password2" %}
+                            <p class="helptext" id="{{ field.auto_id }}_helptext">Type the same password again.</p>
+                        {% endif %}
+                        {{ field }}
+                        {{ field.errors }}
+                    </div>
+                {% endfor %}
                 <button type="submit" class="btn btn--primary">Sign up</button>
             </form>
 
@@ -52,10 +84,22 @@ signup looks like nothing happened.
                 {% include "data_quality/includes/_google_button.html" %}
             {% endblock %}
 
-            <p class="prose">
+            <p class="authswitch">
                 Already have an account?
                 <a href="{% url 'data_quality:login' %}">Log in</a>.
             </p>
         </div>
     </div>
+
+    {% if form.errors %}
+        <script>
+            // Stage 3J: after a failed sign-up, start keyboard and screen-reader
+            // users at the list of problems (the Manage page's pattern).
+            window.addEventListener("load", function () {
+                var summary = document.getElementById("auth-errors");
+                if (!summary) return;
+                window.requestAnimationFrame(function () { summary.focus(); });
+            });
+        </script>
+    {% endif %}
 {% endblock %}

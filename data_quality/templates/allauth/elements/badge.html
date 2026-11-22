@@ -1,0 +1,10 @@
+{% load allauth %}
+{% comment %}
+UX Stage 3J: allauth's badges (Verified, Unverified, Primary, a provider's
+name) as DataPact's neutral stamp, in words. Account states are not data
+health, so they never take the pass/fail colours (DESIGN.md, Two Families).
+{% endcomment %}
+<span class="badge badge--named"{% if attrs.title %} title="{{ attrs.title }}"{% endif %}>
+    {% slot %}
+    {% endslot %}
+</span>

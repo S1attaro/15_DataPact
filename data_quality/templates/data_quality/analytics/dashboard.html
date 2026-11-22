@@ -11,43 +11,42 @@ Context (analytics_views.analytics_dashboard):
 Each section is its own partial so its owner can change it without touching
 this file. Charts are Vega-Lite specs with inline data, drawn by vegaEmbed
 from the same CDN the A4 charts page uses.
+
+UX Stage 3I (product redesign): the 1200px frame (data-surface="analytics");
+a summary of what the filters select; links to the three sections; an empty
+state that tells "nothing logged" apart from "nothing matches these filters";
+charts drawn as SVG once Archivo has loaded, with named "..." menus, as on
+the Charts page (Stage 3E). The page's own <style> block and inline styles
+moved to datapact.css section 26. Filters, data and captions are unchanged.
 {% endcomment %}
+{% load i18n %}
 
 {% block title %}AI Analytics - DataPact{% endblock %}
+
+{% block main_attrs %} data-surface="analytics"{% endblock %}
 
 {% block extra_head %}
     <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
-    <style>
-        .analytics__filters { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: flex-end; }
-        .analytics__filters label { display: block; font-size: 0.85rem; margin-bottom: 0.25rem; }
-        .analytics__section { margin-top: 1.5rem; }
-        .analytics__section > h2 { font-size: 1.25rem; margin: 0 0 0.75rem; }
-        .analytics__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.25rem; }
-        .analytics__grid .panel { margin: 0; }
-        .vega-chart { width: 100%; min-height: 240px; }
-        .chart__caption { color: var(--ink-soft); font-size: 0.88rem; margin: 0.6rem 0 0; }
-        .chart__fallback { color: var(--fail-ink); margin: 0; }
-    </style>
-{% endblock %}
-
-{% block breadcrumbs %}
-    <p class="breadcrumbs"><a href="{% url 'data_quality:home' %}">Home</a> / AI Analytics</p>
 {% endblock %}
 
 {% block page_title %}AI Analytics{% endblock %}
 
 {% block page_subtitle %}
-    <p class="page__subtitle">
-        How DataPact's two AI features perform, how people use them, and what they cost.
-        Showing {{ row_count }} of {{ all_count }} logged requests.
-    </p>
+    <p class="page__subtitle">How DataPact's two AI features perform, how people use them, and what they cost.</p>
 {% endblock %}
 
 {% block content %}
-    <div class="panel">
+    <section class="panel analytics-filters" aria-labelledby="filters-title">
+        <div class="panel__head"><h2 class="panel__title" id="filters-title">Requests shown</h2></div>
         <div class="panel__body">
+            <dl class="factlist analytics-applied">
+                <div><dt>Showing</dt><dd>{{ row_count }} of {{ all_count }} logged requests</dd></div>
+                <div><dt>Time range</dt><dd>{% for value, label in day_choices %}{% if value == filters.days %}{{ label }}{% endif %}{% endfor %}</dd></div>
+                <div><dt>Engine</dt><dd>{% for value, label in engine_choices %}{% if value == filters.engine %}{{ label }}{% endif %}{% endfor %}{% if not filters.engine %}All engines{% endif %}</dd></div>
+                <div><dt>Data source</dt><dd>{% for value, label in source_choices %}{% if value == filters.source %}{{ label }}{% endif %}{% endfor %}{% if not filters.source %}All sources{% endif %}</dd></div>
+            </dl>
             <form method="get" class="analytics__filters" aria-label="Filter the dashboard">
                 <div>
                     <label for="f-days">Time range</label>
@@ -60,7 +59,7 @@ from the same CDN the A4 charts page uses.
                 <div>
                     <label for="f-engine">Engine</label>
                     <select id="f-engine" name="engine">
-                        <option value="">All engines</option>
+                        <option value=""{% if not filters.engine %} selected{% endif %}>All engines</option>
                         {% for value, label in engine_choices %}
                             <option value="{{ value }}"{% if filters.engine == value %} selected{% endif %}>{{ label }}</option>
                         {% endfor %}
@@ -69,7 +68,7 @@ from the same CDN the A4 charts page uses.
                 <div>
                     <label for="f-source">Data source</label>
                     <select id="f-source" name="source">
-                        <option value="">All sources</option>
+                        <option value=""{% if not filters.source %} selected{% endif %}>All sources</option>
                         {% for value, label in source_choices %}
                             <option value="{{ value }}"{% if filters.source == value %} selected{% endif %}>{{ label }}</option>
                         {% endfor %}
@@ -77,40 +76,177 @@ from the same CDN the A4 charts page uses.
                 </div>
                 <div><button type="submit" class="btn btn--primary btn--sm">Apply</button></div>
             </form>
-            <p class="chart__caption">
+            <p class="analytics-note">
                 The time range counts back from the newest logged request. "Live site" rows come from
                 real use of the explain and handbook pages; "Benchmark run" rows come from our
                 collect_ai_logs runs.
             </p>
         </div>
-    </div>
+    </section>
 
-    {% if not row_count %}
-        {% include "data_quality/includes/_empty_state.html" with headline="No AI requests logged yet." message="Use Explain with AI or the Handbook, or load data/ai_logs.csv with manage.py load_ai_logs." only %}
-    {% else %}
-        <section class="analytics__section" aria-labelledby="sec-performance">
+    {% if row_count %}
+        {% comment %}
+            The page is long (eleven charts), so each section is one link away.
+            Plain anchors: the jump is instant, and focus follows the fragment.
+        {% endcomment %}
+        <nav class="analytics-jump" aria-label="Dashboard sections">
+            <ul>
+                {% with n=performance.charts|length %}<li><a href="#performance">System performance</a> <span class="analytics-jump__note">{{ n }} chart{{ n|pluralize }}</span></li>{% endwith %}
+                {% with n=behavior.charts|length %}<li><a href="#behavior">User behavior</a> <span class="analytics-jump__note">{{ n }} chart{{ n|pluralize }}</span></li>{% endwith %}
+                {% with n=cost.charts|length %}<li><a href="#cost">Cost</a> <span class="analytics-jump__note">{{ n }} chart{{ n|pluralize }} and a table</span></li>{% endwith %}
+            </ul>
+        </nav>
+
+        <section class="analytics__section" id="performance" aria-labelledby="sec-performance">
             <h2 id="sec-performance">System performance</h2>
             {% include "data_quality/analytics/_performance.html" with data=performance only %}
         </section>
 
-        <section class="analytics__section" aria-labelledby="sec-behavior">
+        <section class="analytics__section" id="behavior" aria-labelledby="sec-behavior">
             <h2 id="sec-behavior">User behavior</h2>
             {% include "data_quality/analytics/_behavior.html" with data=behavior only %}
         </section>
 
-        <section class="analytics__section" aria-labelledby="sec-cost">
+        <section class="analytics__section" id="cost" aria-labelledby="sec-cost">
             <h2 id="sec-cost">Cost</h2>
             {% include "data_quality/analytics/_cost.html" with data=cost only %}
         </section>
+    {% elif all_count %}
+        {% comment %}
+            Requests are logged, but the filters exclude all of them: say that,
+            not "nothing logged", and offer the default view (last 30 days, every
+            engine and source), which always holds the newest request.
+        {% endcomment %}
+        {% url 'data_quality:analytics' as reset_url %}
+        {% blocktranslate count counter=all_count asvar filtered_message trimmed %}
+            {{ counter }} request is logged, but it does not match this time range, engine and data source.
+        {% plural %}
+            {{ counter }} requests are logged, but none match this time range, engine and data source.
+        {% endblocktranslate %}
+        {% include "data_quality/includes/_empty_state.html" with headline="No requests match these filters." message=filtered_message action_label="Reset filters" action_url=reset_url only %}
+    {% else %}
+        {% include "data_quality/includes/_empty_state.html" with headline="No AI requests logged yet." message="Use Explain with AI or the Handbook, or load data/ai_logs.csv with manage.py load_ai_logs." only %}
     {% endif %}
 
     <script>
-        document.querySelectorAll(".vega-chart").forEach(function (el) {
-            var spec = JSON.parse(document.getElementById(el.dataset.specId).textContent);
-            vegaEmbed(el, spec, {actions: {export: true, source: true, editor: false, compiled: false}})
-                .catch(function (error) {
+        // Stage 3I: as on the Charts page (Stage 3E). Draw once Archivo (the
+        // specs' font, vega.CHART_CONFIG) has loaded, or straight away if the
+        // browser cannot say, and as SVG, so axis, legend and title text stay text.
+        var EMBED = {renderer: "svg", actions: {export: true, source: true, editor: false, compiled: false}};
+        // A chart narrower than this (a phone) keeps every word inside its
+        // drawing: one legend entry per line, axis titles anchored at the
+        // plot's end so a long one runs back over the axis labels, not off the
+        // edge, and at most four x-axis ticks with the end ones kept inside.
+        // Only presentation changes; the data and its text are untouched.
+        var NARROW = 480;
+
+        function onePerLine(spec) {
+            spec.config = Object.assign({}, spec.config);
+            spec.config.legend = Object.assign({}, spec.config.legend, {direction: "vertical", labelLimit: 0});
+            var color = spec.encoding && spec.encoding.color;
+            if (color && color.legend) {
+                color.legend = Object.assign({}, color.legend);
+                if (color.legend.direction) { color.legend.direction = "vertical"; }
+                if (color.legend.labelLimit) { color.legend.labelLimit = 0; }
+            }
+            return spec;
+        }
+
+        function narrow(spec) {
+            spec = onePerLine(spec);
+            spec.config.axis = Object.assign({}, spec.config.axis, {titleAnchor: "end"});
+            // labelFlush 24: end labels within 24px of the plot's edge are kept
+            // inside it (more than the median-time chart's 18px scale padding).
+            spec.config.axisX = Object.assign({}, spec.config.axisX, {tickCount: 4, labelFlush: 24});
+            return spec;
+        }
+
+        // Legend labels that still run past the drawing's right edge (a legend
+        // sits beside the plot, after the axis labels): their text, keyed by the
+        // value it names, and how many characters fit on a line.
+        function overflowingLegend(el, view) {
+            var svg = el.querySelector("svg.marks");
+            var labels = svg ? Array.prototype.slice.call(svg.querySelectorAll(".role-legend-label text")) : [];
+            if (!labels.length) { return null; }
+            var right = svg.getBoundingClientRect().right;
+            var over = labels.some(function (t) { return t.getBoundingClientRect().right > right + 0.5; });
+            if (!over) { return null; }
+            var left = Math.min.apply(null, labels.map(function (t) { return t.getBoundingClientRect().left; }));
+            var domain = view.scale("color") ? view.scale("color").domain() : [];
+            if (domain.length !== labels.length) { return null; }
+            return {
+                maxChars: Math.max(8, Math.floor((right - left - 4) / 6.6)),
+                labels: domain.map(function (value, i) { return [String(value), labels[i].textContent]; })
+            };
+        }
+
+        function wrapWords(text, maxChars) {
+            var lines = [], line = "";
+            text.split(" ").forEach(function (word) {
+                if (line && (line + " " + word).length > maxChars) { lines.push(line); line = word; }
+                else { line = line ? line + " " + word : word; }
+            });
+            if (line) { lines.push(line); }
+            return lines;
+        }
+
+        // The same words over two or more lines, chosen by the value they name.
+        function wrapLegend(spec, fit) {
+            var expr = fit.labels.reduce(function (rest, pair) {
+                return "datum.value === " + JSON.stringify(pair[0]) + " ? " +
+                    JSON.stringify(wrapWords(pair[1], fit.maxChars)) + " : " + rest;
+            }, "datum.label");
+            spec.encoding.color.legend = Object.assign({}, spec.encoding.color.legend, {labelExpr: expr});
+            return spec;
+        }
+
+        function nameMenu(el) {
+            // vega-embed's "..." button is an icon with no name of its own;
+            // name it after what it offers and which chart it is.
+            var menu = el.querySelector("details > summary");
+            var heading = el.closest(".panel").querySelector(".panel__title");
+            if (menu) {
+                menu.setAttribute("aria-label", "Chart options (save as an image or view the source): " +
+                    (heading ? heading.textContent.trim() : "chart"));
+            }
+        }
+
+        // Draw a chart; if its legend still runs past the edge, draw it again
+        // with one entry per line, and if that is not enough, with the words
+        // of each long entry over several lines. Nothing is cut or shrunk.
+        function draw(el) {
+            var source = document.getElementById(el.dataset.specId).textContent;
+            var base = el.clientWidth < NARROW ? narrow : function (spec) { return spec; };
+            var steps = [
+                function () { return base(JSON.parse(source)); },
+                function () { return onePerLine(base(JSON.parse(source))); },
+                function (fit) { return wrapLegend(onePerLine(base(JSON.parse(source))), fit); }
+            ];
+            function attempt(i, fit) {
+                return vegaEmbed(el, steps[i](fit), EMBED).then(function (result) {
+                    var spec = JSON.parse(source);
+                    var over = i < steps.length - 1 && spec.encoding && spec.encoding.color ? overflowingLegend(el, result.view) : null;
+                    if (!over) { return; }
+                    result.finalize();
+                    return attempt(i + 1, over);
+                });
+            }
+            // A phone-width chart already starts one entry per line.
+            return attempt(base === narrow ? 1 : 0, null).then(function () { nameMenu(el); });
+        }
+
+        var fontsReady = (document.fonts && document.fonts.load)
+            ? Promise.all([
+                document.fonts.load("400 12px Archivo"),
+                document.fonts.load("600 12px Archivo")
+            ]).catch(function () {})
+            : Promise.resolve();
+        fontsReady.then(function () {
+            document.querySelectorAll(".vega-chart").forEach(function (el) {
+                draw(el).catch(function (error) {
                     el.innerHTML = '<p class="chart__fallback">Chart failed to load: ' + error + "</p>";
                 });
+            });
         });
     </script>
 {% endblock %}

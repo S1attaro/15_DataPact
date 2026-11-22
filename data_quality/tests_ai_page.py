@@ -1,5 +1,6 @@
 """
-UX Stage 2 - the "Explain this violation" page tells people what is going on.
+UX Stage 2 - the violation page (titled "Investigate this violation" since
+Stage 3D) tells people what is going on.
 Author: Tejas Jaggi.
 
 Before a click, the page says which AI engines this server has set up, from

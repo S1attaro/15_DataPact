@@ -201,6 +201,8 @@ class NavigationStyleTests(StylesheetMixin, TestCase):
         # em breakpoints scale with the browser's text-size setting, px ones do not.
         conditions = [cond for cond, body in self.media_blocks() if ".topbar" in body]
         self.assertGreaterEqual(len(conditions), 2)
+        # Stage 3B: the sidebar starts at a min-width (80em) where the Menu
+        # fold ends at a max-width; both stay in em, which is the point.
         for cond in conditions:
             with self.subTest(media=cond):
-                self.assertRegex(cond, r"^max-width:\s*[\d.]+em$")
+                self.assertRegex(cond, r"^(?:max|min)-width:\s*[\d.]+em$")

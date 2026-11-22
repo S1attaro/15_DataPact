@@ -1,164 +1,433 @@
 {% extends "data_quality/base.html" %}
 {% comment %}
 =============================================================================
-Home page - A3 Section 1 (URL linking & navigation), Tejas Jaggi
-UX Stage 0: explains the product to a first-time visitor (Tejas Jaggi)
+Home page - the public landing page (product redesign, November 2026)
+Earlier versions: A3 Section 1 (navigation) and UX Stage 0 (Tejas Jaggi).
 
-Context expected (supplied by the home() function-based view):
+Context (supplied by the home() function-based view):
     dataset_count         how many datasets are registered
     run_count             how many validation runs have been recorded
     open_violation_count  violations nobody has triaged yet
 
-Every link on this page is built with {% templatetag openblock %} url {% templatetag closeblock %}, so renaming a route
-in urls.py moves the links with it instead of leaving dead ends here.
+The page explains DataPact through one real record from the seeded demo
+workspace: the Monthly Enrollment Export's September file, whose status
+column carried AUDIT in four rows (118, 442, 2910, 3377). A person recorded
+"Contract updated" and contract v4 added AUDIT. The specimen shows those rows
+against contract v3 and lets a visitor switch the key to v4 (two radio
+buttons and CSS :has(), so it works with no script at all). The rows that
+did not fail are representative, and the caption says so.
 
-"How DataPact works" is shown to everyone, because the people who most need
-it are visitors who have not signed in yet. Its links are not: every one of
-them points at a @login_required view, so they render only for a signed-in
-user (A5.1 Part 1.5, Ashok), the same rule the nav follows. The descriptions
-say only what the site really does: runs and violations are recorded, not
-started from here, and there is no upload or rule editor yet.
+Honesty rules this page keeps (PRODUCT.md, "Capabilities and Constraints"):
+  - nothing unbuilt is presented as live: upload, automatic validation and
+    rule editing are listed as planned;
+  - no prices, customers, savings or certifications; pilot packages are
+    labelled as proposals;
+  - the AI answer in the "AI and privacy" section is illustrative and says
+    so, in the shape ai/explain.py accepts (explanation, likely_cause,
+    suggested_action).
 
-Styling lives in datapact.css ("Home page" section), not in this file.
+Signed out, nothing links to a page behind @login_required (A5.1 Part 1.5).
+Every link is built with {% templatetag openblock %} url {% templatetag closeblock %}.
+Styling: datapact.css, section 18 ("Landing page").
 =============================================================================
 {% endcomment %}
 
-{% block title %}DataPact - Know when your data breaks, and why{% endblock %}
+{% block title %}DataPact - Give every dataset an answer key{% endblock %}
 
-{% block page_title %}Know whether your data meets expectations{% endblock %}
+{% block main_attrs %} data-surface="landing"{% endblock %}
 
-{% block page_subtitle %}
-    <p class="page__subtitle">
-        DataPact keeps a contract of rules for each recurring dataset, records
-        how each delivered file did against it, and helps you investigate the
-        checks that failed.
-    </p>
-{% endblock %}
-
-{% block page_actions %}
-    {% if user.is_authenticated %}
-        <a class="btn btn--primary" href="{% url 'data_quality:dataset-list' %}">Explore datasets</a>
-    {% endif %}
-{% endblock %}
+{% block page_header %}{% endblock %}
 
 {% block content %}
-    <section class="panel" aria-labelledby="how-it-works">
-        <div class="panel__head"><h2 class="panel__title" id="how-it-works">How DataPact works</h2></div>
-        <ol class="workflow" role="list">
-            <li class="workflow__step">
-                <h3 class="workflow__name">Datasets</h3>
-                <p class="workflow__text">
-                    A dataset is a file that arrives again and again, such as a
-                    monthly enrollment export. Each one has an owner and a source team.
-                </p>
-                {% if user.is_authenticated %}
-                    <ul class="workflow__links" role="list">
-                        <li><a href="{% url 'data_quality:dataset-list' %}">Browse datasets</a></li>
-                        <li><a href="{% url 'data_quality:dataset-manage' %}">Register a dataset</a></li>
-                    </ul>
-                {% endif %}
-            </li>
-            <li class="workflow__step">
-                <h3 class="workflow__name">Contracts</h3>
-                <p class="workflow__text">
-                    A contract lists the rules every file of a dataset must follow:
-                    types, ranges, allowed values, formats, no blanks, no duplicates.
-                    Contracts are versioned as expectations change.
-                </p>
-                {% if user.is_authenticated %}
-                    <ul class="workflow__links" role="list">
-                        <li><a href="{% url 'data_quality:contract-search' %}">Search contracts</a></li>
-                        <li><a href="{% url 'data_quality:dataset-cbv-base' %}">See which version is active</a></li>
-                    </ul>
-                {% endif %}
-            </li>
-            <li class="workflow__step">
-                <h3 class="workflow__name">Validation runs and violations</h3>
-                <p class="workflow__text">
-                    Each time a file is checked against a contract, the result is
-                    recorded as a validation run. Every rule it broke becomes a
-                    violation, and a person records whether it was a data issue or
-                    a contract that needs updating. You can ask an AI model for a
-                    suggested explanation.
-                </p>
-                {% if user.is_authenticated %}
-                    <ul class="workflow__links" role="list">
-                        <li><a href="{% url 'data_quality:contract-search' %}#violation-lookup">Look up violations</a></li>
-                    </ul>
-                {% endif %}
-            </li>
-            <li class="workflow__step">
-                <h3 class="workflow__name">Insights and reports</h3>
-                <p class="workflow__text">
-                    See how validation runs have turned out, and export every run
-                    as CSV or JSON.
-                </p>
-                {% if user.is_authenticated %}
-                    {% url 'data_quality:charts' as charts_url %}
-                    <ul class="workflow__links" role="list">
-                        <li><a href="{% url 'data_quality:quality-history' %}">Quality History</a></li>
-                        {% if charts_url %}<li><a href="{{ charts_url }}">Charts</a></li>{% endif %}
-                        <li><a href="{% url 'data_quality:reports' %}">Reports</a></li>
-                    </ul>
-                {% endif %}
-            </li>
-        </ol>
-        <p class="panel__note">
-            This site shows results that have already been recorded. Uploading new
-            files and editing contract rules are not available here yet.
-        </p>
-    </section>
+<div class="landing">
 
-    {% if not user.is_authenticated %}
-        {% comment %}
-            Straight after the explanation, so a visitor's next step (sign in)
-            is not pushed below the counts.
-        {% endcomment %}
-        <div class="panel">
-            <div class="panel__head"><h2 class="panel__title">Get started</h2></div>
-            <div class="panel__body">
-                <p class="prose">
-                    The registry, contract search, quality history and reports are
-                    available to signed-in users.
-                    <a href="{% url 'data_quality:login' %}">Log in</a>, or
-                    <a href="{% url 'data_quality:signup' %}">create an account</a>
-                    - it takes a moment and needs nothing but a username.
+    {# ---------------------------------------------------------------- hero #}
+    <section class="hero" aria-labelledby="hero-title">
+        <div class="hero__inner">
+            <div class="hero__copy">
+                <h1 class="hero__title" id="hero-title">Give every dataset an answer key.</h1>
+                <p class="hero__lead">
+                    DataPact keeps a versioned contract for every file your office receives on
+                    repeat, records how each delivery measured up, and helps your team decide
+                    whether a failure is bad data or an outdated contract.
                 </p>
-                <p class="prose">
-                    The run-outcome summary at
-                    <a href="{% url 'data_quality:api-run-outcomes' %}"><code>/api/run-outcomes/</code></a>
-                    is public and needs no account.
-                </p>
-            </div>
-        </div>
-    {% endif %}
-
-    <div class="panel">
-        <div class="panel__head"><h2 class="panel__title">At a glance</h2></div>
-        <div class="panel__body">
-            <dl class="factlist factlist--stats">
-                <div>
-                    <dt>Datasets registered</dt>
-                    <dd>{{ dataset_count }}</dd>
-                </div>
-                <div>
-                    <dt>Validation runs</dt>
-                    <dd>{{ run_count }}</dd>
-                </div>
-                <div>
-                    <dt>Open violations</dt>
-                    <dd>{{ open_violation_count }}</dd>
-                    {% comment %}
-                        UX Stage 3: from the count to the violations behind it.
-                        The lookup is a POST, so the link opens it with "Open"
-                        chosen rather than running it; signed-in users only,
-                        like every other protected link on this page.
-                    {% endcomment %}
-                    {% if user.is_authenticated and open_violation_count %}
-                        <dd class="factlist__link"><a href="{% url 'data_quality:contract-search' %}?resolution=OPEN#violation-lookup">Look up open violations</a></dd>
+                <div class="hero__actions">
+                    {% if user.is_authenticated %}
+                        <a class="btn btn--primary btn--lg" href="{% url 'data_quality:dataset-list' %}">Open the dataset registry</a>
+                        <a class="btn btn--lg" href="{% url 'data_quality:contract-search' %}#violation-lookup">Look up a violation</a>
+                    {% else %}
+                        <a class="btn btn--primary btn--lg" href="{% url 'data_quality:login' %}">Sign in to the demo workspace</a>
+                        <a class="btn btn--lg" href="{% url 'data_quality:signup' %}">Create an account</a>
                     {% endif %}
                 </div>
-            </dl>
+                <div class="hero__stats">
+                    <p class="hero__statsnote">In the demo workspace right now</p>
+                    <dl class="factlist factlist--stats">
+                        <div>
+                            <dt>Datasets registered</dt>
+                            <dd>{{ dataset_count }}</dd>
+                        </div>
+                        <div>
+                            <dt>Validation runs</dt>
+                            <dd>{{ run_count }}</dd>
+                        </div>
+                        <div>
+                            <dt>Open violations</dt>
+                            <dd>{{ open_violation_count }}</dd>
+                            {% if user.is_authenticated and open_violation_count %}
+                                <dd class="factlist__link"><a href="{% url 'data_quality:contract-search' %}?resolution=OPEN#violation-lookup">Look up open violations</a></dd>
+                            {% endif %}
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            {# The answer sheet. The radios come before the table so :has() can read them. #}
+            <figure class="sheet" aria-labelledby="sheet-caption">
+                <span class="sheet__reg sheet__reg--tl" aria-hidden="true"></span>
+                <span class="sheet__reg sheet__reg--tr" aria-hidden="true"></span>
+                <span class="sheet__reg sheet__reg--bl" aria-hidden="true"></span>
+                <span class="sheet__reg sheet__reg--br" aria-hidden="true"></span>
+                <span class="sheet__track" aria-hidden="true"></span>
+
+                <div class="sheet__head">
+                    <p class="sheet__field"><span class="sheet__label">Dataset</span> <span class="sheet__value">Monthly Enrollment Export</span></p>
+                    <p class="sheet__field"><span class="sheet__label">File</span> <span class="sheet__value">enrollment_2026_09.csv</span></p>
+                    <p class="sheet__field"><span class="sheet__label">Rows</span> <span class="sheet__value">4,812</span></p>
+                </div>
+
+                <fieldset class="rekey">
+                    <legend class="sheet__label">Answer key for the status column</legend>
+                    <div class="rekey__options">
+                        <input class="rekey__input" type="radio" name="answer-key" id="key-v3" value="v3" checked>
+                        <label class="rekey__option" for="key-v3">Contract v3 <span>ACTIVE or INACTIVE</span></label>
+                        <input class="rekey__input" type="radio" name="answer-key" id="key-v4" value="v4">
+                        <label class="rekey__option" for="key-v4">Contract v4 <span>adds AUDIT</span></label>
+                    </div>
+                </fieldset>
+
+                <table class="answers">
+                    <caption class="visually-hidden">Eight rows of the status column, checked against the chosen answer key</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Row</th>
+                            <th scope="col"><span class="answers__keys" aria-hidden="true"><span>A</span><span>I</span><span class="answers__au">AU</span></span><span class="visually-hidden">Marked bubble</span></th>
+                            <th scope="col">Value</th>
+                            <th scope="col">Check</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><th scope="row">117</th><td><span class="bubbles is-a" aria-hidden="true"><i></i><i></i><i></i></span></td><td>ACTIVE</td><td><span class="check">Matches</span></td></tr>
+                        <tr class="is-audit"><th scope="row">118</th><td><span class="bubbles is-au" aria-hidden="true"><i></i><i></i><i></i></span></td><td><span class="writein">AUDIT</span></td><td><span class="check check--v3">Departs</span><span class="check check--v4">Matches</span></td></tr>
+                        <tr><th scope="row">441</th><td><span class="bubbles is-i" aria-hidden="true"><i></i><i></i><i></i></span></td><td>INACTIVE</td><td><span class="check">Matches</span></td></tr>
+                        <tr class="is-audit"><th scope="row">442</th><td><span class="bubbles is-au" aria-hidden="true"><i></i><i></i><i></i></span></td><td><span class="writein">AUDIT</span></td><td><span class="check check--v3">Departs</span><span class="check check--v4">Matches</span></td></tr>
+                        <tr><th scope="row">2909</th><td><span class="bubbles is-a" aria-hidden="true"><i></i><i></i><i></i></span></td><td>ACTIVE</td><td><span class="check">Matches</span></td></tr>
+                        <tr class="is-audit"><th scope="row">2910</th><td><span class="bubbles is-au" aria-hidden="true"><i></i><i></i><i></i></span></td><td><span class="writein">AUDIT</span></td><td><span class="check check--v3">Departs</span><span class="check check--v4">Matches</span></td></tr>
+                        <tr><th scope="row">3376</th><td><span class="bubbles is-i" aria-hidden="true"><i></i><i></i><i></i></span></td><td>INACTIVE</td><td><span class="check">Matches</span></td></tr>
+                        <tr class="is-audit"><th scope="row">3377</th><td><span class="bubbles is-au" aria-hidden="true"><i></i><i></i><i></i></span></td><td><span class="writein">AUDIT</span></td><td><span class="check check--v3">Departs</span><span class="check check--v4">Matches</span></td></tr>
+                    </tbody>
+                </table>
+
+                <div class="sheet__result" aria-live="polite">
+                    <p class="result result--v3"><strong>4 of 4,812 rows</strong> depart from contract v3.</p>
+                    <p class="result result--v4"><strong>0 of 4,812 rows</strong> depart from contract v4.</p>
+                </div>
+
+                <div class="causes">
+                    <p class="cause"><strong>Bad data?</strong> The export wrote a status the Registrar never uses.</p>
+                    <p class="cause cause--chosen"><strong>Outdated key?</strong> The Registrar introduced an audit enrolment category.</p>
+                </div>
+                <p class="sheet__prompt">Which reading is right? Choose contract v4 to see what the Registrar's team decided.</p>
+                <p class="sheet__decision">Recorded by a person: <span class="badge">Contract updated</span> Contract v4 adds AUDIT, so these rows now match.</p>
+
+                <figcaption class="sheet__caption" id="sheet-caption">
+                    From the demo workspace: the September 2026 enrollment file against its contract.
+                    Rows 118, 442, 2910 and 3377 are the recorded failures; the other rows are representative.
+                </figcaption>
+            </figure>
         </div>
-    </div>
+    </section>
+
+    {# ------------------------------------------------------------- problem #}
+    <section class="band band--sheet" id="problem" aria-labelledby="problem-title">
+        <div class="band__inner split">
+            <div class="split__lead">
+                <h2 class="section-title" id="problem-title">Files change. Reports break quietly.</h2>
+                <p class="section-lead">
+                    A recurring export looks the same every month, until it doesn't: a new status
+                    code, a negative total, a reading off the scale. Without a written expectation,
+                    nobody can say whether the file is wrong or the expectation is out of date.
+                </p>
+            </div>
+            <div class="split__body">
+                <table class="drift">
+                    <caption>Violations recorded in the demo workspace</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Office and dataset</th>
+                            <th scope="col">What arrived</th>
+                            <th scope="col">What the contract expects</th>
+                            <th scope="col" class="num">Rows</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><th scope="row">Registrar <span>Monthly Enrollment Export</span></th><td><code>credit_hours</code> of &minus;3</td><td>0 to 24</td><td class="num">47</td></tr>
+                        <tr><th scope="row">Finance <span>Weekly Sales Extract</span></th><td><code>order_total</code> of &minus;14.5</td><td>0 to 100,000</td><td class="num">23</td></tr>
+                        <tr><th scope="row">Operations <span>Facilities Work Orders</span></th><td><code>priority</code> of P1 and CRITICAL</td><td>LOW, MEDIUM, HIGH or URGENT</td><td class="num">61</td></tr>
+                        <tr><th scope="row">Research <span>Sensor Readings - Lab 3</span></th><td><code>temperature_c</code> of 98.4</td><td>&minus;20 to 60</td><td class="num">140</td></tr>
+                        <tr><th scope="row">Registrar <span>Monthly Enrollment Export</span></th><td><code>term_code</code> of 2026-FA</td><td>Four digits and a letter</td><td class="num">8</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    {# -------------------------------------------------------- how it works #}
+    <section class="band" id="how-it-works" aria-labelledby="how-title">
+        <div class="band__inner">
+            <h2 class="section-title" id="how-title">Four steps, one record of every decision.</h2>
+            <ol class="workflow" role="list">
+                <li class="workflow__step">
+                    <h3 class="workflow__name">Register the dataset</h3>
+                    <p class="workflow__text">
+                        Name the file that arrives again and again, such as a monthly
+                        enrollment export, with its owner and the office that sends it.
+                    </p>
+                    {% if user.is_authenticated %}
+                        <ul class="workflow__links" role="list">
+                            <li><a href="{% url 'data_quality:dataset-list' %}">Browse datasets</a></li>
+                            <li><a href="{% url 'data_quality:dataset-manage' %}">Register a dataset</a></li>
+                        </ul>
+                    {% endif %}
+                </li>
+                <li class="workflow__step">
+                    <h3 class="workflow__name">Write its contract</h3>
+                    <p class="workflow__text">
+                        List what every delivery must satisfy: types, ranges, allowed values,
+                        formats, no blanks, no duplicates. Each change becomes a new version
+                        with a note saying why.
+                    </p>
+                    {% if user.is_authenticated %}
+                        <ul class="workflow__links" role="list">
+                            <li><a href="{% url 'data_quality:contract-search' %}">Search contracts</a></li>
+                            <li><a href="{% url 'data_quality:dataset-cbv-base' %}">See which version is active</a></li>
+                        </ul>
+                    {% endif %}
+                </li>
+                <li class="workflow__step">
+                    <h3 class="workflow__name">Record each run</h3>
+                    <p class="workflow__text">
+                        Each check of a delivered file is kept as a validation run. Every rule
+                        it broke becomes a violation, with the number of failed rows and a few
+                        sample values.
+                    </p>
+                    {% if user.is_authenticated %}
+                        <ul class="workflow__links" role="list">
+                            <li><a href="{% url 'data_quality:contract-search' %}#violation-lookup">Look up violations</a></li>
+                        </ul>
+                    {% endif %}
+                </li>
+                <li class="workflow__step">
+                    <h3 class="workflow__name">Decide the cause</h3>
+                    <p class="workflow__text">
+                        A person records whether each violation was a data issue or a contract
+                        that needed updating. An AI model can suggest which, first.
+                    </p>
+                    {% if user.is_authenticated %}
+                        {% url 'data_quality:charts' as charts_url %}
+                        <ul class="workflow__links" role="list">
+                            <li><a href="{% url 'data_quality:quality-history' %}">Quality History</a></li>
+                            {% if charts_url %}<li><a href="{{ charts_url }}">Charts</a></li>{% endif %}
+                            <li><a href="{% url 'data_quality:reports' %}">Reports</a></li>
+                        </ul>
+                    {% endif %}
+                </li>
+            </ol>
+            <p class="band__note">
+                Today the demo shows runs that have already been recorded. Uploading new files
+                and editing contract rules in the browser are planned, not available yet.
+            </p>
+        </div>
+    </section>
+
+    {# ---------------------------------------------------------- AI section #}
+    <section class="band band--sheet" id="ai" aria-labelledby="ai-title">
+        <div class="band__inner">
+            <h2 class="section-title" id="ai-title">The AI suggests. A person decides.</h2>
+            <div class="split split--wide-lead split--below">
+            <div class="split__lead">
+                <div class="anatomy">
+                    <section class="layer layer--fact" aria-labelledby="layer-fact">
+                        <h3 class="layer__title" id="layer-fact">From the record</h3>
+                        <dl class="layer__list">
+                            <div><dt>Dataset</dt><dd>Monthly Enrollment Export, contract v3</dd></div>
+                            <div><dt>Run</dt><dd>enrollment_2026_09.csv, 1 September 2026</dd></div>
+                            <div><dt>Rule</dt><dd><code>status ALLOWED_VALUES ["ACTIVE", "INACTIVE"]</code></dd></div>
+                            <div><dt>Rows failed</dt><dd>4 of 4,812</dd></div>
+                        </dl>
+                    </section>
+                    <section class="layer layer--ai" aria-labelledby="layer-ai">
+                        <h3 class="layer__title" id="layer-ai">AI suggestion <span>Illustrative answer, in the format DataPact accepts</span></h3>
+                        <dl class="layer__list">
+                            <div><dt>Explanation</dt><dd>Four rows carry AUDIT, a status the contract does not list. The value is consistent and well formed, which points to a new enrolment category rather than a typing error.</dd></div>
+                            <div><dt>Likely cause</dt><dd>The contract needs updating</dd></div>
+                            <div><dt>Next step</dt><dd>Confirm AUDIT with the Registrar and add it to the allowed values.</dd></div>
+                        </dl>
+                    </section>
+                    <section class="layer layer--human" aria-labelledby="layer-human">
+                        <h3 class="layer__title" id="layer-human">The decision</h3>
+                        <p>A person records it: <span class="badge">Contract updated</span> A suggestion never changes a record or resolves a violation by itself.</p>
+                    </section>
+                </div>
+            </div>
+            <div class="split__body">
+                <dl class="provenance">
+                    <div>
+                        <dt>Model in production</dt>
+                        <dd><code>openai/gpt-oss-20b</code>, through the Groq API.</dd>
+                    </div>
+                    <div>
+                        <dt>What leaves the server</dt>
+                        <dd>The dataset, column, rule and row counts. Sample values only when they are known status codes such as AUDIT, at most three. Names, numbers, emails and IDs from the file are never sent.</dd>
+                    </div>
+                    <div>
+                        <dt>Checked before you see it</dt>
+                        <dd>The reply must be three non-empty fields with one of the two allowed causes. Anything else is discarded, and the page says no reliable explanation came back.</dd>
+                    </div>
+                    <div>
+                        <dt>Local models</dt>
+                        <dd>SmolLM2-1.7B-Instruct and the handbook search run on a team machine for development. The public host cannot hold them, so they are switched off there.</dd>
+                    </div>
+                    <div>
+                        <dt>Measured</dt>
+                        <dd>Every request's latency, tokens, cost and outcome go to the AI analytics dashboard, with benchmark runs kept apart from real use.</dd>
+                    </div>
+                </dl>
+            </div>
+            </div>
+        </div>
+    </section>
+
+    {# ----------------------------------------------------------- use cases #}
+    <section class="band band--ink" id="use-cases" aria-labelledby="use-title">
+        <div class="band__inner">
+            <h2 class="section-title" id="use-title">Made for offices that trade files on a schedule.</h2>
+            <dl class="offices">
+                <div><dt>Registrar</dt><dd><strong>Monthly Enrollment Export</strong> One row per student per term, on the first working day of each month.</dd></div>
+                <div><dt>Finance</dt><dd><strong>Weekly Sales Extract</strong> Order-level revenue for the week before, every Monday.</dd></div>
+                <div><dt>Facilities</dt><dd><strong>Work Orders</strong> Open and closed maintenance requests across campus buildings.</dd></div>
+                <div><dt>Research</dt><dd><strong>Sensor Readings, Lab 3</strong> Temperature and humidity on a fixed hourly cycle.</dd></div>
+                <div><dt>Provost's Office</dt><dd><strong>Course Catalog Snapshot</strong> The full course listing at the start of each registration window.</dd></div>
+                <div><dt>Human Resources</dt><dd><strong>Payroll Deductions Export</strong> Per-employee deduction totals for each pay period.</dd></div>
+                <div><dt>University Library</dt><dd><strong>Circulation Log</strong> Checkout and return events, aggregated daily by branch.</dd></div>
+            </dl>
+            <p class="band__note">
+                These are the seven datasets in the demo workspace. They show where DataPact could
+                fit; none of them is a live university deployment.
+            </p>
+        </div>
+    </section>
+
+    {# --------------------------------------------------------------- today #}
+    <section class="band" id="today" aria-labelledby="today-title">
+        <div class="band__inner">
+            <h2 class="section-title" id="today-title">What works today, and what doesn't yet.</h2>
+            <div class="maturity">
+                <section class="maturity__col" aria-labelledby="mat-live">
+                    <h3 class="maturity__title" id="mat-live"><span class="mark mark--filled" aria-hidden="true"></span>Live on this site</h3>
+                    <ul role="list">
+                        <li>Dataset registry, search and registration</li>
+                        <li>Versioned contracts with a note for every change</li>
+                        <li>Recorded validation runs and violations, with their resolutions</li>
+                        <li>AI explanations through the Groq API</li>
+                        <li>AI analytics: latency, cost and outcomes</li>
+                        <li>CSV and JSON exports, and a <a href="{% url 'data_quality:api-run-outcomes' %}">public run-outcomes API</a></li>
+                        <li>Sign-in with a username or a Google account</li>
+                    </ul>
+                </section>
+                <section class="maturity__col" aria-labelledby="mat-local">
+                    <h3 class="maturity__title" id="mat-local"><span class="mark mark--half" aria-hidden="true"></span>On a local machine only</h3>
+                    <ul role="list">
+                        <li>Explanations from SmolLM2-1.7B-Instruct</li>
+                        <li>Handbook questions answered from retrieved passages (MiniLM embeddings)</li>
+                    </ul>
+                    <p class="maturity__note">Both need more memory and disk than the public host offers.</p>
+                </section>
+                <section class="maturity__col" aria-labelledby="mat-planned">
+                    <h3 class="maturity__title" id="mat-planned"><span class="mark mark--open" aria-hidden="true"></span>Planned</h3>
+                    <ul role="list">
+                        <li>Uploading a delivered file</li>
+                        <li>Checking it against its contract automatically</li>
+                        <li>Editing contract rules in the browser</li>
+                    </ul>
+                </section>
+            </div>
+            {% if not user.is_authenticated %}
+                <p class="band__note">
+                    The registry, contracts, quality history and reports need an account:
+                    <a href="{% url 'data_quality:login' %}">log in</a>, or
+                    <a href="{% url 'data_quality:signup' %}">create one</a> with nothing but a username.
+                </p>
+            {% endif %}
+        </div>
+    </section>
+
+    {# --------------------------------------------------------------- pilot #}
+    <section class="band band--sheet" id="pilot" aria-labelledby="pilot-title">
+        <div class="band__inner">
+            <div class="split split--head">
+                <h2 class="section-title" id="pilot-title">Start with one office.</h2>
+                <p class="section-lead">
+                    DataPact has no price list. These are the shapes a deployment could take;
+                    cost, hosting and responsibilities are agreed with each partner before
+                    any real data is involved.
+                </p>
+            </div>
+            <div class="packages-wrap">
+                <table class="packages">
+                    <caption class="visually-hidden">Three deployment proposals compared</caption>
+                    <thead>
+                        <tr>
+                            <td></td>
+                            <th scope="col">Demo</th>
+                            <th scope="col">Department pilot</th>
+                            <th scope="col">Institution-wide</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><th scope="row">For</th><td>Trying the idea, coursework and evaluation</td><td>One office and its recurring exports</td><td>Several offices under central data governance</td></tr>
+                        <tr><th scope="row">Runs on</th><td>This public demo site</td><td>Hosting agreed with the department</td><td>University infrastructure, behind campus sign-in</td></tr>
+                        <tr><th scope="row">Data</th><td>The seeded demo datasets only</td><td>Real exports only after a privacy and security review</td><td>Under the university's data policies</td></tr>
+                        <tr><th scope="row">AI</th><td>Groq, with the sample allow-list</td><td>A hosted model, or switched off</td><td>An approved provider or a self-hosted model</td></tr>
+                        <tr><th scope="row">Price</th><td>No charge</td><td>Agreed per pilot</td><td>Discussed per deployment</td></tr>
+                        <tr class="packages__next"><th scope="row">Next step</th>
+                            <td>{% if user.is_authenticated %}<a href="{% url 'data_quality:dataset-list' %}">Open the registry</a>{% else %}<a class="btn btn--primary" href="{% url 'data_quality:signup' %}">Create a demo account</a>{% endif %}</td>
+                            <td class="packages__tbd">Pilot contact channel to be announced</td>
+                            <td class="packages__tbd">Contact channel to be announced</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="band__note">
+                These packages are proposals, not offers. No service levels, certifications or
+                customer commitments exist yet.
+            </p>
+        </div>
+    </section>
+
+    {# --------------------------------------------------------------- close #}
+    <section class="close" aria-labelledby="close-title">
+        <div class="band__inner close__inner">
+            <h2 class="close__title" id="close-title">Trust your data. Understand every failure.</h2>
+            <div class="hero__actions">
+                {% if user.is_authenticated %}
+                    <a class="btn btn--primary btn--lg" href="{% url 'data_quality:dataset-list' %}">Open the dataset registry</a>
+                {% else %}
+                    <a class="btn btn--primary btn--lg" href="{% url 'data_quality:login' %}">Sign in to the demo workspace</a>
+                    <a class="btn btn--lg btn--onink" href="{% url 'data_quality:signup' %}">Create an account</a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+</div>
 {% endblock %}

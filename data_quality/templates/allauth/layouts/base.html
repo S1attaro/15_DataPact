@@ -1,0 +1,33 @@
+{% extends "data_quality/base.html" %}
+{% comment %}
+=============================================================================
+UX Stage 3J (product redesign): every django-allauth page in DataPact's shell.
+
+allauth 65 renders each of its pages (password reset, Google sign-in
+cancelled or failed, the Google "connect" sign-up, account inactive, and the
+signed-in email, password and connections pages) through this layout, by way
+of allauth/layouts/entrance.html or manage.html. Its own version was a bare
+HTML page with a "Menu:" list and no stylesheet. This override (found first
+because data_quality comes before allauth in INSTALLED_APPS) extends
+data_quality/base.html instead, so those pages get the bar or sidebar, the
+stylesheet, flash messages and the footer.
+
+Presentation only: allauth's URLs, views, forms and flows are unchanged.
+
+  head_title   allauth's page title, inside DataPact's <title>
+  content      allauth fills DataPact's content block directly (same name)
+  extra_body   allauth's page scripts (the email page's confirm-on-remove).
+               DataPact's base has no block at the end of <body>, so they go
+               in <head>; allauth's loader waits for DOMContentLoaded.
+  page_header  left empty: each allauth page prints its own <h1> through
+               allauth/elements/h1.html, which carries the page__title class.
+=============================================================================
+{% endcomment %}
+
+{% block title %}{% block head_title %}{% endblock head_title %} - DataPact{% endblock %}
+
+{% block extra_head %}{% block extra_body %}{% endblock extra_body %}{% endblock %}
+
+{% block main_attrs %} data-surface="account"{% endblock %}
+
+{% block page_header %}{% endblock %}

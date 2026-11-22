@@ -23,51 +23,116 @@
     14. Explain page     (UX Stage 2)
     15. Violation lookup (UX Stage 3)
     16. Small screens
+    17. Answer-sheet primitives (product redesign)
+    18. Landing page            (product redesign)
+    19. Dataset registry        (product redesign, Stage 3A)
+    20. Application shell       (product redesign, Stage 3B)
+    21. Workspace overview, breadcrumbs (product redesign, Stage 3C)
+    22. Investigation journey   (product redesign, Stage 3D)
+    23. Insight pages           (product redesign, Stage 3E)
+    24. Contracts and Manage    (product redesign, Stage 3F)
+
+   Product redesign, November 2026 - the answer-sheet system.
+   A contract is the answer key for a recurring dataset, so the system
+   borrows an optical-mark answer sheet's three inks:
+     petrol "dropout" blue  everything the contract expects: guides, the
+                            version in force, links and actions (--accent)
+     graphite               the data that actually arrived (--ink, --bar)
+     vermilion              only where data departs from the key (--signal)
+   Type: Source Serif 4 for statements and page titles, Archivo for the
+   interface, its condensed width for form-field labels. Both are
+   self-hosted (static/data_quality/fonts). Token names from UX Stages 5-6
+   are kept, so every component and test that reads them still does.
    ========================================================================= */
+
+/* ---- typefaces -------------------------------------------------- */
+@font-face {
+    font-family: "Archivo";
+    src: url("../fonts/archivo-var.woff2") format("woff2");
+    font-weight: 100 900;
+    font-stretch: 62% 125%;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Source Serif 4";
+    src: url("../fonts/source-serif-4-var.woff2") format("woff2");
+    font-weight: 200 900;
+    font-style: normal;
+    font-display: swap;
+}
 
 /* ---- design tokens ------------------------------------------- */
 :root {
-    --ink:        #16202c;
-    --ink-soft:   #5a6672;
-    /* The quietest text (footer, breadcrumb, fact labels, table notes).
-       Was #8b959f, under 3.1:1; this is 4.6:1 on the page background and
-       5:1 on white, still lighter than --ink-soft (UX Stage 5). */
-    --ink-faint:  #67717c;
-    --line:       #e3e7ec;
-    /* A form field's edge: 3:1 against white, so the box itself shows. */
-    --line-strong: #7d8792;
+    /* Graphite: the data that arrived, and all running text. */
+    --ink:        #121b20;
+    --ink-soft:   #46545b;
+    /* The quietest text (footer, breadcrumb, fact labels, table notes):
+       5.8:1 on white, 5.2:1 on the canvas, still lighter than --ink-soft
+       (the UX Stage 5 rule). */
+    --ink-faint:  #5a676d;
+    --line:       #dde3e3;
+    /* A form field's edge: 3:1 against white and the canvas. */
+    --line-strong: #77878d;
     --surface:    #ffffff;
-    --canvas:     #f6f7f9;
-    --bar:        #16202c;
-    --accent:     #2f5bd7;
+    /* The paper the sheets lie on: a cool grey, never cream. */
+    --canvas:     #f1f3f2;
+    --bar:        #0e171c;
+    /* Petrol, the answer key's dropout ink: links, actions, focus. */
+    --accent:     #0b5d71;
     /* Hover and pressed accent (UX Stage 6): links and primary buttons. */
-    --accent-strong: #2448b0;
-    --pass-bg:    #e3f4e8;  --pass-ink:   #1d6b36;
-    --fail-bg:    #fce4e4;  --fail-ink:   #a12a2a;
-    --warn-bg:    #fdf3d8;  --warn-ink:   #855c11;
-    /* The contract version in force (UX Stage 6): the accent's own tint,
-       so "Active" no longer wears the "passed" green of a healthy run. */
-    --live-bg:    #e8eefc;  --live-ink:   #2448b0;
+    --accent-strong: #084656;
+    /* The key printed as guides on a sheet: pale wash and its rule. */
+    --key-wash:   #e4f0f3;
+    --key-rule:   #a9cbd5;
+    /* The key's ink on the dark bar: links, focus ring, the mark. */
+    --key-on-bar: #7cc3d6;
+    /* Vermilion: a departure from the key. Marks only; text uses --fail-ink. */
+    --signal:     #c23a22;
+    --pass-bg:    #e1f1e5;  --pass-ink:   #1a5f32;
+    --fail-bg:    #fae5e0;  --fail-ink:   #9f2718;
+    --warn-bg:    #faefd2;  --warn-ink:   #7a5207;
+    /* The contract version in force (UX Stage 6): the key's own tint,
+       so "Active" never wears the "passed" green of a healthy run. */
+    --live-bg:    #e0eef2;  --live-ink:   #084656;
+    /* Text on the dark bar and ink bands. */
+    --on-bar:      #c9d3d7;
+    --on-bar-soft: #a3b1b7;
     /* One curve for the little motion there is: a fast start, a soft stop. */
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-    --radius:     8px;
+    /* Sheets are square-cornered; controls take the smallest softening. */
+    --radius:     3px;
+    --radius-sheet: 2px;
     /* The small capitals that label data (UX Stage 6): column headers and
        fact labels. One size, so a panel title (1rem) and a form label
        (0.85rem, sentence case) can sit visibly above and beside it. */
     --text-label: 0.72rem;
+    --font-text: "Archivo", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    --font-display: "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --font-code: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
 }
 
 * { box-sizing: border-box; }
+
+html { scrollbar-color: var(--line-strong) var(--canvas); }
 
 body {
     margin: 0;
     background: var(--canvas);
     color: var(--ink);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                 Helvetica, Arial, sans-serif;
+    font-family: var(--font-text);
     font-size: 15px;
     line-height: 1.5;
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
+
+/* Real code, rules and file names only; never as decoration. */
+code, kbd, samp, pre { font-family: var(--font-code); font-size: 0.9em; }
+
+/* Numbers that line up: counts, row numbers, money, milliseconds. */
+.num, td, dd { font-variant-numeric: tabular-nums; }
 
 /* Links (UX Stage 6). There was no base rule, so any link outside a
    component that styled its own came out browser blue, or visited purple.
@@ -75,11 +140,11 @@ body {
    alone; components such as tables and the nav drop the underline. The
    hover is wrapped in :where() to keep it at a bare link's weight, so the
    brand, the nav and link-buttons keep their own colours. */
-a { color: var(--accent); text-underline-offset: 0.18em; }
+a { color: var(--accent); text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
 a:where(:hover) { color: var(--accent-strong); }
 
 /* Selected text in the accent's own tint rather than the browser's. */
-::selection { background: #d6e0fa; color: var(--ink); }
+::selection { background: #cfe6ed; color: var(--ink); }
 
 /* Keyboard focus (UX Stage 5): every link, button and scrolling panel gets
    the 2px accent ring the Home links and primary buttons already had,
@@ -105,7 +170,7 @@ a:where(:hover) { color: var(--accent-strong); }
 .skiplink:focus { transform: none; }
 
 /* ---- top navigation ------------------------------------------ */
-.topbar { background: var(--bar); color: #fff; }
+.topbar { background: var(--bar); color: #fff; position: relative; z-index: 5; }
 
 /* UX Stage 5: signed in, the brand, nine links and the account area need
    about 1120px in one row, more than the page's 1000px column, so Log out
@@ -128,26 +193,29 @@ a:where(:hover) { color: var(--accent-strong); }
 .brand {
     display: flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0;
     color: #fff;
     text-decoration: none;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    font-size: 0.95rem;
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-size: 1.3rem;
+    line-height: 1;
 }
-.brand span { color: #8fb0ff; }
+/* "Pact" in the key's ink: the agreement half of the name. */
+.brand span { color: var(--key-on-bar); }
 
 /* The logo is a second static asset, served the same way as this
    stylesheet - it proves the static pipeline handles more than CSS. */
-.brand__logo { width: 22px; height: 22px; display: block; flex: none; }
+.brand__logo { width: 24px; height: 24px; display: block; flex: none; margin-right: 0.55rem; }
 
-.mainnav { display: flex; flex-wrap: wrap; gap: 0.35rem 1.5rem; font-size: 0.9rem; }
+.mainnav { display: flex; flex-wrap: wrap; gap: 0.35rem 1.4rem; font-size: 0.9rem; font-weight: 500; }
 
 /* The planned item takes the links' padding and border too, so its text
    sits on the same line as theirs (UX Stage 5; it used to ride 4px high). */
 .mainnav a,
 .mainnav__planned {
-    color: #c4ccd6;
+    color: var(--on-bar);
     text-decoration: none;
     padding: 0.25rem 0;
     border-bottom: 2px solid transparent;
@@ -157,29 +225,34 @@ a:where(:hover) { color: var(--accent-strong); }
     white-space: nowrap;
 }
 .mainnav a:hover { color: #fff; }
-.mainnav a.is-active { color: #fff; border-bottom-color: #8fb0ff; }
+.mainnav a.is-active { color: #fff; border-bottom-color: var(--key-on-bar); }
 
 /* Upload (wireframe screen 4) is not built yet. Dimmer than the links but
    readable (6:1 on the bar; it was 2.9:1), with a dashed "Not yet" tag in
    the dashed style of the page's unavailable buttons. position: relative
    holds the tag's screen-reader-only word inside the item. */
-.mainnav__planned { color: #949eaa; cursor: not-allowed; position: relative; }
+.mainnav__planned { color: #a3b1b7; cursor: not-allowed; position: relative; }
+/* Stage 3B.1: a square stamp, not a pill (the answer sheet's only round
+   shape is a bubble). The dashed edge stays: dashed is the system's mark for
+   "not available", as on the disabled buttons. Used by Upload and, where the
+   handbook cannot answer, by Handbook. */
 .mainnav__tag {
     margin-left: 0.3rem;
     padding: 0 0.4rem;
-    border: 1px dashed #949eaa;
-    border-radius: 999px;
+    border: 1px dashed #a3b1b7;
+    border-radius: var(--radius);
+    white-space: nowrap;
     font-size: 0.7rem; /* 11.2px: the 11px floor for UI text (was 10.9px) */
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: #949eaa;
+    color: #a3b1b7;
 }
 
 /* The focus ring on the dark bar: the accent blue is under 3:1 there, so
    use the bar's own highlight (7.7:1), as the "Sign up" button does. */
-.topbar :focus-visible { outline-color: #8fb0ff; }
-.skiplink:focus-visible { outline-color: #8fb0ff; }
+.topbar :focus-visible { outline-color: #7cc3d6; }
+.skiplink:focus-visible { outline-color: #7cc3d6; }
 
 /* The folding wrapper around the links and the account area (base.html).
    Without the narrow-screen menu it is not a box at all, so the bar's
@@ -201,18 +274,28 @@ a:where(:hover) { color: var(--accent-strong); }
     flex-wrap: wrap;
     margin-bottom: 1.5rem;
 }
-.page__title { margin: 0; font-size: 1.6rem; letter-spacing: -0.01em; }
+/* Page titles are statements: the serif, at a size that leads the page. */
+.page__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 2.1rem;
+    font-weight: 600;
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+}
 /* 72ch keeps a long subtitle (Home's runs to two sentences) at a reading
    measure; it was about 120 characters a line on a desktop. */
-.page__subtitle { margin: 0.35rem 0 0; max-width: 72ch; color: var(--ink-soft); font-size: 0.9rem; }
+.page__subtitle { margin: 0.5rem 0 0; max-width: 72ch; color: var(--ink-soft); font-size: 0.95rem; }
 
 /* ---- buttons -------------------------------------------------- */
 .btn {
     display: inline-block;
-    padding: 0.5rem 0.9rem;
+    padding: 0.55rem 1rem;
     border-radius: var(--radius);
     font-size: 0.88rem;
     font-weight: 600;
+    line-height: 1.3;
     text-decoration: none;
     /* --line-strong, as the form fields use (UX Stage 6): the panel line
        (--line) left a plain button's edge at 1.2:1 against white. */
@@ -252,7 +335,7 @@ button.btn[aria-disabled="true"] { opacity: 0.6; }
 .btn--primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* On the dark top bar (signed-out "Sign up") the accent ring is too faint;
    use the bar's own highlight colour instead. */
-.topbar .btn--primary:focus-visible { outline-color: #8fb0ff; }
+.topbar .btn--primary:focus-visible { outline-color: #7cc3d6; }
 /* An action that is not available yet (_unavailable_action.html). Legible
    rather than faded, with a dashed edge like the empty-state mark, and its
    reason written beside it instead of in a hover tooltip. */
@@ -271,14 +354,13 @@ button.btn[aria-disabled="true"] { opacity: 0.6; }
 .panel {
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: var(--radius);
+    border-radius: var(--radius-sheet);
     /* auto, not hidden: it still clips the table's square corners to
        the panel's rounded ones, but on a narrow screen a wide table
        becomes scrollable instead of having its last column cut off
        with no way to reach it. */
     overflow: auto;
     margin-bottom: 1.5rem;
-    box-shadow: 0 1px 2px rgba(22, 32, 44, 0.04);
 }
 /* Scroll cue (UX Stage 6): on a phone a wide table scrolls inside its
    panel with nothing to say there is more. A soft shadow now sits on the
@@ -329,6 +411,7 @@ button.btn[aria-disabled="true"] { opacity: 0.6; }
 .datatable thead th {
     text-align: left;
     padding: 0.6rem 1.1rem;
+    font-stretch: 88%;
     font-size: var(--text-label);
     font-weight: 700;
     letter-spacing: 0.07em;
@@ -375,8 +458,10 @@ button.btn[aria-disabled="true"] { opacity: 0.6; }
 /* ---- badges and chips ----------------------------------------- */
 .badge {
     display: inline-block;
-    padding: 0.15rem 0.55rem;
-    border-radius: 999px;
+    padding: 0.15rem 0.5rem;
+    /* A square stamp, not a pill (product redesign): on the answer sheet
+       the only round shape is a bubble. */
+    border-radius: var(--radius);
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -396,7 +481,7 @@ button.btn[aria-disabled="true"] { opacity: 0.6; }
    white with a dashed edge (not written yet), Retired is the plain grey
    above (history). Active used to share the "passed" green and Draft the
    "error" amber. */
-.badge--active { background: var(--live-bg); color: var(--live-ink); box-shadow: inset 0 0 0 1px #b4c5f2; }
+.badge--active { background: var(--live-bg); color: var(--live-ink); box-shadow: inset 0 0 0 1px var(--key-rule); }
 .badge--draft  { background: var(--surface); color: var(--ink-soft); outline: 1px dashed var(--line-strong); outline-offset: -1px; }
 
 /* Data health, filled: a run Passed (green), Failed (red) or hit an Error
@@ -412,19 +497,8 @@ button.btn[aria-disabled="true"] { opacity: 0.6; }
    version on Overview: "v3" as written elsewhere, not "V3". */
 .badge--named { text-transform: none; letter-spacing: 0; }
 
-/* Small label naming the view kind that rendered the page. It makes
-   the A2 screenshots self-describing. */
-.viewchip {
-    display: inline-block;
-    margin-bottom: 1rem;
-    padding: 0.2rem 0.6rem;
-    border: 1px dashed var(--line);
-    border-radius: 999px;
-    font-size: 0.75rem;
-    color: var(--ink-faint);
-    background: var(--surface);
-}
-.viewchip code { font-size: 0.75rem; color: var(--ink-soft); }
+/* (.viewchip, the A2 "Rendered by" caption, was removed in Stage 3B.1: no
+   template has used it since Stage 3A.) */
 
 /* ---- empty state ---------------------------------------------- */
 .empty-state {
@@ -502,7 +576,8 @@ textarea {
     background: var(--surface);
     border: 1px solid var(--line-strong);
     border-radius: var(--radius);
-    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+    /* No transition (Stage 3D): focus is keyboard-driven and frequent, so
+       the petrol border and halo appear at once. */
 }
 
 textarea { max-width: 40rem; min-height: 5.5rem; resize: vertical; }
@@ -510,7 +585,7 @@ textarea { max-width: 40rem; min-height: 5.5rem; resize: vertical; }
 input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(47, 91, 215, 0.16);
+    box-shadow: 0 0 0 3px rgba(11, 93, 113, 0.18);
 }
 
 input::placeholder, textarea::placeholder { color: var(--ink-faint); }
@@ -545,20 +620,19 @@ button.btn { font: inherit; font-weight: 600; cursor: pointer; }
     padding: 0.75rem 1rem;
     margin-bottom: 0.6rem;
     border: 1px solid var(--line);
-    border-left: 4px solid var(--ink-faint);
     border-radius: var(--radius);
     background: var(--surface);
     font-size: 0.92rem;
 }
 .message::before { content: "i"; font-weight: 700; color: var(--ink-faint); }
 
-.message--success { border-left-color: var(--pass-ink); background: var(--pass-bg); color: var(--pass-ink); }
+.message--success { border-color: var(--pass-ink); background: var(--pass-bg); color: var(--pass-ink); }
 .message--success::before { content: "\2713"; color: var(--pass-ink); }
 
-.message--error { border-left-color: var(--fail-ink); background: var(--fail-bg); color: var(--fail-ink); }
+.message--error { border-color: var(--fail-ink); background: var(--fail-bg); color: var(--fail-ink); }
 .message--error::before { content: "\2715"; color: var(--fail-ink); }
 
-.message--warning { border-left-color: var(--warn-ink); background: var(--warn-bg); color: var(--warn-ink); }
+.message--warning { border-color: var(--warn-ink); background: var(--warn-bg); color: var(--warn-ink); }
 .message--warning::before { content: "!"; color: var(--warn-ink); }
 
 /* ---- account area in the top bar (A5.1) ------------------------- */
@@ -575,7 +649,7 @@ button.btn { font: inherit; font-weight: 600; cursor: pointer; }
 .useraccount form button { margin-top: 0; }
 
 .useraccount__name {
-    color: #c4ccd6;
+    color: var(--on-bar);
     font-size: 0.85rem;
     font-weight: 600;
     max-width: 12rem;
@@ -585,7 +659,7 @@ button.btn { font: inherit; font-weight: 600; cursor: pointer; }
 }
 
 .useraccount__link {
-    color: #c4ccd6;
+    color: var(--on-bar);
     text-decoration: none;
     font-size: 0.9rem;
 }
@@ -597,14 +671,14 @@ button.btn { font: inherit; font-weight: 600; cursor: pointer; }
 
 .btn--ghost {
     background: transparent;
-    border-color: #3b4654;
-    color: #c4ccd6;
+    border-color: #3a4a52;
+    color: var(--on-bar);
 }
 /* background: transparent, or the plain button's light hover fill (section
    5) would show under the white label (UX Stage 6). Pointer only, like
    that fill. */
 @media (hover: hover) and (pointer: fine) {
-    .btn--ghost:hover { background: transparent; border-color: #6b7686; color: #fff; }
+    .btn--ghost:hover { background: transparent; border-color: var(--on-bar-soft); color: #fff; }
 }
 
 /* The narrow-screen "Menu" button (UX Stage 5). Hidden here; the small
@@ -648,7 +722,6 @@ button.btn { font: inherit; font-weight: 600; cursor: pointer; }
     margin: 0 0 1rem;
     padding: 0.7rem 0.9rem;
     border: 1px solid var(--fail-ink);
-    border-left-width: 4px;
     border-radius: var(--radius);
     background: var(--fail-bg);
     color: var(--fail-ink);
@@ -686,11 +759,26 @@ button.btn { font: inherit; font-weight: 600; cursor: pointer; }
 /* ---- footer ---------------------------------------------------- */
 .sitefoot {
     border-top: 1px solid var(--line);
-    padding: 1.25rem 1.5rem;
+    padding: 1.75rem 1.5rem 2rem;
     text-align: center;
     font-size: 0.8rem;
     color: var(--ink-faint);
 }
+.sitefoot p { margin: 0; }
+.sitefoot__brand {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--ink);
+}
+.sitefoot__brand span {
+    margin-left: 0.5rem;
+    font-family: var(--font-text);
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--ink-soft);
+}
+.sitefoot .sitefoot__credit { margin-top: 0.35rem; }
 
 /* ---- home page (UX Stage 0) ------------------------------------ */
 /* "How DataPact works": the four steps in their real order, as one panel
@@ -808,7 +896,7 @@ button[aria-disabled="true"] { cursor: progress; }
 
 /* ---- violation lookup (UX Stage 3) ----------------------------- */
 /* Read by screen readers, not drawn: the run and rule that give each
-   results-table "Explain" link a name of its own. Clipped rather than
+   results-table "Investigate" link a name of its own. Clipped rather than
    display:none, which would hide it from screen readers as well. */
 .visually-hidden {
     position: absolute;
@@ -853,31 +941,62 @@ button[aria-disabled="true"] { cursor: progress; }
    right edge of a full-size window. (The bar's wrapping onto a second line,
    which used to start here at 1040px, is now in section 3 for every width.) */
 
-/* Below 1000px the links no longer fit on one line beside the brand, and
-   the wrapped bar grew to a quarter of a phone screen. Signed in, with the
-   script, the links and the account area fold behind the "Menu" button
-   and open as a list under the bar, pushing the page down rather than
-   covering it. Rows are 44px tall, for a thumb. */
-@media (max-width: 62.5em) {
+/* Signed in, with the script, the navigation and the account area fold
+   behind the "Menu" button below 80em (UX Stage 5 folded at 62.5em; the
+   Stage 3B sidebar takes over from 80em). Rows are 44px tall, for a thumb. */
+@media (max-width: 79.9375em) {
+    /* Stage 3B: below 80em (1280px at the default text size) the signed-in
+       navigation folds behind the Menu button; from 80em it is the sidebar
+       (section 20), so the two ranges meet without a gap. Open, it pushes
+       the page down rather than covering it, so there is no focus to trap. */
     .topbar.has-menutoggle .menutoggle { display: inline-block; margin-left: auto; }
     /* Open: the bar's highlight edge, so the button shows its state too. */
-    .topbar .menutoggle[aria-expanded="true"] { border-color: #8fb0ff; color: #fff; }
+    .topbar .menutoggle[aria-expanded="true"] { border-color: #7cc3d6; color: #fff; }
     .topbar.has-menutoggle .topbar__menu { display: none; }
-    .topbar.is-open .topbar__menu { display: block; width: 100%; padding-bottom: 0.25rem; }
-    .topbar.has-menutoggle .mainnav { flex-direction: column; gap: 0; font-size: 0.95rem; }
-    .topbar.has-menutoggle .mainnav > * {
-        display: block;
-        min-height: 44px;
-        padding: 0.6rem 0.75rem;
-        border-bottom: none;
-        border-left: 3px solid transparent;
+    .topbar.is-open .topbar__menu { display: block; width: 100%; padding: 0.5rem 0 0.25rem; }
+    /* Home on its own row, then the three groups side by side where they
+       fit (three on a tablet, one on a phone). Rows are 44px, for a thumb. */
+    .topbar.has-menutoggle .mainnav {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+        gap: 0.25rem 1.5rem;
+        font-size: 0.95rem;
     }
-    .topbar.has-menutoggle .mainnav a.is-active { border-left-color: #8fb0ff; }
+    .topbar.has-menutoggle .mainnav > a { grid-column: 1 / -1; }
+    .topbar.has-menutoggle .mainnav__group { display: block; }
+    .topbar.has-menutoggle .mainnav__heading { padding: 0.75rem 0.6rem 0.25rem 1.7rem; }
+    /* Stage 3B.1: in a narrow column a status tag (Handbook's "Local only")
+       wraps under its link text, inside the link's own box, instead of
+       running past it. Its margin is the gap, so it aligns either way. */
+    .topbar.has-menutoggle .mainnav a .mainnav__tag,
+    .topbar.has-menutoggle .mainnav__planned .mainnav__tag { margin-left: 0; }
+    .topbar.has-menutoggle .mainnav a,
+    .topbar.has-menutoggle .mainnav__planned {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.25rem 0.6rem;
+        min-height: 44px;
+        /* Stage 3B.2: the left padding is the dot's lane (0.6 + 0.5 + 0.6rem),
+           so the text sits exactly where it did and any line that wraps (a
+           status label) starts under the text, not under the dot. */
+        padding: 0.55rem 0.6rem 0.55rem 1.7rem;
+        border-bottom: none;
+        border-radius: var(--radius);
+    }
+    /* The dot is pinned in that lane, level with the first line of text. */
+    .topbar.has-menutoggle .mainnav a::before,
+    .topbar.has-menutoggle .mainnav__planned::before {
+        position: absolute;
+        left: 0.6rem;
+        top: 1.1rem;
+    }
     .topbar.has-menutoggle .useraccount {
         width: 100%;
-        margin: 0.5rem 0 0;
-        padding: 0.75rem 0.75rem 0;
-        border-top: 1px solid #3b4654;
+        margin: 0.75rem 0 0;
+        padding: 0.75rem 0.6rem 0;
+        border-top: 1px solid #3a4a52;
     }
 }
 
@@ -888,4 +1007,1507 @@ button[aria-disabled="true"] { cursor: progress; }
     .page { padding: 1.25rem 1rem 2rem; }
     .factlist { gap: 1rem; }
     input[type="text"], input[type="search"], select, textarea { max-width: 100%; }
+}
+
+
+/* ---- 17. answer-sheet primitives (product redesign) ------------------ */
+/* The one mark grammar every status can borrow: a filled bubble is
+   settled, half is partial, an empty ring is not there yet. Each use
+   names its state in words beside it; the mark is never the only cue. */
+.mark {
+    display: inline-block;
+    flex: none;
+    width: 0.875rem;
+    height: 0.875rem;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+}
+.mark--filled { background: var(--ink); }
+/* A hard stop, so this is a half-filled bubble, not a fade. */
+.mark--half { background: linear-gradient(90deg, var(--ink) 50%, transparent 50%); }
+
+/* A larger, more comfortable button for page-level actions. */
+.btn--lg { padding: 0.8rem 1.3rem; font-size: 1rem; }
+
+
+/* ---- 18. landing page (product redesign) ------------------------------ */
+/* Home renders <main class="page" data-surface="landing">: the page column
+   is released so each band can run edge to edge, and every band's content
+   sits in one frame with equal outer margins. */
+.page[data-surface="landing"] { max-width: none; padding: 0; }
+.page[data-surface="landing"] > .messages {
+    width: min(1240px, 100% - 2 * clamp(1rem, 4vw, 3rem));
+    margin: 1.25rem auto 0;
+}
+
+.landing {
+    --frame: min(1240px, 100% - 2 * clamp(1rem, 4vw, 3rem));
+    font-size: 1.0625rem;
+}
+
+/* hero ------------------------------------------------------------------ */
+/* The first band is the paper the answer sheet lies on. */
+.hero {
+    background: var(--canvas);
+    border-bottom: 1px solid var(--line);
+}
+.hero__inner {
+    width: var(--frame);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: clamp(2rem, 4.5vw, 5rem);
+    align-items: center;
+    padding: clamp(2.5rem, 5vw, 4.5rem) 0 clamp(3rem, 6vw, 5rem);
+}
+.hero__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(2.6rem, 1.25rem + 3.4vw, 4.4rem);
+    font-weight: 600;
+    line-height: 1.02;
+    letter-spacing: -0.028em;
+    text-wrap: balance;
+}
+.hero__lead {
+    margin: 1.5rem 0 0;
+    max-width: 34rem;
+    font-size: 1.2rem;
+    line-height: 1.55;
+    color: var(--ink);
+}
+.hero__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 2rem; }
+.hero__stats {
+    margin-top: 2.5rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--line);
+}
+.hero__statsnote { margin: 0 0 0.6rem; font-size: 0.85rem; color: var(--ink-soft); }
+/* One ledger line that wraps inside its column rather than past it. */
+.hero__stats .factlist { display: flex; flex-wrap: wrap; gap: 0.6rem 1.75rem; }
+.hero__stats .factlist div { min-width: 0; }
+.hero__stats .factlist div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.45rem; }
+.hero__stats .factlist dd { order: -1; }
+.hero__stats .factlist .factlist__link { order: 2; flex-basis: 100%; }
+.hero .factlist--stats dt + dd {
+    font-size: 1.25rem;
+    font-weight: 650;
+}
+
+/* The sheet: white paper, registration ticks at its corners, the scanner's
+   timing track down its left edge. It is the only thing on the page with
+   a shadow, because it is the only thing lying on top of something. */
+.sheet {
+    position: relative;
+    margin: 0;
+    padding: 1.75rem 1.75rem 1.4rem 3.4rem;
+    background: var(--surface);
+    border-radius: var(--radius-sheet);
+    box-shadow: 0 1px 2px rgba(14, 23, 28, 0.06), 0 18px 40px -22px rgba(14, 23, 28, 0.32);
+}
+.sheet__track {
+    position: absolute;
+    top: 1.9rem;
+    bottom: 1.9rem;
+    left: 1.25rem;
+    width: 0.7rem;
+    /* Hard stops: a column of printed bars, not a fade. */
+    background: repeating-linear-gradient(to bottom, var(--ink) 0 0.3rem, transparent 0.3rem 1.55rem);
+}
+.sheet__reg {
+    position: absolute;
+    width: 0.85rem;
+    height: 0.85rem;
+    border: 0 solid var(--ink);
+}
+.sheet__reg--tl { top: 0.6rem; left: 0.6rem; border-top-width: 2px; border-left-width: 2px; }
+.sheet__reg--tr { top: 0.6rem; right: 0.6rem; border-top-width: 2px; border-right-width: 2px; }
+.sheet__reg--bl { bottom: 0.6rem; left: 0.6rem; border-bottom-width: 2px; border-left-width: 2px; }
+.sheet__reg--br { bottom: 0.6rem; right: 0.6rem; border-bottom-width: 2px; border-right-width: 2px; }
+
+.sheet__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.4fr) minmax(0, 0.5fr);
+    gap: 1rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--key-rule);
+}
+.sheet__field { margin: 0; display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+/* The form's printed field names: the key's dropout ink, condensed. */
+.sheet__label {
+    font-size: 0.7rem;
+    font-weight: 650;
+    font-stretch: 80%;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+.sheet__value { font-size: 0.95rem; font-weight: 600; overflow-wrap: break-word; }
+
+/* Re-key: the page's one live control. Two real radio buttons, so the
+   keyboard, screen readers and no-script visitors all get it. */
+.rekey { margin: 1rem 0 0.6rem; padding: 0; border: 0; min-width: 0; }
+.rekey legend { padding: 0; margin-bottom: 0.5rem; }
+.rekey__options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.rekey__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+.rekey .rekey__option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.45rem 0.85rem 0.45rem 0.6rem;
+    border: 1px solid var(--key-rule);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--accent-strong);
+    font-size: 0.9rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: background-color 160ms var(--ease-out), border-color 160ms var(--ease-out);
+}
+.rekey__option span { font-weight: 400; color: var(--ink-soft); font-size: 0.82rem; }
+.rekey__option::before {
+    content: "";
+    width: 0.8rem;
+    height: 0.8rem;
+    border: 1.5px solid var(--accent);
+    border-radius: 50%;
+    transition: background-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+.rekey__input:checked + .rekey__option { background: var(--live-bg); border-color: var(--accent); }
+.rekey__input:checked + .rekey__option::before { background: var(--accent); box-shadow: inset 0 0 0 2px var(--live-bg); }
+.rekey__input:focus-visible + .rekey__option { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.answers { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.answers thead th {
+    padding: 0.3rem 0.5rem 0.35rem 0;
+    text-align: left;
+    font-size: 0.68rem;
+    font-weight: 650;
+    font-stretch: 80%;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border-bottom: 1px solid var(--key-rule);
+}
+.answers tbody th,
+.answers tbody td {
+    padding: 0.36rem 0.5rem 0.36rem 0;
+    border-bottom: 1px solid #e6eff2;
+    text-align: left;
+    transition: background-color 260ms var(--ease-out);
+}
+/* Row numbers are printed on the form, so they are in the key's ink. */
+.answers tbody th { width: 3.5rem; font-weight: 500; color: var(--accent); }
+.answers tbody tr:last-child > * { border-bottom: 0; }
+.answers__keys,
+.bubbles { display: inline-grid; grid-template-columns: repeat(3, 1rem); gap: 0.5rem; justify-items: center; }
+.answers__keys span { min-width: 1rem; text-align: center; }
+.bubbles i {
+    display: block;
+    width: 1rem;
+    height: 1rem;
+    border: 1.5px solid var(--key-rule);
+    border-radius: 50%;
+}
+/* The graphite mark: the value the file actually holds. */
+.bubbles.is-a i:nth-child(1),
+.bubbles.is-i i:nth-child(2) { background: var(--ink); border-color: var(--ink); }
+/* Contract v3 has no AUDIT bubble to fill: its column is not printed. */
+.answers__au,
+.bubbles i:nth-child(3) { opacity: 0; transform: scale(0.4); transition: opacity 220ms var(--ease-out), transform 260ms var(--ease-out); }
+.writein { font-weight: 650; }
+.check { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; color: var(--ink-soft); }
+.check::before {
+    content: "";
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--accent);
+}
+/* A departure: the scanner's vermilion bar, and the word. */
+.check--v3 { color: var(--fail-ink); font-weight: 650; }
+.check--v3::before {
+    width: 1.1rem;
+    height: 0.3rem;
+    border-radius: 0;
+    background: var(--signal);
+    transform-origin: left center;
+}
+.check--v4 { display: none; }
+.answers .is-audit > * { background: #fdf1ee; }
+
+.sheet__result { margin-top: 0.85rem; font-size: 0.95rem; }
+.result { margin: 0; }
+.result--v3 strong { color: var(--fail-ink); }
+.result--v4 { display: none; }
+.result--v4 strong { color: var(--accent-strong); }
+
+.causes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; margin-top: 0.8rem; }
+.cause {
+    margin: 0;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sheet);
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    transition: background-color 260ms var(--ease-out), border-color 260ms var(--ease-out);
+}
+.cause strong { display: block; margin-bottom: 0.1rem; color: var(--ink); font-size: 0.92rem; }
+.sheet__decision {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    margin: 0.8rem 0 0;
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+}
+.sheet__prompt { margin: 0.8rem 0 0; font-size: 0.88rem; color: var(--accent-strong); font-weight: 600; }
+.sheet__decision { display: none; }
+.sheet__caption {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--ink-faint);
+}
+
+/* Contract v4 chosen: the AUDIT column is printed, the four rows fill it,
+   their vermilion marks clear and the "outdated key" reading is the one
+   the record bears out. */
+.sheet:has(#key-v4:checked) .answers__au,
+.sheet:has(#key-v4:checked) .bubbles i:nth-child(3) { opacity: 1; transform: none; }
+.sheet:has(#key-v4:checked) .bubbles.is-au i:nth-child(3) { background: var(--ink); border-color: var(--ink); }
+.sheet:has(#key-v4:checked) .check--v3,
+.sheet:has(#key-v4:checked) .result--v3 { display: none; }
+.sheet:has(#key-v4:checked) .check--v4 { display: inline-flex; }
+.sheet:has(#key-v4:checked) .result--v4 { display: block; }
+.sheet:has(#key-v4:checked) .answers .is-audit > * { background: transparent; }
+.sheet:has(#key-v4:checked) .cause--chosen { background: var(--live-bg); border-color: var(--accent); }
+.sheet:has(#key-v4:checked) .sheet__prompt { display: none; }
+.sheet:has(#key-v4:checked) .sheet__decision { display: flex; }
+
+/* bands ------------------------------------------------------------------ */
+.band { padding: clamp(4rem, 8vw, 7.5rem) 0; }
+.band__inner { width: var(--frame); margin: 0 auto; }
+.band--sheet { background: var(--surface); border-block: 1px solid var(--line); }
+.band--ink { background: var(--bar); color: var(--on-bar); }
+.band--ink :focus-visible,
+.close :focus-visible { outline-color: var(--key-on-bar); }
+
+.section-title {
+    margin: 0;
+    max-width: 24ch;
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 1.15rem + 2vw, 3rem);
+    font-weight: 600;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    color: var(--ink);
+}
+.band--ink .section-title { color: #fff; }
+.section-lead { margin: 1.25rem 0 0; max-width: 38rem; font-size: 1.1rem; line-height: 1.6; }
+.band__note { margin: 2.25rem 0 0; max-width: 64ch; font-size: 0.92rem; line-height: 1.55; color: var(--ink-soft); }
+.band--ink .band__note { color: var(--on-bar-soft); }
+
+.split {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: clamp(2rem, 5vw, 5rem);
+    align-items: start;
+}
+.split--wide-lead { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.split--below { margin-top: clamp(2rem, 4vw, 3rem); }
+.split--head { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: end; margin-bottom: 2.5rem; }
+.split--head .section-lead { margin: 0; }
+
+/* problem: the drift log -------------------------------------------------- */
+.drift { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.drift caption { caption-side: bottom; padding-top: 0.9rem; text-align: left; font-size: 0.85rem; color: var(--ink-soft); }
+.drift thead th {
+    padding: 0 1rem 0.7rem 0;
+    text-align: left;
+    font-size: var(--text-label);
+    font-weight: 700;
+    font-stretch: 88%;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    border-bottom: 2px solid var(--ink);
+}
+.drift tbody th,
+.drift td {
+    padding: 1rem 1rem 1rem 0;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--line);
+}
+.drift tbody th { font-weight: 650; }
+.drift tbody th span { display: block; font-size: 0.85rem; font-weight: 400; color: var(--ink-soft); }
+.drift td:nth-child(2) { color: var(--fail-ink); }
+.drift td:nth-child(2) code { color: var(--ink); }
+.drift td.num { padding-right: 0; text-align: right; font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; line-height: 1.2; }
+
+/* how it works: four steps on one timing track ---------------------------- */
+.landing .workflow {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0 2rem;
+    margin: 3rem 0 0;
+    border-top: 2px solid var(--ink);
+}
+.landing .workflow__step { position: relative; padding: 1.6rem 0 0; border: 0; }
+.landing .workflow__step::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 0;
+    width: 2.5rem;
+    height: 10px;
+    background: var(--ink);
+}
+.landing .workflow__name {
+    margin: 0 0 0.6rem;
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+.landing .workflow__text { font-size: 1rem; line-height: 1.6; color: var(--ink-soft); }
+.landing .workflow__links { font-size: 0.95rem; }
+
+/* AI: facts, suggestion and decision, three layers of one record -------- */
+.anatomy { border: 1px solid var(--line); border-radius: var(--radius-sheet); background: var(--surface); }
+.layer { padding: 1.35rem 1.5rem; }
+.layer + .layer { border-top: 1px solid var(--line); }
+.layer--ai { background: var(--key-wash); }
+.layer__title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.75rem;
+    margin: 0 0 0.9rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-stretch: 85%;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.layer--ai .layer__title { color: var(--accent-strong); }
+.layer__title span { font-size: 0.82rem; font-weight: 400; font-stretch: 100%; letter-spacing: 0; text-transform: none; color: var(--ink-soft); }
+.layer__list { display: grid; gap: 0.7rem; margin: 0; }
+.layer__list div { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: 1rem; }
+.layer__list dt { font-size: 0.88rem; font-weight: 600; color: var(--ink-soft); }
+.layer__list dd { margin: 0; font-size: 0.98rem; line-height: 1.5; overflow-wrap: anywhere; }
+.layer--human p { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; margin: 0; line-height: 1.5; }
+
+.provenance { display: grid; gap: 1.5rem; margin: 0; }
+.provenance div { padding-top: 1rem; border-top: 1px solid var(--line); }
+.provenance div:first-child { padding-top: 0; border-top: 0; }
+.provenance dt { margin-bottom: 0.3rem; font-weight: 650; }
+.provenance dd { margin: 0; font-size: 0.97rem; line-height: 1.55; color: var(--ink-soft); }
+
+/* use cases: the offices, on the graphite band ---------------------------- */
+.offices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 3.5rem; margin: 3rem 0 0; }
+.offices div { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: 1.25rem; padding: 1.25rem 0; border-top: 1px solid #2a3a42; }
+.offices dt { font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; line-height: 1.2; color: #fff; }
+.offices dd { margin: 0; font-size: 0.97rem; line-height: 1.55; color: var(--on-bar); }
+.offices dd strong { display: block; margin-bottom: 0.15rem; font-weight: 600; color: #fff; }
+
+/* today: live, local only, planned ----------------------------------------- */
+.maturity { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.5rem; margin-top: 3rem; }
+.maturity__col { padding-top: 1.25rem; border-top: 2px solid var(--ink); }
+.maturity__title { display: flex; align-items: center; gap: 0.6rem; margin: 0 0 1rem; font-size: 1.15rem; font-weight: 650; }
+.maturity ul { display: grid; gap: 0.6rem; margin: 0; padding: 0; list-style: none; }
+.maturity li { line-height: 1.5; }
+.maturity__note { margin: 1rem 0 0; font-size: 0.9rem; color: var(--ink-soft); }
+
+/* pilots: proposals compared ------------------------------------------------ */
+.packages-wrap { overflow-x: auto; }
+.packages { width: 100%; min-width: 46rem; border-collapse: collapse; font-size: 0.97rem; }
+.packages thead th,
+.packages thead td { padding: 0 1.25rem 1rem; border-bottom: 2px solid var(--ink); vertical-align: bottom; text-align: left; }
+.packages thead th { font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; line-height: 1.2; }
+.packages tbody th {
+    width: 8rem;
+    padding: 1rem 1.25rem 1rem 0;
+    text-align: left;
+    vertical-align: top;
+    font-size: var(--text-label);
+    font-weight: 700;
+    font-stretch: 88%;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--line);
+}
+.packages td { padding: 1rem 1.25rem; vertical-align: top; line-height: 1.5; border-bottom: 1px solid var(--line); }
+/* The demo is the one package that exists today, printed in the key's wash. */
+.packages tr > :nth-child(2) { background: var(--key-wash); }
+.packages__next td { border-bottom: 0; }
+.packages__tbd { color: var(--ink-soft); }
+.packages__next th { border-bottom: 0; }
+
+/* close -------------------------------------------------------------------- */
+.close { padding: clamp(4rem, 8vw, 7rem) 0; background: var(--bar); color: var(--on-bar); }
+.close__inner { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 2rem; }
+.close__title {
+    margin: 0;
+    max-width: 16ch;
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 1.2rem + 3vw, 4rem);
+    font-weight: 600;
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    color: #fff;
+}
+.close .hero__actions { margin-top: 0; }
+/* On graphite the primary action takes the key's light ink, with dark text. */
+.close .btn--primary { background: var(--key-on-bar); border-color: var(--key-on-bar); color: var(--bar); }
+.btn--onink { background: transparent; border-color: var(--on-bar-soft); color: #fff; }
+
+@media (hover: hover) and (pointer: fine) {
+    .rekey .rekey__option:hover { border-color: var(--accent); }
+    .close .btn--primary:hover { background: #a6d8e5; border-color: #a6d8e5; color: var(--bar); }
+    .btn--onink:hover { background: transparent; border-color: #fff; color: #fff; }
+}
+
+/* load: the sheet assembles in registered layers -------------------------- */
+/* Key first (printed guides), then the graphite marks, then the vermilion
+   departures. Everything is visible at rest: the animations only run from
+   an earlier state into the final one, and reduced motion skips them. */
+@keyframes sheet-key-in { from { opacity: 0; } }
+@keyframes sheet-mark-in { from { opacity: 0; transform: scale(0.3); } }
+@keyframes sheet-depart-in { from { transform: scaleX(0); } }
+.sheet__head,
+.rekey,
+.answers thead { animation: sheet-key-in 420ms var(--ease-out) both; }
+.bubbles.is-a i:nth-child(1),
+.bubbles.is-i i:nth-child(2) { animation: sheet-mark-in 360ms var(--ease-out) both; }
+.answers tbody tr:nth-child(1) .bubbles i { animation-delay: 260ms; }
+.answers tbody tr:nth-child(3) .bubbles i { animation-delay: 320ms; }
+.answers tbody tr:nth-child(5) .bubbles i { animation-delay: 380ms; }
+.answers tbody tr:nth-child(7) .bubbles i { animation-delay: 440ms; }
+.check--v3::before { animation: sheet-depart-in 380ms var(--ease-out) both; }
+.answers tbody tr:nth-child(2) .check--v3::before { animation-delay: 560ms; }
+.answers tbody tr:nth-child(4) .check--v3::before { animation-delay: 620ms; }
+.answers tbody tr:nth-child(6) .check--v3::before { animation-delay: 680ms; }
+.answers tbody tr:nth-child(8) .check--v3::before { animation-delay: 740ms; }
+/* Re-key: the AUDIT bubbles fill one row after another. */
+.sheet:has(#key-v4:checked) .bubbles.is-au i:nth-child(3) { transition-delay: 0ms; }
+.sheet:has(#key-v4:checked) tbody tr:nth-child(4) .bubbles.is-au i:nth-child(3) { transition-delay: 60ms; }
+.sheet:has(#key-v4:checked) tbody tr:nth-child(6) .bubbles.is-au i:nth-child(3) { transition-delay: 120ms; }
+.sheet:has(#key-v4:checked) tbody tr:nth-child(8) .bubbles.is-au i:nth-child(3) { transition-delay: 180ms; }
+
+@media (prefers-reduced-motion: reduce) {
+    .sheet *,
+    .sheet *::before { animation: none !important; transition: none !important; }
+}
+
+/* landing: narrower screens (em, so they follow the text size) ----------- */
+@media (max-width: 64em) {
+    .hero__inner { grid-template-columns: minmax(0, 1fr); }
+    .hero__copy { max-width: 40rem; }
+    .sheet { max-width: 46rem; }
+    .split,
+    .split--wide-lead,
+    .split--head { grid-template-columns: minmax(0, 1fr); }
+    .landing .workflow { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.5rem 2rem; border-top: 0; }
+    .landing .workflow__step { border-top: 2px solid var(--ink); }
+    .offices { grid-template-columns: minmax(0, 1fr); }
+    .maturity { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 40em) {
+    .landing { font-size: 1rem; }
+    .hero__lead { font-size: 1.08rem; }
+    .hero__actions .btn { flex: 1 1 100%; text-align: center; }
+    .sheet { padding: 1.4rem 1rem 1.1rem 2.4rem; }
+    .sheet__track { left: 0.8rem; width: 0.55rem; }
+    .sheet__head { grid-template-columns: minmax(0, 1fr) auto; }
+    .sheet__head .sheet__field:first-child { grid-column: 1 / -1; }
+    .answers { font-size: 0.85rem; }
+    .answers__keys, .bubbles { grid-template-columns: repeat(3, 0.85rem); gap: 0.35rem; }
+    .bubbles i { width: 0.85rem; height: 0.85rem; }
+    .causes { grid-template-columns: minmax(0, 1fr); }
+    .landing .workflow,
+    .maturity { grid-template-columns: minmax(0, 1fr); }
+    .layer { padding: 1.1rem 1rem; }
+    .layer__list div,
+    .offices div { grid-template-columns: minmax(0, 1fr); gap: 0.2rem; }
+    .drift thead { display: none; }
+    .drift tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; padding: 0.9rem 0; border-bottom: 1px solid var(--line); }
+    .drift tbody th, .drift td { padding: 0.15rem 0; border: 0; }
+    .drift tbody th { grid-column: 1; grid-row: 1; }
+    .drift td:nth-child(2) { grid-column: 1 / -1; }
+    .drift td:nth-child(3) { grid-column: 1 / -1; color: var(--ink-soft); }
+    .drift td:nth-child(3)::before { content: "Expected: "; }
+    .drift td.num { grid-column: 2; grid-row: 1; align-self: start; padding-left: 1rem; }
+}
+
+/* Signed out, the bar's section anchors are a desktop convenience: on a
+   phone the page itself is the path, and the bar stays one line (there is
+   no Menu button signed out, by design: tests_navigation). */
+@media (max-width: 52em) {
+    .mainnav__anchor { display: none; }
+}
+.drift thead th.num { text-align: right; padding-right: 0; }
+@media (max-width: 40em) {
+    /* The comparison scrolls sideways on a phone; its row names stay put. */
+    .packages { min-width: 36rem; }
+    .packages tbody th,
+    .packages thead td { position: sticky; left: 0; z-index: 1; width: 5.5rem; background: var(--surface); }
+}
+
+
+/* ---- 19. dataset registry (product redesign, Stage 3A) ---------------- */
+/* An Operate screen: the registry answers "which of our recurring datasets
+   needs attention, and where do I go next?". One white sheet holds the
+   table; a quiet ledger, the search and the filter sit above it on the
+   paper. Status keeps its words (badges, "1 open"); colour is never the
+   only cue. No new motion: the page is used weekly and every control
+   already has the shared press and hover feedback. */
+.page[data-surface="registry"] { max-width: 1200px; }
+
+.registry-tools {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 1.1rem 2rem;
+    margin: 0 0 1.25rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--line);
+}
+
+/* The registry at a glance, read as one ledger line: number first. */
+.registry-ledger { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.4rem 2rem; margin: 0; }
+.registry-ledger div { display: flex; align-items: baseline; gap: 0.4rem; }
+.registry-ledger dd { order: -1; margin: 0; font-size: 1.25rem; font-weight: 650; line-height: 1.2; }
+.registry-ledger dt { font-size: 0.9rem; color: var(--ink-soft); }
+.registry-ledger .is-attention dd { color: var(--fail-ink); }
+
+/* Search: a GET form, so it works without script and a search is a link.
+   The bare-element form rules (section 10) are reset for this one row. */
+.registry-search { display: block; min-width: 0; }
+.registry-search .registry-search__label { margin: 0 0 0.35rem; }
+.registry-search__row { display: flex; gap: 0.5rem; }
+.registry-search .registry-search__input { flex: 0 1 26rem; width: 26rem; max-width: 100%; min-height: 2.5rem; }
+.registry-search .btn { margin-top: 0; min-height: 2.5rem; }
+
+/* The filter: two real links, the current one marked for screen readers
+   (aria-current) and by the key's tint for the eye. */
+.registry-filter {
+    display: flex;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+.registry-filter a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.5rem;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-decoration: none;
+    white-space: nowrap;
+}
+.registry-filter a + a { border-left: 1px solid var(--line); }
+.registry-filter a[aria-current="page"] { background: var(--live-bg); color: var(--accent-strong); }
+.registry-filter__count {
+    min-width: 1.4rem;
+    padding: 0 0.35rem;
+    border-radius: var(--radius);
+    background: var(--canvas);
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+    text-align: center;
+}
+.registry-filter__count.is-attention { background: var(--fail-bg); color: var(--fail-ink); }
+
+.registry-result { margin: -0.25rem 0 1rem; font-size: 0.92rem; color: var(--ink-soft); }
+
+/* The table: the dataset's name is the clearest thing in its row. */
+.registry-table tbody th,
+.registry-table td { vertical-align: top; }
+.registry-table .registry-dataset { min-width: 15rem; max-width: 24rem; }
+.registry-table .registry-name { font-size: 1rem; font-weight: 650; }
+.registry-desc {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.85rem;
+    font-weight: 400;
+    line-height: 1.45;
+    color: var(--ink-soft);
+}
+.registry-table .badge + .cell__sub { margin-top: 0.3rem; white-space: nowrap; }
+.registry-table td .muted { white-space: nowrap; }
+.registry-date { color: var(--ink-faint); white-space: nowrap; }
+/* A dataset with a violation still open: the vermilion departure bar from
+   the answer sheet, and the count in words. */
+.open-count { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 650; color: var(--fail-ink); white-space: nowrap; }
+.open-count__mark { width: 0.9rem; height: 0.25rem; background: var(--signal); }
+
+@media (hover: hover) and (pointer: fine) {
+    .registry-filter a:not([aria-current="page"]):hover { background: var(--canvas); color: var(--ink); }
+}
+
+/* Laptop: the description gives way a little so six columns fit. */
+@media (max-width: 72em) {
+    .registry-table .registry-dataset { min-width: 12rem; }
+    .registry-table thead th,
+    .registry-table tbody th,
+    .registry-table td { padding-left: 0.8rem; padding-right: 0.8rem; }
+}
+
+/* Tablet and phone: each row becomes a compact summary on the one sheet.
+   No sideways scrolling, nothing hidden: every column keeps its label. */
+@media (max-width: 52em) {
+    .registry-tools { grid-template-columns: minmax(0, 1fr); }
+    .registry-filter { justify-self: start; }
+    .registry-panel { overflow: visible; }
+    .panel.registry-panel { background: var(--surface); }
+    .registry-table,
+    .registry-table tbody { display: block; }
+    .registry-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+    .registry-table tbody tr {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.8rem 1rem;
+        padding: 1rem 1.1rem 1.1rem;
+        border-bottom: 1px solid var(--line);
+    }
+    .registry-table tbody tr:last-child { border-bottom: 0; }
+    .registry-table tbody th,
+    .registry-table td,
+    .registry-table td.num { display: block; padding: 0; border: 0; text-align: left; }
+    .registry-table .registry-dataset { grid-column: 1 / -1; min-width: 0; max-width: 46rem; }
+    .registry-table .registry-name { font-size: 1.05rem; }
+    .registry-table td::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 0.25rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        font-stretch: 88%;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+    }
+    .registry-table .is-emptyrow { display: block; }
+    .registry-table .is-emptyrow td::before { content: none; }
+}
+@media (max-width: 36em) {
+    .registry-table tbody tr { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem 1rem; }
+    /* The date takes the whole last line, its label beside it. */
+    .registry-table .registry-date { grid-column: 1 / -1; }
+    .registry-table .registry-date::before { display: inline; margin: 0 0.45rem 0 0; }
+    .registry-search__row { flex-wrap: wrap; }
+    .registry-search .registry-search__input { flex: 1 1 12rem; width: auto; }
+    .registry-filter { justify-self: stretch; }
+    .registry-filter a { flex: 1 1 auto; justify-content: center; }
+}
+
+
+/* ---- 20. application shell (product redesign, Stage 3B) ---------------- */
+/* Signed in, base.html wraps the page in .shell--app. The header holds one
+   navigation in three labelled groups (Data, Quality, AI); from 80em it is
+   a graphite sidebar beside the page, below that it folds behind the Menu
+   button (section 16). Signed out, none of this applies: the plain top bar
+   with the landing page's section links stays as it was.
+
+   The active page is marked three ways, never by colour alone: a filled
+   bubble (the answer sheet's one round mark), bold text on a lifted tone,
+   and aria-current="page" for screen readers. No motion: navigating loads
+   a new page, and the menu opens tens of times a day on a phone. */
+
+/* Without the script, below 80em, the groups simply wrap in the bar. */
+.mainnav__group { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 1.4rem; }
+.mainnav__heading { margin: 0; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.01em; color: var(--on-bar-soft); }
+
+.shell--app .mainnav a::before,
+.shell--app .mainnav__planned::before {
+    content: "";
+    flex: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+}
+.shell--app .mainnav a.is-active { background: #1b2c33; color: #fff; font-weight: 600; }
+.shell--app .mainnav a.is-active::before { background: var(--key-on-bar); }
+
+@media (hover: hover) and (pointer: fine) {
+    .shell--app .mainnav a:not(.is-active):hover { background: #15242b; }
+}
+
+@media (min-width: 80em) {
+    .shell--app {
+        display: grid;
+        grid-template-columns: 15rem minmax(0, 1fr);
+        grid-template-rows: 1fr auto;
+        min-height: 100vh;
+    }
+    .shell--app > .topbar {
+        grid-row: 1 / -1;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+    }
+    .shell--app > main,
+    .shell--app > .sitefoot { grid-column: 2; width: 100%; }
+    .shell--app .topbar__inner {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        gap: 0;
+        max-width: none;
+        min-height: 100%;
+        margin: 0;
+        padding: 1.4rem 0.75rem 1rem;
+    }
+    .shell--app .brand { padding: 0 0.6rem 0.75rem; }
+    .shell--app .topbar__menu { display: flex; flex-direction: column; flex: 1 1 auto; }
+    .shell--app .mainnav { flex-direction: column; flex-wrap: nowrap; gap: 0; font-size: 0.92rem; }
+    .shell--app .mainnav__group { display: block; margin-top: 1.4rem; }
+    .shell--app .mainnav__heading { padding: 0 0.6rem 0.4rem 1.7rem; }
+    .shell--app .mainnav a,
+    .shell--app .mainnav__planned {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        min-height: 2.25rem;
+        padding: 0.4rem 0.6rem;
+        border-bottom: 0;
+        border-radius: var(--radius);
+    }
+    .shell--app .mainnav > a { margin-top: 0.75rem; }
+    /* Signed in, the landing page sits beside the sidebar in a column 240px
+       narrower than the screen. Its hero gets equal halves and a headline a
+       step smaller, so "Give every dataset an answer key." stays on two
+       lines. Signed out (no sidebar) the hero is unchanged. */
+    .shell--app .hero__inner { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .shell--app .hero__title { font-size: clamp(2.6rem, 0.9rem + 2.6vw, 3.6rem); }
+    /* Account at the foot of the sidebar: who is signed in, and the way out. */
+    .shell--app .useraccount {
+        flex-wrap: wrap;
+        justify-content: space-between;
+        margin: auto 0 0;
+        padding: 1rem 0.6rem 0;
+        border-top: 1px solid #26343b;
+    }
+}
+
+
+/* ---- 21. workspace overview and breadcrumbs (product redesign, Stage 3C) */
+/* The workspace answers three questions in reading order: what needs a
+   decision (the only urgent block: a white sheet with vermilion departure
+   marks), what was checked most recently (a compact run table), and which
+   datasets are not covered yet (a quiet list on the paper, in the right
+   column). The A2 contract table closes the page. Same 1200px column and
+   divider as the registry, so the two pages line up. No motion: nothing on
+   the page changes without a reload. */
+.page[data-surface="workspace"] { max-width: 1200px; }
+
+.ws-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 2.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+}
+.ws-main { display: grid; gap: 2.5rem; min-width: 0; }
+.ws-grid + .ws-coverage { margin-top: 2.75rem; }
+
+.ws-section__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.2rem 1rem;
+    margin-bottom: 0.85rem;
+}
+.ws-section__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+.ws-section__count { margin: 0; font-size: 0.9rem; color: var(--ink-soft); }
+.ws-section__count.is-attention { font-weight: 650; color: var(--fail-ink); }
+
+/* Needs a decision: one sheet, one row per open violation. */
+.ws-decisions {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sheet);
+}
+.ws-decision {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0.3rem 1rem;
+    padding: 1rem 1.1rem;
+}
+.ws-decision + .ws-decision { border-top: 1px solid var(--line); }
+.ws-decision__mark { margin-top: 0.6rem; }
+.ws-decision__body { min-width: 0; }
+.ws-decision__title { margin: 0; font-size: 1rem; font-weight: 650; }
+.ws-decision__title a { text-decoration: none; }
+.ws-decision__what { margin: 0.2rem 0 0; font-size: 0.92rem; }
+.ws-decision__what strong { color: var(--fail-ink); }
+.ws-decision__where { margin: 0.15rem 0 0; font-size: 0.82rem; color: var(--ink-soft); overflow-wrap: anywhere; }
+.ws-decision__action { align-self: center; }
+
+.ws-section__foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; margin-top: 0.75rem; }
+.ws-note { margin: 0; max-width: 62ch; font-size: 0.85rem; line-height: 1.45; color: var(--ink-soft); }
+.ws-more { margin: 0.75rem 0 0; font-size: 0.88rem; color: var(--ink-soft); }
+.ws-section__foot .ws-more { margin: 0; }
+.ws-more a { font-weight: 600; }
+
+/* A section with nothing to show says so, in the mark grammar. */
+.ws-empty {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 1rem 1.1rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sheet);
+    color: var(--ink-soft);
+}
+
+/* Recent runs: a compact table on its own sheet. */
+.ws-runs-panel { margin-bottom: 0; }
+.ws-runs tbody th,
+.ws-runs td { vertical-align: top; }
+.ws-runs__date { color: var(--ink-soft); white-space: nowrap; }
+.ws-runs .cell__sub { overflow-wrap: anywhere; }
+
+/* Coverage gaps: quiet, on the paper, each kind with its mark. */
+.ws-gap + .ws-gap { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+.ws-gap__title { display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 0.98rem; font-weight: 650; }
+.ws-gap__why { margin: 0.2rem 0 0.5rem 1.375rem; font-size: 0.85rem; line-height: 1.45; color: var(--ink-soft); }
+.ws-gap ul { display: grid; gap: 0.3rem; margin: 0 0 0 1.375rem; padding: 0; list-style: none; }
+.ws-gap a { font-weight: 600; text-decoration: none; }
+.ws-gap .cell__sub { display: block; font-size: 0.8rem; color: var(--ink-soft); }
+
+/* Breadcrumbs on nested pages: a labelled landmark, parent links first and
+   the current page last (aria-current). The separator is drawn by CSS and
+   given empty alternative text, so a screen reader does not read "slash". */
+.breadcrumbs ol { display: flex; flex-wrap: wrap; gap: 0.25rem 0.5rem; margin: 0; padding: 0; list-style: none; }
+.breadcrumbs li + li::before { content: "/"; content: "/" / ""; margin-right: 0.5rem; color: var(--ink-faint); }
+.breadcrumbs [aria-current="page"] { color: var(--ink-soft); }
+
+@media (hover: hover) and (pointer: fine) {
+    .ws-gap a:hover { text-decoration: underline; }
+}
+
+@media (min-width: 80em) {
+    /* Home and Overview sit together at the top of the sidebar. */
+    .shell--app .mainnav > a + a { margin-top: 0; }
+    /* The sidebar's column keeps its graphite all the way down, so a page
+       longer than the window (or a full-page capture of one) never shows the
+       paper under the pinned sidebar. A hard stop: a band, not a fade. */
+    .shell--app { background: linear-gradient(to right, var(--bar) 15rem, transparent 15rem); }
+}
+
+@media (max-width: 64em) {
+    .ws-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 40em) {
+    .ws-decision { grid-template-columns: auto minmax(0, 1fr); padding: 0.9rem 1rem; }
+    /* The page's key action: a 44px target for a thumb. */
+    .ws-decision__action { grid-column: 2; justify-self: start; display: inline-flex; align-items: center; min-height: 2.75rem; margin-top: 0.4rem; padding-inline: 1rem; }
+    /* Runs stack into labelled summaries, the registry's phone pattern. */
+    .ws-runs-panel { overflow: visible; }
+    .panel.ws-runs-panel { background: var(--surface); }
+    .ws-runs,
+    .ws-runs tbody { display: block; }
+    .ws-runs thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .ws-runs tbody tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.6rem 1rem;
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid var(--line);
+    }
+    .ws-runs tbody tr:last-child { border-bottom: 0; }
+    .ws-runs tbody th,
+    .ws-runs td { display: block; padding: 0; border: 0; }
+    .ws-runs__dataset { grid-column: 1 / -1; order: -1; }
+    .ws-runs td::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 0.2rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        font-stretch: 88%;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+    }
+    .ws-runs .ws-runs__date { grid-column: 1 / -1; }
+    .ws-runs .ws-runs__date::before { display: inline; margin-right: 0.45rem; }
+    /* The A2 contract table, the same way: the dataset first, then its three
+       facts side by side under their labels. No sideways scrolling. */
+    .ws-coverage-panel { overflow: visible; }
+    .panel.ws-coverage-panel { background: var(--surface); }
+    .ws-coverage-table,
+    .ws-coverage-table tbody { display: block; }
+    .ws-coverage-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .ws-coverage-table tbody tr {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.5rem 1rem;
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid var(--line);
+    }
+    .ws-coverage-table tbody tr:last-child { border-bottom: 0; }
+    .ws-coverage-table td,
+    .ws-coverage-table td.num { display: block; padding: 0; border: 0; text-align: left; }
+    .ws-coverage-table td:first-child { grid-column: 1 / -1; }
+    .ws-coverage-table td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 0.2rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        font-stretch: 88%;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+    }
+    .ws-coverage-table .is-emptyrow { display: block; }
+}
+
+
+/* ---- 22. investigation journey (product redesign, Stage 3D) ------------ */
+/* Dataset detail -> lookup results -> Investigate. One name for the page
+   (Investigate), the rule by its readable name over the exact expression,
+   counts with thousands separators, the human decision in every state, and
+   the two violation tables reflowed into labelled blocks on a phone. */
+
+/* The rule: the model's RuleType label, then the exact expression in the
+   code face (it is a rule, so monospace is earned), quieter, on its own line. */
+.rule__name { display: block; }
+.rule__expr {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+}
+.facts__num { font-variant-numeric: tabular-nums; }
+
+/* What happens next: DESIGN.md's human-decision layer. A white panel with the
+   recorded badge, then the three steps on ruled rows, each marked by the
+   short graphite step bar. An <ol>, because the order is the process. */
+.decision__state { margin: 0.4rem 0 1rem; font-size: 0.9rem; color: var(--ink-soft); }
+.decision__steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 2px solid var(--ink);
+}
+.decision__steps li {
+    position: relative;
+    max-width: 70ch;
+    padding: 0.75rem 0 0.75rem 1.4rem;
+    border-bottom: 1px solid var(--line);
+    line-height: 1.5;
+}
+.decision__steps li:last-child { border-bottom: 0; padding-bottom: 0; }
+.decision__steps li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 1.45rem;
+    width: 10px;
+    height: 3px;
+    background: var(--ink);
+}
+.decision__steps strong { font-weight: 650; }
+
+/* The Contracts page says it also holds the lookup; the lookup says what it
+   is for before its form. */
+.lookup__intro { margin: 0 0 0.9rem; max-width: 62ch; font-size: 0.9rem; color: var(--ink-soft); }
+
+/* Stage 3D.1, the record: DESIGN.md's record layers. Facts, AI suggestion and
+   the human decision are layers of one bordered container (the same edge,
+   corner and white as the landing page's .anatomy); each layer keeps its panel
+   head and h2, and a 1px Rule Line separates them. Only a usable AI answer is
+   tinted Key Wash, its title in Deep Petrol. No shadow, no gradient. */
+.record {
+    margin-bottom: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sheet);
+}
+.record > .panel { margin: 0; border: 0; border-radius: 0; overflow: visible; }
+.record > .panel + .panel { border-top: 1px solid var(--line); }
+/* Stage 3D.2: inside the record a layer's title sits on the layer itself. The
+   panel head's own rule (and its band of padding) made each layer read as a
+   separate card with a header; now the only lines are the record's edge and
+   the 1px rules between layers. Each title is still the layer's h2. */
+.record > .panel > .panel__head { padding: 1.1rem 1.1rem 0; border-bottom: 0; }
+.record > .panel > .panel__body { padding-top: 0.75rem; }
+.record > .record__suggestion { background: var(--key-wash); }
+.record > .record__suggestion .panel__title { color: var(--accent-strong); }
+/* The waiting line now sits in the facts layer, under the buttons it reports on. */
+.record .explain__status { margin: 1rem 0 0; }
+.record .explain__status:empty { margin: 0; }
+
+/* The one entrance on the page: a new, usable AI answer (only rendered on the
+   POST that produced it) rises 6px into place. Transform and opacity only, the
+   shared ease-out curve, under 200ms, from the panel's own resting state.
+   Reduced motion removes it entirely: no fade in its place. */
+@keyframes ai-answer-in {
+    from { opacity: 0; transform: translateY(6px); }
+}
+.ai-answer--new { animation: ai-answer-in 190ms var(--ease-out) backwards; }
+@media (prefers-reduced-motion: reduce) {
+    .ai-answer--new { animation: none; }
+}
+
+/* Phone: each violation becomes a labelled block, the Overview's run pattern.
+   Identity first (dataset, column and rule, run), then Failed rows beside
+   Resolution, then Investigate as a 44px target. Nothing is hidden; the
+   column names come back as labels (data-label) and the table roles in the
+   markup keep each cell tied to its column for screen readers. */
+@media (max-width: 40em) {
+    .panel:has(.vtable) { overflow: visible; background: var(--surface); }
+    .vtable,
+    .vtable tbody { display: block; }
+    .vtable thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .vtable tbody tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.6rem 1rem;
+        padding: 0.9rem 1.1rem;
+        border-bottom: 1px solid var(--line);
+    }
+    .vtable tbody tr:last-child { border-bottom: 0; }
+    .vtable td,
+    .vtable td.num { display: block; padding: 0; border: 0; text-align: left; }
+    .vtable td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 0.2rem;
+        font-size: var(--text-label);
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+    }
+    .vtable__dataset,
+    .vtable__rule,
+    .vtable__run,
+    .vtable__next { grid-column: 1 / -1; }
+    .vtable .cell__sub { overflow-wrap: anywhere; }
+    .vtable__run { overflow-wrap: anywhere; }
+    .vtable__next a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.75rem;
+        padding: 0 1rem;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius);
+        background: var(--surface);
+    }
+    .vtable .is-emptyrow { display: block; }
+}
+
+
+/* ---- 23. insight pages (product redesign, Stage 3E) --------------------- */
+/* Quality History (understand outcomes), Charts (explore the runs) and Reports
+   (review and export the record). The registry's 1200px frame; on a wide
+   screen a chart sits beside its text equivalent, and the two charts, or the
+   two breakdowns, sit side by side. Below 64em everything stacks, in reading
+   order. Nothing here moves: these pages are read, not operated. */
+.page[data-surface="insight"] { max-width: 1200px; }
+
+.insight-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.insight-grid > .panel { margin: 0; }
+.panel + .insight-grid { margin-top: 1.5rem; }
+@media (min-width: 64.0625em) {
+    .insight-grid--chart { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+    .insight-grid--pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* The server-drawn chart: the wide image at its own size or smaller; below
+   40em <picture> swaps in the phone drawing (shown at half its pixel size). */
+.insight-grid picture { display: block; }
+.chart-img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+
+/* A chart's caption says what to read off it; the spec link is a footnote. */
+.insight-note { margin: 0.9rem 0 0; max-width: 62ch; font-size: 0.9rem; line-height: 1.5; color: var(--ink-soft); }
+.chart { width: 100%; min-height: 340px; }
+.chart__fallback { margin: 0; color: var(--fail-ink); }
+.chart__spec { margin: 0.6rem 0 0; font-size: 0.82rem; color: var(--ink-soft); }
+/* Animation review (Stage 3E): vega-embed rests its "..." menu at 20% opacity
+   and fades it in over 0.4s ease-in on :hover, ungated. On a touch screen
+   nothing hovers, so the menu stayed nearly invisible; the fade is also slow
+   and eases in. The menu is an action people need: shown plainly, no fade.
+   (Higher specificity than vega-embed's injected .vega-embed:hover summary.) */
+.chart.vega-embed details > summary { opacity: 1; transition: none; }
+/* The menu it opens: vega-embed scales it in from 0.6, from its centre, on an
+   overshooting curve, and ignores reduced motion. Opening a chart's menu is
+   occasional, so a short entrance stays, made physical: from 0.96, out of the
+   top-right corner it hangs from, on the site's ease-out, and none at all
+   under reduced motion. */
+@keyframes chart-menu-in {
+    from { opacity: 0; transform: scale(0.96); }
+}
+.chart.vega-embed .vega-actions { transform-origin: top right; animation: chart-menu-in 150ms var(--ease-out); }
+@media (prefers-reduced-motion: reduce) {
+    .chart.vega-embed .vega-actions { animation: none; }
+}
+/* On a phone, vega-embed's "..." menu takes its own row above the chart (vegaEmbed puts
+   .vega-embed on the .chart element itself, hence the compound selector)
+   instead of a 38px strip down its right side, which the plot needs. */
+@media (max-width: 40em) {
+    .chart.vega-embed.has-actions { padding-right: 0; padding-top: 2.25rem; }
+}
+
+/* Reports' totals are the figures the page exists to show: in the serif.
+   Through the page's surface, so the stats markup stays as it was. */
+.page[data-surface="insight"] .factlist--stats { gap: 1.25rem 2.5rem; }
+.page[data-surface="insight"] .factlist--stats dt + dd {
+    font-family: var(--font-display);
+    font-size: 2.1rem;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+}
+
+
+/* ---- 24. contracts and manage (product redesign, Stage 3F) ------------- */
+/* Contracts: one search panel (the status counts as a line of stamps, the
+   fields in a row) over one table of versions grouped by dataset. Manage:
+   registration first, beside the registered datasets on a wide screen. The
+   1200px frame of the other redesigned pages. Nothing here moves. */
+.page[data-surface="contracts"],
+.page[data-surface="manage"] { max-width: 1200px; }
+
+/* The status counts: each stamp with its number, in one line that wraps. */
+.contracts-summary { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin: 0 0 1rem; }
+.contracts-summary__item { display: inline-flex; align-items: center; gap: 0.5rem; }
+.contracts-summary__count { font-weight: 650; font-variant-numeric: tabular-nums; }
+
+/* The search fields in one row on a wide screen; the button on their baseline. */
+.contracts-search__form,
+.manage-filter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.75rem 1rem; }
+.contracts-search__field,
+.manage-filter__field { display: grid; gap: 0.25rem; flex: 1 1 14rem; max-width: 26rem; }
+.contracts-search__field label,
+.manage-filter__field label { margin-top: 0; }
+.contracts-search__form .btn,
+.manage-filter .btn { margin-top: 0; }
+
+.contracts-results__count { margin: 0; font-size: 0.88rem; color: var(--ink-soft); }
+
+/* A dataset heads its group: the paper-grey band under a 2px graphite rule
+   (DESIGN.md: graphite rules head tables and step rows), its name as a link
+   and the version in force beside it. */
+.ctable__dataset th {
+    padding: 0.7rem 1.1rem;
+    background: var(--canvas);
+    border-top: 2px solid var(--ink);
+    text-align: left;
+    font-weight: 650;
+}
+.ctable__group:first-of-type .ctable__dataset th { border-top-width: 1px; border-top-color: var(--line); }
+.ctable__dataset a { margin-right: 0.75rem; }
+.ctable__active { font-size: 0.85rem; font-weight: 500; color: var(--ink-soft); }
+.ctable tbody th[scope="row"] { font-weight: 600; font-variant-numeric: tabular-nums; }
+.ctable td.muted { max-width: 60ch; }
+
+/* Manage: registration first, beside the list on a wide screen. */
+.manage-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.manage-grid > .panel { margin: 0; }
+@media (min-width: 64.0625em) {
+    .manage-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+}
+.form-note { margin: 0 0 0.75rem; font-size: 0.85rem; color: var(--ink-soft); }
+.manage-list__registry { font-size: 0.88rem; font-weight: 600; }
+
+/* After a failed registration: what went wrong, each linked to its field.
+   A 1px Fail Ink edge on the fail ground (no thick coloured left edge). */
+.form-errors {
+    margin: 0 0 1rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--fail-ink);
+    border-radius: var(--radius);
+    background: var(--fail-bg);
+    color: var(--fail-ink);
+}
+.form-errors:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.form-errors__title { margin: 0 0 0.4rem; font-weight: 650; }
+.form-errors__list { margin: 0; padding-left: 1.1rem; }
+.form-errors__list a { color: var(--fail-ink); font-weight: 600; }
+
+/* Phone: each version becomes a labelled block under its dataset heading;
+   nothing is hidden and nothing scrolls sideways. The table roles in the
+   markup keep the cells tied to their headers once the display changes. */
+@media (max-width: 40em) {
+    .panel.contracts-results { overflow: visible; background: var(--surface); }
+    .ctable,
+    .ctable tbody { display: block; }
+    .ctable thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .ctable tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.5rem 1rem; padding: 0.8rem 1.1rem; border-bottom: 1px solid var(--line); }
+    .ctable tbody tr.ctable__dataset { display: block; padding: 0; border-bottom: 0; }
+    .ctable .ctable__dataset th { display: block; }
+    .ctable__active { display: block; margin-top: 0.15rem; }
+    .ctable tbody th[scope="row"],
+    .ctable td { display: block; padding: 0; border: 0; }
+    .ctable td[data-label="Change note"] { grid-column: 1 / -1; max-width: none; }
+    .ctable [data-label]::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 0.2rem;
+        font-size: var(--text-label);
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+    }
+}
+
+/* ---- 25. dataset detail (product redesign, Stage 3G) ------------------- */
+/* Where the dataset stands first (the version in force, the newest run and
+   its outcome, the violations with their scope), then every contract version,
+   every recorded run, and the Stage 3D violations section, unchanged. The
+   1200px frame of the other redesigned pages. Nothing here moves. */
+.page[data-surface="dataset"] { max-width: 1200px; }
+/* A long dataset name or description wraps instead of running out. */
+.page[data-surface="dataset"] .page__title,
+.page[data-surface="dataset"] .breadcrumbs li { overflow-wrap: anywhere; }
+.dataset-lead { margin: 0.6rem 0 0; max-width: 72ch; color: var(--ink); overflow-wrap: anywhere; }
+
+/* Where it stands: four facts, the run given the most room. One column on a
+   phone (the version, then the run), two on a tablet, four on a wide screen. */
+.standing { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem 2rem; margin: 0; }
+@media (min-width: 48em) {
+    .standing { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 64.0625em) {
+    .standing { grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr) minmax(0, 1.1fr) minmax(0, 0.6fr); }
+}
+.standing dt {
+    font-size: var(--text-label);
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+.standing dd { display: grid; justify-items: start; gap: 0.3rem; margin: 0.35rem 0 0; }
+.standing__value { font-size: 1.0625rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.standing__file { overflow-wrap: anywhere; }
+.standing__line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.6rem; font-size: 0.88rem; color: var(--ink-soft); }
+.standing__line .standing__value { color: var(--ink); }
+.standing__note { font-size: 0.88rem; color: var(--ink-soft); }
+/* The run was checked against a version that is not the one in force: said
+   in the main ink so it is read, with no data-health colour (DESIGN.md: the
+   lifecycle never borrows pass/fail colours). */
+.standing__note--version { color: var(--ink); }
+.standing__link { font-size: 0.88rem; font-weight: 600; color: var(--accent); }
+.standing__item--quiet dd { color: var(--ink-soft); }
+
+/* Contract versions head: the Contracts link (with what it searches) beside
+   the unavailable "View / edit rules". */
+.panel__tools { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.75rem 1.5rem; }
+.versions-link { display: grid; gap: 0.2rem; margin: 0; max-width: 24rem; }
+.versions-link a { font-size: 0.88rem; font-weight: 600; color: var(--accent); }
+.versions-link__note { font-size: 0.85rem; color: var(--ink-soft); overflow-wrap: anywhere; }
+
+/* The version and the run's file head their rows. */
+.dtable tbody th[scope="row"] { font-weight: 600; text-align: left; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.dtable td.muted { max-width: 60ch; overflow-wrap: anywhere; }
+/* A date stays on one line beside a long file name. */
+.dtable td[data-label="Date"] { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* Phone: each version and each run becomes a labelled block; nothing is
+   hidden and nothing scrolls sideways. The table roles in the markup keep
+   the cells tied to their headers once the display changes. */
+@media (max-width: 40em) {
+    .panel:has(.dtable) { overflow: visible; background: var(--surface); }
+    .dtable,
+    .dtable tbody { display: block; }
+    .dtable thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    /* Three columns keep a long history short: a version is two lines
+       (version, status, rules; then its note), a run is two lines (file and
+       outcome; then date, contract and rows). */
+    .dtable tbody tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem 1rem; padding: 0.8rem 1.1rem; border-bottom: 1px solid var(--line); }
+    .dtable tbody tr:last-child { border-bottom: 0; }
+    .dtable tbody tr.is-emptyrow { display: block; padding: 0; }
+    .dtable tbody th[scope="row"],
+    .dtable td,
+    .dtable td.num { display: block; padding: 0; border: 0; text-align: left; }
+    .dtable [data-label="Change note"] { grid-column: 1 / -1; max-width: none; }
+    .dtable [data-label="File"] { grid-column: 1 / span 2; grid-row: 1; }
+    .dtable [data-label="Outcome"] { grid-column: 3; grid-row: 1; }
+    .dtable [data-label]::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 0.2rem;
+        font-size: var(--text-label);
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+    }
+}
+
+/* ---- 26. AI analytics (product redesign, Stage 3I) ---------------------- */
+/* /analytics/ (the A10 dashboard) in the shared 1200px frame. What the
+   filters select is stated first, then one link to each section, then the
+   three sections, each opened by a 2px graphite rule and a serif heading so
+   the long page reads as three parts. Charts sit two to a row from 64em and
+   one to a row below, and no column asks for more width than it has, so the
+   page never scrolls sideways (it did: 420px minimum columns on a phone).
+   Nothing here moves: the section links jump instantly and the charts draw
+   without an entrance. The chart menus take section 23's treatment through
+   the .chart class in the markup. */
+.page[data-surface="analytics"] { max-width: 1200px; }
+
+.analytics-applied { gap: 0.9rem 2.5rem; }
+.analytics-applied div { min-width: 0; }
+.analytics-applied dd { font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.analytics__filters { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: flex-end; margin-top: 1.25rem; padding-top: 1.1rem; border-top: 1px solid var(--line); }
+.analytics__filters > div { min-width: 0; max-width: 100%; }
+.analytics__filters label { display: block; margin-bottom: 0.3rem; font-size: 0.85rem; font-weight: 600; }
+.analytics__filters select { max-width: 100%; }
+.analytics-note { margin: 0.9rem 0 0; max-width: 72ch; font-size: 0.9rem; line-height: 1.5; color: var(--ink-soft); }
+
+/* One link per section, with what it holds: the page is long. */
+.analytics-jump { margin-top: 1.5rem; }
+.analytics-jump ul { display: flex; flex-wrap: wrap; gap: 0.6rem 2.25rem; margin: 0; padding: 0; list-style: none; }
+.analytics-jump a { font-weight: 600; color: var(--accent); }
+.analytics-jump__note { margin-left: 0.35rem; font-size: 0.85rem; color: var(--ink-soft); }
+
+.analytics__section { margin-top: 3rem; padding-top: 1.25rem; border-top: 2px solid var(--ink); scroll-margin-top: 1rem; }
+.analytics__section > h2 { margin: 0 0 1rem; font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.15; }
+.analytics__section > .panel { margin: 0; }
+
+.analytics__grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; margin-top: 1.25rem; align-items: start; }
+.analytics__grid > .panel { margin: 0; min-width: 0; }
+@media (min-width: 64.0625em) {
+    .analytics__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .analytics__grid > .panel--wide { grid-column: 1 / -1; }
+}
+.analytics__grid .chart { min-height: 260px; }
+.chart__caption { margin: 0.9rem 0 0; max-width: 72ch; font-size: 0.9rem; line-height: 1.5; color: var(--ink-soft); }
+
+/* The figures each section exists to show, in the serif (as on Reports). */
+.page[data-surface="analytics"] .factlist--stats { gap: 1.25rem 2.5rem; }
+.page[data-surface="analytics"] .factlist--stats dt + dd {
+    font-family: var(--font-display);
+    font-size: 2.1rem;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+}
+.page[data-surface="analytics"] .panel__note { max-width: 72ch; }
+
+/* Cost drivers: Dataset detail's table (section 25), so below 40em each
+   driver is a labelled block; here the request type spans its block's top. */
+@media (min-width: 40.0625em) {
+    .dtable--drivers td[data-label="Engine"] { white-space: nowrap; }
+}
+@media (max-width: 40em) {
+    .analytics__section { margin-top: 2.25rem; }
+    .analytics__section > h2 { font-size: 1.4rem; }
+    /* A little more room for the drawing itself. */
+    .analytics__grid .panel__body { padding: 0.9rem 0.6rem; }
+    .dtable--drivers th[scope="row"] { grid-column: 1 / -1; }
+    /* Engine names ("Local (SmolLM2)") need two of the three columns. */
+    .dtable--drivers [data-label="Engine"] { grid-column: span 2; }
+}
+
+/* ---- 27. sign-in and account pages (product redesign, Stage 3J) ---------- */
+/* Log in and Sign up (data-surface="auth") and every django-allauth page
+   (data-surface="account": password reset, Google sign-in cancelled or
+   failed, the Google connect sign-up, account inactive, and the signed-in
+   email, password and connections pages), in the Manage page's form style:
+   sentence-case labels above full-width fields at least 44px tall, one short
+   guidance line under a label, errors in Fail Ink under their field and in
+   one summary. The Google button keeps its own rule (section "login and
+   signup pages"). Presentation only; nothing here moves. */
+.page[data-surface="auth"] .panel--auth { max-width: 28rem; }
+
+.authform__field { margin: 0 0 1.1rem; }
+.authform__field label { display: block; margin: 0 0 0.35rem; font-size: 0.9rem; font-weight: 600; color: var(--ink); }
+.authform__field .helptext { margin: 0 0 0.45rem; padding: 0; font-size: 0.82rem; line-height: 1.45; color: var(--ink-soft); }
+.authform input[type="text"],
+.authform input[type="password"] { max-width: 100%; min-height: 2.75rem; }
+.panel--auth .errorlist { margin: 0.35rem 0 0; padding: 0; list-style: none; font-size: 0.82rem; color: var(--fail-ink); }
+.panel--auth .form-errors { margin: 0 0 1.25rem; }
+.panel--auth .form-errors__list { margin: 0; padding-left: 1.1rem; list-style: disc; font-size: 0.9rem; line-height: 1.45; color: var(--fail-ink); }
+.authform .btn { margin-top: 0.25rem; }
+
+.authswitch { margin: 1.25rem 0 0; font-size: 0.92rem; color: var(--ink-soft); }
+.authswitch a { font-weight: 600; color: var(--accent); }
+
+/* allauth pages: its content arrives as bare elements after the page header,
+   so they are styled through the page's surface. */
+.page[data-surface="account"] > p { max-width: 62ch; margin: 0 0 1rem; line-height: 1.55; }
+.page[data-surface="account"] > p a { font-weight: 600; color: var(--accent); }
+.page[data-surface="account"] h2 { margin: 2rem 0 0.75rem; font-size: 1.0625rem; font-weight: 650; color: var(--ink); }
+.page[data-surface="account"] hr { max-width: 32rem; margin: 1.5rem 0; border: 0; border-top: 1px solid var(--line); }
+.page[data-surface="account"] form {
+    max-width: 32rem;
+    margin: 0 0 1.5rem;
+    padding: 1.4rem;
+    justify-items: stretch;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+}
+.page[data-surface="account"] form p { margin: 0 0 1rem; }
+.page[data-surface="account"] form label { display: block; margin: 0 0 0.35rem; font-size: 0.9rem; font-weight: 600; color: var(--ink); }
+.page[data-surface="account"] form input[type="radio"] + label,
+.page[data-surface="account"] form input[type="checkbox"] + label { display: inline; margin: 0 0 0 0.4rem; font-weight: 500; }
+.page[data-surface="account"] form input[type="text"],
+.page[data-surface="account"] form input[type="email"],
+.page[data-surface="account"] form input[type="password"] { max-width: 100%; min-height: 2.75rem; }
+.page[data-surface="account"] form .helptext,
+.page[data-surface="account"] form .helptext ul { margin: 0.35rem 0 0; font-size: 0.82rem; line-height: 1.45; color: var(--ink-soft); }
+.page[data-surface="account"] form .helptext ul { padding-left: 1.1rem; }
+.page[data-surface="account"] form > div { display: flex; flex-wrap: wrap; gap: 0.6rem 0.75rem; }
+.page[data-surface="account"] > ul { margin: 0 0 1.5rem; padding: 0; list-style: none; }
+.page[data-surface="account"] > ul a { font-weight: 600; color: var(--accent); }
+
+/* The three signed-in account pages, one link each; the current one in ink. */
+.account-nav ul { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin: 0 0 1.5rem; padding: 0 0 0.75rem; list-style: none; border-bottom: 1px solid var(--line); }
+.account-nav a { font-weight: 600; color: var(--accent); text-decoration: none; }
+.account-nav a[aria-current="page"] { color: var(--ink); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.35em; }
+
+@media (max-width: 40em) {
+    .panel--auth .panel__body,
+    .page[data-surface="account"] form { padding: 1.1rem; }
 }

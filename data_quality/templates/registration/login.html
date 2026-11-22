@@ -10,10 +10,20 @@ Ashok: restyle freely. Two things have to survive a restyle:
     page lands on the home page instead of the page they asked for.
 The "Continue with Google" button belongs under {% block oauth %}, which is
 left empty on purpose - that is Hriday's provider wiring plus your button.
+
+UX Stage 3J (product redesign), presentation only: the fields are written out
+instead of {{ form.as_p }}, so labels lose Django's colon and a wrong password
+is reported once (as_p printed the form's own error a second time under the
+red box). Problems are listed in one summary (role="alert", the Manage page's
+pattern) with a link to each field, and each field keeps its own error,
+aria-invalid and aria-describedby (Django 5.2). The view, the form, CSRF,
+`next`, the Google block and every redirect are unchanged.
 =============================================================================
 {% endcomment %}
 
 {% block title %}Log in - DataPact{% endblock %}
+
+{% block main_attrs %} data-surface="auth"{% endblock %}
 
 {% block page_title %}Log in{% endblock %}
 
@@ -24,18 +34,32 @@ left empty on purpose - that is Hriday's provider wiring plus your button.
 {% block content %}
     <div class="panel panel--auth">
         <div class="panel__body">
-            {% if form.non_field_errors %}
-                <div class="form__errors" role="alert">
-                    {% for error in form.non_field_errors %}
-                        <p>{{ error }}</p>
-                    {% endfor %}
+            {% if form.errors %}
+                <div class="form-errors" id="auth-errors" role="alert" tabindex="-1">
+                    <p class="form-errors__title">You were not signed in.</p>
+                    <ul class="form-errors__list">
+                        {% for error in form.non_field_errors %}
+                            <li><a href="#{{ form.username.id_for_label }}">{{ error }}</a></li>
+                        {% endfor %}
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
                 </div>
             {% endif %}
 
-            <form method="post" novalidate>
+            <form method="post" class="authform" novalidate>
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ next }}">
-                {{ form.as_p }}
+                {% for field in form %}
+                    <div class="authform__field">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {{ field.errors }}
+                    </div>
+                {% endfor %}
                 <button type="submit" class="btn btn--primary">Log in</button>
             </form>
 
@@ -51,10 +75,23 @@ left empty on purpose - that is Hriday's provider wiring plus your button.
                 {% include "data_quality/includes/_google_button.html" %}
             {% endblock %}
 
-            <p class="prose">
+            <p class="authswitch">
                 No account yet?
                 <a href="{% url 'data_quality:signup' %}">Create one</a>.
             </p>
         </div>
     </div>
+
+    {% if form.errors %}
+        <script>
+            // Stage 3J: after a failed sign-in, start keyboard and screen-reader
+            // users at the list of problems (the Manage page's pattern): wait for
+            // the load, then one frame, then move focus to the summary.
+            window.addEventListener("load", function () {
+                var summary = document.getElementById("auth-errors");
+                if (!summary) return;
+                window.requestAnimationFrame(function () { summary.focus(); });
+            });
+        </script>
+    {% endif %}
 {% endblock %}

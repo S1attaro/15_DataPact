@@ -25,7 +25,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from data_quality import charts
+from data_quality import charts, vega
 from data_quality.models import Contract, Dataset, ValidationRun, Violation
 from data_quality.tests import SignedInClientMixin, StylesheetMixin, contrast_ratio
 from data_quality.tests_discovery import DiscoveryData
@@ -161,8 +161,12 @@ class ChartFigureTests(TestCase):
     def test_bars_keep_their_order_counts_and_colours(self):
         ax = self.figure().axes[0]
         self.assertEqual([round(p.get_height()) for p in ax.patches], [1, 2, 0])
+        # Stage 3E: DESIGN.md's Pass / Fail / Warn inks (--pass-ink, --fail-ink,
+        # --warn-ink), the same three the Vega charts use; they were #1d6b36,
+        # #a12a2a and #855c11 before the redesign.
         self.assertEqual([hex_colour(p.get_facecolor()) for p in ax.patches],
-                         ["#1d6b36", "#a12a2a", "#855c11"])
+                         ["#1a5f32", "#9f2718", "#7a5207"])
+        self.assertEqual([hex_colour(p.get_facecolor()) for p in ax.patches], vega.OUTCOME_RANGE)
 
     def test_every_word_on_it_is_readable(self):
         fig = self.figure()
@@ -174,8 +178,9 @@ class ChartFigureTests(TestCase):
                 continue
             with self.subTest(text=text.get_text()):
                 self.assertGreaterEqual(contrast_ratio(hex_colour(text.get_color()), "#ffffff"), 4.5)
-                # The 792px image is shown about 310px wide on a 390px phone;
-                # the old 9pt notes came out near 5 CSS px there.
+                # The wide (desktop) image's floor. Before Stage 3E phones got this
+                # image scaled to about 310px, where the old 9pt notes came out near
+                # 5 CSS px; they now get the narrow drawing (tests_insight.py).
                 self.assertGreaterEqual(text.get_fontsize(), 11)
 
     def test_the_baseline_is_visible(self):
