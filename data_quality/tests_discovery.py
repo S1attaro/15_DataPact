@@ -45,7 +45,8 @@ def when(year, month, day):
 def results_rows(html):
     """The <tr> elements of the violation results table, as raw HTML."""
     panel = html.split('id="violation-results"', 1)[1]
-    body = panel.split("<tbody>", 1)[1].split("</tbody>", 1)[0]
+    # Stage 3D: the tbody carries role="rowgroup" now, so match it with any attributes.
+    body = re.split(r"<tbody\b[^>]*>", panel, maxsplit=1)[1].split("</tbody>", 1)[0]
     return re.findall(r"<tr\b.*?</tr>", body, flags=re.S)
 
 
@@ -240,23 +241,24 @@ class ResultsTests(DiscoveryData):
 
     def test_the_table_has_a_run_column(self):
         response = self.lookup()
-        self.assertContains(response, '<th scope="col">Validation run</th>', html=True)
-        self.assertContains(response, '<th scope="col">AI explanation</th>', html=True)
+        self.assertContains(response, '<th scope="col" role="columnheader">Validation run</th>', html=True)
+        self.assertContains(response, '<th scope="col" role="columnheader">Next step</th>', html=True)
+        self.assertNotContains(response, "AI explanation")
 
-    def test_each_explain_link_has_a_name_of_its_own(self):
+    def test_each_investigate_link_has_a_name_of_its_own(self):
         html = self.lookup().content.decode()
-        names = [name for row in results_rows(html) for name in link_names(row) if name.startswith("Explain")]
+        names = [name for row in results_rows(html) for name in link_names(row) if name.startswith("Investigate")]
         # The date too: the same file name can be checked again in a later run.
         self.assertEqual(names, [
-            "Explain order_total Range in sales_2026_w36.csv, 2026-09-04",
-            "Explain credit_hours Type match in enrollment_2026_04.csv, 2026-04-30",
-            "Explain credit_hours Type match in enrollment_2026_05.csv, 2026-05-31",
+            "Investigate order_total Range in sales_2026_w36.csv, 2026-09-04",
+            "Investigate credit_hours Type match in enrollment_2026_04.csv, 2026-04-30",
+            "Investigate credit_hours Type match in enrollment_2026_05.csv, 2026-05-31",
         ])
 
-    def test_the_explain_link_still_looks_the_same(self):
+    def test_the_investigate_link_keeps_its_route(self):
         rows = results_rows(self.lookup().content.decode())
         self.assertIn(f'href="{reverse("data_quality:violation-explain", args=[self.april_credit.pk])}"', rows[1])
-        self.assertTrue(visible_text(rows[1]).endswith("Explain"))
+        self.assertTrue(visible_text(rows[1]).endswith("Investigate"))
 
     def test_showing_the_run_costs_no_extra_query_per_row(self):
         with CaptureQueriesContext(connection) as three:

@@ -1,7 +1,9 @@
 {% extends "data_quality/base.html" %}
 {% comment %}
 =============================================================================
-Explain a violation - A6 Part 2.2 (local Hugging Face model), Tejas Jaggi
+Investigate a violation (product redesign, Stage 3D; the route, view and
+URL name are still "violation-explain").
+Earlier: Explain a violation - A6 Part 2.2 (local Hugging Face model), Tejas Jaggi
 Context (supplied by ai_views.violation_explain):
     violation    the Violation, with its rule, contract, dataset and run
     rule_text    the rule written as the model sees it
@@ -20,24 +22,41 @@ engine=groq (Groq's API, Part 2.3; sample values are sent only if they are known
 An engine this server has not set up shows as an unavailable label, not a
 button (UX Stage 2). The script at the bottom adds a waiting message, stops a
 second click and moves focus to the answer; without it the page works the same.
+Stage 3D. "Investigate" is what the person does here; "Explain" is left only
+on the engine buttons, because what the model returns is an explanation. The
+page is three layers, as DESIGN.md's record layers: the facts (the failed
+check), the AI suggestion (only after a request), and the human decision
+("What happens next"), which is always shown, so how a decision is recorded
+never depends on an engine answering. Stage 3D.1: the layers sit in one
+bordered record (.record), as DESIGN.md's record layers; only a usable AI
+answer is tinted Key Wash (record__suggestion). A failure keeps its layer white,
+so the tint never stands for a suggestion that is not there. The rule is shown by its readable name
+(the model's RuleType label) with the exact expression the model sees under it.
 Sample values and violation.message are deliberately not shown: the existing
 lookup keeps them off GET pages (the message can quote values from the file),
 and this page follows suit. Everything the model wrote is escaped
 by Django's autoescaping; nothing here uses |safe.
 =============================================================================
 {% endcomment %}
-{% block title %}Explain violation - DataPact{% endblock %}
+{% block title %}Investigate violation - DataPact{% endblock %}
 {% block breadcrumbs %}
-    <p class="breadcrumbs">
-        <a href="{% url 'data_quality:home' %}">Home</a> /
-        <a href="{% url 'data_quality:contract-search' %}">Contract search</a> / Explain violation
-    </p>
+    {# Stage 3C: the violation's real parents, the registry and its dataset. #}
+    {% with dataset=violation.rule.contract.dataset %}
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <ol>
+            <li><a href="{% url 'data_quality:dataset-list' %}">Datasets</a></li>
+            <li><a href="{{ dataset.get_absolute_url }}">{{ dataset.name }}</a></li>
+            <li aria-current="page">Investigate violation</li>
+        </ol>
+    </nav>
+    {% endwith %}
 {% endblock %}
-{% block page_title %}Explain this violation{% endblock %}
+{% block page_title %}Investigate this violation{% endblock %}
 {% block page_subtitle %}
-    <p class="page__subtitle">A language model suggests why this check failed and what to do next: the local model, or Groq's API.</p>
+    <p class="page__subtitle">What failed, against which contract version, and how the decision is recorded. An AI model can suggest a cause; a person decides.</p>
 {% endblock %}
 {% block content %}
+    <div class="record">
     <div class="panel">
         <div class="panel__head"><h2 class="panel__title">The failed check</h2></div>
         <div class="panel__body">
@@ -45,9 +64,8 @@ by Django's autoescaping; nothing here uses |safe.
                 <dt>Dataset</dt><dd><a href="{{ violation.rule.contract.dataset.get_absolute_url }}">{{ violation.rule.contract.dataset.name }}</a> (contract v{{ violation.rule.contract.version_number }})</dd>
                 <dt>Validation run</dt><dd>{{ violation.run.file_name }}, checked {{ violation.run.started_at|date:"Y-m-d" }}</dd>
                 <dt>Column</dt><dd>{{ violation.rule.column_name }}</dd>
-                <dt>Rule</dt><dd><code>{{ rule_text }}</code></dd>
-                <dt>Rows failed</dt><dd>{{ violation.failed_row_count }} of {{ violation.run.row_count }}</dd>
-                <dt>Recorded resolution</dt><dd>{% include "data_quality/includes/_status_badge.html" with status=violation.resolution label=violation.get_resolution_display only %}</dd>
+                <dt>Rule</dt><dd><span class="rule__name">{{ violation.rule.get_rule_type_display }}</span><code class="rule__expr">{{ rule_text }}</code></dd>
+                <dt>Rows failed</dt><dd class="facts__num">{{ violation.failed_row_count|floatformat:"0g" }} of {{ violation.run.row_count|floatformat:"0g" }}</dd>
             </dl>
             {% if any_engine %}
                 <form id="explain-form" method="post" action="{% url 'data_quality:violation-explain' violation.pk %}#ai-suggestion">
@@ -65,6 +83,7 @@ by Django's autoescaping; nothing here uses |safe.
                         {% endfor %}
                     </div>
                 </form>
+                <p class="explain__status" id="explain-status" role="status"></p>
             {% else %}
                 <div class="engines">
                     {% for choice in engines %}
@@ -79,12 +98,13 @@ by Django's autoescaping; nothing here uses |safe.
         </div>
     </div>
 
-    {% if any_engine %}
-        <p class="explain__status" id="explain-status" role="status"></p>
-    {% endif %}
-
     {% if attempted %}
-        <section class="panel" id="ai-suggestion" tabindex="-1" aria-labelledby="ai-suggestion-title">
+        {% comment %}
+            ai-answer--new: the one entrance on this page, only on a POST that
+            returned a usable answer (it can only be new here: the answer is
+            never stored). Failures and the first visit do not move.
+        {% endcomment %}
+        <section class="panel{% if result and not unavailable %} record__suggestion ai-answer--new{% endif %}" id="ai-suggestion" tabindex="-1" aria-labelledby="ai-suggestion-title">
             <div class="panel__head"><h2 class="panel__title" id="ai-suggestion-title">AI suggestion</h2></div>
             <div class="panel__body">
                 {% if unavailable %}
@@ -131,6 +151,27 @@ by Django's autoescaping; nothing here uses |safe.
             </div>
         </section>
     {% endif %}
+
+    {% comment %}
+        The human decision, in every state: before any request, with no engine
+        set up, after an answer and after every kind of failure. Words only;
+        there is no link to the admin (Stage 3D brief).
+    {% endcomment %}
+    <section class="panel decision" aria-labelledby="decision-title">
+        <div class="panel__head"><h2 class="panel__title" id="decision-title">What happens next</h2></div>
+        <div class="panel__body">
+            <dl class="facts">
+                <dt>Recorded resolution</dt><dd>{% include "data_quality/includes/_status_badge.html" with status=violation.resolution label=violation.get_resolution_display only %}</dd>
+            </dl>
+            <p class="decision__state">{% if violation.resolution == "OPEN" %}No decision has been recorded yet.{% elif violation.resolution %}A person has recorded this decision.{% else %}No resolution is recorded for this violation.{% endif %}</p>
+            <ol class="decision__steps">
+                <li><strong>The AI can suggest.</strong> Where an AI engine is set up, it can suggest an explanation, a likely cause and an action. A suggestion never changes the recorded resolution.</li>
+                <li><strong>A person decides.</strong> Is the file wrong (a data issue), or is the contract out of date (contract updated)?</li>
+                <li><strong>The decision is recorded in the DataPact admin,</strong> by someone with access to it. This page then shows it as the recorded resolution.</li>
+            </ol>
+        </div>
+    </section>
+    </div>{# /.record #}
 
     {% if any_engine %}
         <script>

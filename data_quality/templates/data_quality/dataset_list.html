@@ -3,91 +3,174 @@
 =============================================================================
 Wireframe screen 1 - Dashboard / Dataset Registry
 Section 3 (Templates / UI) - Ashok Chacko
+Product redesign, Stage 3A (registry workspace) - Tejas Jaggi
 
-This template is deliberately written against ONE context variable:
+The template still needs only ONE context variable:
 
     datasets    an iterable of Dataset objects
 
-Nothing else is required. It does not care whether that list arrived from a
-generic ListView, from a hand-written View.get(), or from a function-based
-view calling render(). That is the whole point of section C of the
-assignment - the template is independent of how the data was passed.
+so any view can render it (Section 3C; TemplateReuseTests renders it from a
+plain dict). Two optional keys turn on the registry's richer parts:
 
-Currently rendered by:
-    DatasetListView (generic ListView)   ->  /datasets/
-    dataset_render  (render() FBV)       ->  /datasets/render/   [Tejas]
+    registry_columns  True when each dataset carries the annotations from
+                      views.registry_queryset(): active_version, run_count,
+                      latest_run_at/status/label, open_violation_count.
+                      Without it the page shows only what Dataset stores,
+                      instead of a column that would read "No runs" for
+                      data that was simply never loaded.
+    registry          the ListView's summary and search state (query, show,
+                      filtered, total, with_active_contract, with_runs,
+                      needing_decision). Only the ListView reads the search
+                      parameters, so only it shows the search form: no
+                      control on this page does nothing.
 
-To reuse it from a function-based view, that is all it takes:
+Rendered by:
+    DatasetListView (generic ListView)   ->  /datasets/        (search, summary)
+    dataset_render  (render() FBV)       ->  /datasets/render/ [Tejas]
 
-    return render(request, "data_quality/dataset_list.html",
-                  {"datasets": Dataset.objects.select_related("owner"),
-                   "view_label": "Function-based view - render()"})
+Stage 3A removed the "Rendered by:" caption (an A2 grading aid, like the
+detail page's in UX Stage 4). The FBV still names itself in its context as
+view_label; the page does not print it.
 
-Optional context:
-    view_label  small caption naming the view kind that rendered the page.
-                Defaults to the ListView, so the CBV needs no extra code.
+Small screens: below 52em each row is laid out as a compact summary (see
+datapact.css, section 19). The ARIA roles below keep the table announced as
+a table when CSS changes how its rows are displayed.
 =============================================================================
 {% endcomment %}
 
 {% block title %}Dataset Registry - DataPact{% endblock %}
 
-{% block page_title %}My Datasets{% endblock %}
+{% block main_attrs %} data-surface="registry"{% endblock %}
+
+{% block page_title %}Dataset registry{% endblock %}
 
 {% block page_subtitle %}
     <p class="page__subtitle">
-        {{ datasets|length }} recurring dataset{{ datasets|length|pluralize }} registered in DataPact.
+        {% if registry %}{{ registry.total }}{% else %}{{ datasets|length }}{% endif %} recurring
+        dataset{% if registry %}{{ registry.total|pluralize }}{% else %}{{ datasets|length|pluralize }}{% endif %},
+        each with the office that sends it, the person who answers for it, and how its
+        latest delivery measured up against its contract.
     </p>
 {% endblock %}
 
 {% block page_actions %}
     {% comment %}
         UX Stage 0: registering works on the Manage page (Section 5,
-        DatasetManageView), so this is a real link to it instead of the old
-        disabled "planned for a later assignment" label.
+        DatasetManageView), so this is a real link to it.
     {% endcomment %}
     <a class="btn btn--primary" href="{% url 'data_quality:dataset-manage' %}">+ Register dataset</a>
 {% endblock %}
 
 {% block content %}
-    <p class="viewchip">Rendered by: <code>{{ view_label|default:"Generic CBV - ListView (DatasetListView)" }}</code></p>
+    {% url 'data_quality:dataset-list' as registry_url %}
+    {% comment %}
+        With nothing registered there is nothing to count or search, so the
+        tools stay away and the empty state below speaks alone.
+    {% endcomment %}
+    {% if registry and registry.total %}
+        <div class="registry-tools">
+            <dl class="registry-ledger" aria-label="The registry at a glance">
+                <div><dt>registered</dt><dd>{{ registry.total }}</dd></div>
+                <div><dt>with an active contract</dt><dd>{{ registry.with_active_contract }}</dd></div>
+                <div><dt>with recorded runs</dt><dd>{{ registry.with_runs }}</dd></div>
+                <div{% if registry.needing_decision %} class="is-attention"{% endif %}><dt>with open violations</dt><dd>{{ registry.needing_decision }}</dd></div>
+            </dl>
 
-    <div class="panel">
-        <table class="datatable">
+            <form class="registry-search" method="get" action="{{ registry_url }}" role="search" aria-label="Find a dataset">
+                <label class="registry-search__label" for="registry-q">Find a dataset</label>
+                <div class="registry-search__row">
+                    <input class="registry-search__input" type="search" id="registry-q" name="q" value="{{ registry.query }}" placeholder="Name, office or owner" maxlength="100" autocomplete="off">
+                    {% if registry.show %}<input type="hidden" name="show" value="{{ registry.show }}">{% endif %}
+                    <button class="btn" type="submit">Search</button>
+                </div>
+            </form>
+
+            <nav class="registry-filter" aria-label="Filter the registry">
+                <a href="{{ registry_url }}{% if registry.query %}?q={{ registry.query|urlencode }}{% endif %}"{% if not registry.show %} aria-current="page"{% endif %}>All datasets</a>
+                <a href="{{ registry_url }}?{% if registry.query %}q={{ registry.query|urlencode }}&amp;{% endif %}show=open"{% if registry.show %} aria-current="page"{% endif %}>With open violations <span class="registry-filter__count{% if registry.needing_decision %} is-attention{% endif %}">{{ registry.needing_decision }}</span></a>
+            </nav>
+        </div>
+
+        {% if registry.filtered %}
+            <p class="registry-result" role="status">
+                Showing {{ datasets|length }} of {{ registry.total }} dataset{{ registry.total|pluralize }}{% if registry.query %} matching &ldquo;{{ registry.query }}&rdquo;{% endif %}{% if registry.show %} with open violations{% endif %}.
+                <a href="{{ registry_url }}">Clear</a>
+            </p>
+        {% endif %}
+    {% endif %}
+
+    <div class="panel registry-panel">
+        <table class="datatable registry-table" role="table">
+            <caption class="visually-hidden">Registered datasets{% if registry.filtered %}, filtered{% endif %}</caption>
             {% comment %}
                 The header is hidden when there are no rows, so the empty state
                 is not sitting underneath column titles that describe nothing.
             {% endcomment %}
             {% if datasets %}
-                <thead>
-                    <tr>
-                        <th scope="col">Dataset</th>
-                        <th scope="col">Owner</th>
-                        <th scope="col">Source team</th>
-                        <th scope="col">Registered</th>
+                <thead role="rowgroup">
+                    <tr role="row">
+                        <th scope="col" role="columnheader">Dataset</th>
+                        <th scope="col" role="columnheader">Office and owner</th>
+                        {% if registry_columns %}
+                            <th scope="col" role="columnheader">Contract</th>
+                            <th scope="col" role="columnheader">Latest run</th>
+                            <th scope="col" role="columnheader" class="num">Open violations</th>
+                        {% endif %}
+                        <th scope="col" role="columnheader">Registered</th>
                     </tr>
                 </thead>
             {% endif %}
-            <tbody>
+            <tbody role="rowgroup">
                 {% for dataset in datasets %}
-                    <tr>
-                        <td>
-                            <a href="{{ dataset.get_absolute_url }}">{{ dataset.name }}</a>
+                    <tr role="row"{% if registry_columns and dataset.open_violation_count %} class="needs-decision"{% endif %}>
+                        <th scope="row" role="rowheader" class="registry-dataset">
+                            <a class="registry-name" href="{{ dataset.get_absolute_url }}">{{ dataset.name }}</a>
+                            {% if dataset.description %}<span class="registry-desc">{{ dataset.description }}</span>{% endif %}
+                        </th>
+                        <td role="cell" data-label="Office and owner">
+                            {{ dataset.source_team }}
+                            <span class="cell__sub">{{ dataset.owner.username }}</span>
                         </td>
-                        <td>{{ dataset.owner.username }}</td>
-                        <td>{{ dataset.source_team }}</td>
-                        <td class="muted">{{ dataset.created_at|date:"Y-m-d" }}</td>
+                        {% if registry_columns %}
+                            <td role="cell" data-label="Contract">
+                                {% if dataset.active_version %}
+                                    {% include "data_quality/includes/_status_badge.html" with status="ACTIVE" label=dataset.active_version prefix="v" only %}
+                                {% else %}
+                                    <span class="muted">None active</span>
+                                {% endif %}
+                            </td>
+                            <td role="cell" data-label="Latest run">
+                                {% if dataset.latest_run_at %}
+                                    {% include "data_quality/includes/_status_badge.html" with status=dataset.latest_run_status label=dataset.latest_run_label only %}
+                                    <span class="cell__sub">{{ dataset.latest_run_at|date:"Y-m-d" }} &middot; {{ dataset.run_count }} run{{ dataset.run_count|pluralize }}</span>
+                                {% else %}
+                                    <span class="muted">No runs recorded</span>
+                                {% endif %}
+                            </td>
+                            <td role="cell" data-label="Open violations" class="num">
+                                {% if dataset.open_violation_count %}
+                                    <span class="open-count"><span class="open-count__mark" aria-hidden="true"></span>{{ dataset.open_violation_count }} open</span>
+                                {% else %}
+                                    <span class="muted">None</span>
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                        <td role="cell" data-label="Registered" class="registry-date">{{ dataset.created_at|date:"Y-m-d" }}</td>
                     </tr>
                 {% empty %}
                     {% comment %}
-                        The branch below runs only when the loop above produced
-                        zero rows. It replaces a separate "is this list empty?"
-                        check and keeps the normal case and the empty case
-                        readable side by side.
+                        Runs only when the loop produced zero rows: either the
+                        registry is empty, or the search matched nothing. They
+                        need different next steps, so they say different things.
                     {% endcomment %}
                     <tr class="is-emptyrow">
-                        <td colspan="4">
-                            {% url 'data_quality:dataset-manage' as register_url %}
-                            {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register dataset" action_url=register_url only %}
+                        <td colspan="{% if registry_columns %}6{% else %}3{% endif %}">
+                            {% if registry.filtered %}
+                                {% include "data_quality/includes/_empty_state.html" with headline="No datasets match this search." message="Try another name, office or owner, or show every dataset." action_label="Show all datasets" action_url=registry_url only %}
+                            {% else %}
+                                {% url 'data_quality:dataset-manage' as register_url %}
+                                {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register dataset" action_url=register_url only %}
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}

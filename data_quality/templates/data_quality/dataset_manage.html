@@ -1,78 +1,66 @@
 {% extends "data_quality/base.html" %}
-{% comment %} Section 5 - Hriday {% endcomment %}
+{% comment %}
+=============================================================================
+Manage datasets - Section 5 (Hriday Agarwal); product redesign, Stage 3F
 
-{% block title %}Manage Datasets - DataPact{% endblock %}
+Context (DatasetManageView): datasets (filtered by ?team), team, form
+(DatasetForm). GET filters the list; POST registers a dataset and, on
+success, redirects to its page with a message (base.html shows it).
 
-{% block page_title %}Manage Datasets{% endblock %}
+Stage 3F: registration is the page's job, so it comes first; the registered
+datasets and their source-team filter follow, with a link to the Dataset
+registry for everything else. The form posts to #register, so a failed
+submission reopens on the form (the fragment never reaches the server, so the
+POST itself is unchanged); there an error summary (role="alert") lists each
+problem with a link to its field, and a small script moves focus to it.
+(The browser resets focus as it scrolls to the fragment, so the script waits
+for the page to load before moving it; #register itself is not focusable.) Each
+field keeps its own error, aria-invalid and aria-describedby (Django 5.2).
+=============================================================================
+{% endcomment %}
+
+{% block title %}Manage datasets - DataPact{% endblock %}
+
+{% block main_attrs %} data-surface="manage"{% endblock %}
+
+{% block page_title %}Manage datasets{% endblock %}
 
 {% block page_subtitle %}
-    <p class="page__subtitle">Filter the registry, or register a new dataset.</p>
+    <p class="page__subtitle">
+        Register a new dataset, or find one already registered by its source team. To browse
+        and search everything, use the <a href="{% url 'data_quality:dataset-list' %}">Dataset registry</a>.
+    </p>
 {% endblock %}
 
 {% block content %}
-    <p class="viewchip">Rendered by: <code>DatasetManageView (django.views.View, GET + POST)</code></p>
-
     {% comment %}
         The success message this page sets is rendered by base.html now, for
         every page at once (Section 3). The local loop that used to live here
         would show it a second time.
     {% endcomment %}
-
-    <div class="panel">
+    <div class="manage-grid">
+    <section class="panel manage-register" id="register" aria-labelledby="register-title">
         <div class="panel__head">
-            <h2 class="panel__title">Filter by source team</h2>
+            <h2 class="panel__title" id="register-title">Register a new dataset</h2>
         </div>
         <div class="panel__body">
-            <form method="get" action="{% url 'data_quality:dataset-manage' %}">
-                <label for="team">Source team contains</label>
-                <input type="text" id="team" name="team" value="{{ team }}" placeholder="e.g. Registrar">
-                <button type="submit" class="btn btn--primary">Filter</button>
-            </form>
-        </div>
-    </div>
-
-    <div class="panel">
-        <div class="panel__head">
-            <h2 class="panel__title">Datasets</h2>
-        </div>
-        <table class="datatable">
-            {% if datasets %}
-                <thead>
-                    <tr>
-                        <th scope="col">Name</th>
-                        <th scope="col">Owner</th>
-                        <th scope="col">Source team</th>
-                    </tr>
-                </thead>
+            {% if form.errors %}
+                <div class="form-errors" id="register-errors" role="alert" tabindex="-1">
+                    <p class="form-errors__title">The dataset was not registered. Fix {{ form.errors|length|pluralize:"this,these" }} and register it again:</p>
+                    <ul class="form-errors__list">
+                        {% for error in form.non_field_errors %}
+                            <li><a href="#{{ form.name.id_for_label }}">{{ error }}</a></li>
+                        {% endfor %}
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
             {% endif %}
-            <tbody>
-                {% for dataset in datasets %}
-                    <tr>
-                        <td><a href="{{ dataset.get_absolute_url }}">{{ dataset.name }}</a></td>
-                        <td>{{ dataset.owner.username }}</td>
-                        <td>{{ dataset.source_team }}</td>
-                    </tr>
-                {% empty %}
-                    <tr class="is-emptyrow">
-                        <td colspan="3">
-                            {% include "data_quality/includes/_empty_state.html" with headline="No datasets match that filter." message="Try a different source team, or register one below." only %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <div class="panel">
-        <div class="panel__head">
-            <h2 class="panel__title">Register a new dataset</h2>
-        </div>
-        <div class="panel__body">
-            {% if form.non_field_errors %}
-                <p class="prose">{{ form.non_field_errors }}</p>
-            {% endif %}
-
-            <form method="post" action="{% url 'data_quality:dataset-manage' %}">
+            <p class="form-note">All fields except Description are required.</p>
+            <form method="post" action="{% url 'data_quality:dataset-manage' %}#register">
                 {% csrf_token %}
                 <input type="hidden" name="team" value="{{ team }}">
 
@@ -95,5 +83,62 @@
                 <button type="submit" class="btn btn--primary">Register dataset</button>
             </form>
         </div>
-    </div>
+    </section>
+
+    <section class="panel manage-list" aria-labelledby="registered-title">
+        <div class="panel__head">
+            <h2 class="panel__title" id="registered-title">Registered datasets</h2>
+            <a class="manage-list__registry" href="{% url 'data_quality:dataset-list' %}">Open the Dataset registry</a>
+        </div>
+        <div class="panel__body manage-list__filter">
+            <form method="get" class="manage-filter" action="{% url 'data_quality:dataset-manage' %}">
+                <div class="manage-filter__field">
+                    <label for="team">Source team contains</label>
+                    <input type="text" id="team" name="team" value="{{ team }}" placeholder="e.g. Registrar">
+                </div>
+                <button type="submit" class="btn btn--primary">Filter</button>
+            </form>
+        </div>
+        <table class="datatable">
+            {% if datasets %}
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Owner</th>
+                        <th scope="col">Source team</th>
+                    </tr>
+                </thead>
+            {% endif %}
+            <tbody>
+                {% for dataset in datasets %}
+                    <tr>
+                        <td><a href="{{ dataset.get_absolute_url }}">{{ dataset.name }}</a></td>
+                        <td>{{ dataset.owner.username }}</td>
+                        <td>{{ dataset.source_team }}</td>
+                    </tr>
+                {% empty %}
+                    <tr class="is-emptyrow">
+                        <td colspan="3">
+                            {% include "data_quality/includes/_empty_state.html" with headline="No datasets match that filter." message="Try a different source team, or register one above." only %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    </div>{# /.manage-grid #}
+
+    {% if form.errors %}
+        <script>
+            // Stage 3F: after a failed registration, start keyboard and screen-reader
+            // users at the list of problems. The browser scrolls to #register and
+            // resets focus while the page loads, so this waits for the load (and one
+            // frame) before moving focus; the summary is in view either way.
+            window.addEventListener("load", function () {
+                var summary = document.getElementById("register-errors");
+                if (!summary) return;
+                window.requestAnimationFrame(function () { summary.focus(); });
+            });
+        </script>
+    {% endif %}
 {% endblock %}

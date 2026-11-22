@@ -1,4 +1,4 @@
-{% load static %}
+{% load static navigation %}
 {% comment %}
 =============================================================================
 DataPact - base template
@@ -20,6 +20,12 @@ Blocks a child template can override:
   page_subtitle   one muted line of context under the <h1>
   page_actions    primary buttons on the right of the page header
   content         the body of the page (this is the one every child fills)
+  main_attrs      extra attributes on <main> (Home sets data-surface="landing")
+  page_header     the whole header row; Home replaces it with its own hero
+
+Product redesign (Nov 2026): the answer-sheet design system. The two
+typefaces are self-hosted (static/data_quality/fonts/, see FONTS.txt) and
+preloaded here so the first paint uses them; no font host is contacted.
 
 Styling note (changed in A3): the stylesheet used to live inline in this
 file, because runserver serves no static files once DEBUG = False and an
@@ -35,8 +41,12 @@ it in production. See docs/notes/notes.txt section 30.
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}DataPact{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}DataPact keeps a versioned contract for every recurring dataset, records how each delivered file measured up, and helps your team decide whether a failure is bad data or an outdated contract.{% endblock %}">
+    <meta name="theme-color" content="#0e171c">
+    <link rel="preload" href="{% static 'data_quality/fonts/archivo-var.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{% static 'data_quality/fonts/source-serif-4-var.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{% static 'data_quality/css/datapact.css' %}">
-    <link rel="icon" href="{% static 'data_quality/img/datapact-logo.svg' %}">
+    <link rel="icon" href="{% static 'data_quality/img/datapact-mark.svg' %}">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -46,11 +56,22 @@ it in production. See docs/notes/notes.txt section 30.
     {% endcomment %}
     <a class="skiplink" href="#main">Skip to main content</a>
 
+    {% comment %}
+        Product redesign, Stage 3B - the application shell. Signed in, this
+        wrapper becomes a two-column grid on a wide screen (80em, 1280px at
+        the default text size): the header below turns into a sidebar and
+        the page sits beside it. Narrower, the header is one line with the
+        Menu button, which opens the same grouped navigation. Signed out,
+        the shell is the plain top bar it always was. See datapact.css,
+        section 20.
+    {% endcomment %}
+    <div class="shell{% if user.is_authenticated %} shell--app{% endif %}">
+
     <header class="topbar">
         <div class="topbar__inner">
             <a class="brand" href="{% url 'data_quality:home' %}">
-                <img class="brand__logo" src="{% static 'data_quality/img/datapact-logo.svg' %}" alt="">
-                DATA<span>PACT</span>
+                <img class="brand__logo" src="{% static 'data_quality/img/datapact-mark.svg' %}" alt="">
+                Data<span>Pact</span>
             </a>
             {% comment %}
                 UX Stage 5: on a narrow screen, or at high zoom, the nine links
@@ -92,32 +113,86 @@ it in production. See docs/notes/notes.txt section 30.
             <nav class="mainnav" aria-label="Main">
                 <a href="{% url 'data_quality:home' %}"{% if here == 'home' %} class="is-active" aria-current="page"{% endif %}>Home</a>
 
+                {% comment %}
+                    Product redesign: signed out, the bar walks a visitor
+                    through the landing page's own sections. Same-page
+                    anchors, so nothing locked is offered (A5.1 Part 1.5).
+                {% endcomment %}
+                {% if not user.is_authenticated %}
+                    {% url 'data_quality:home' as home_url %}
+                    <a class="mainnav__anchor" href="{{ home_url }}#how-it-works">How it works</a>
+                    <a class="mainnav__anchor" href="{{ home_url }}#ai">AI and privacy</a>
+                    <a class="mainnav__anchor" href="{{ home_url }}#use-cases">Use cases</a>
+                    <a class="mainnav__anchor" href="{{ home_url }}#pilot">Pilots</a>
+                {% endif %}
+
                 {% if user.is_authenticated %}
-                    <a href="{% url 'data_quality:dataset-list' %}"{% if here == 'dataset-list' %} class="is-active" aria-current="page"{% endif %}>Datasets</a>
+                    {% comment %}
+                        Stage 3C: Overview is the workspace overview, so it sits
+                        with Home, outside the groups, rather than under Data.
+                    {% endcomment %}
                     <a href="{% url 'data_quality:dataset-cbv-base' %}"{% if here == 'dataset-cbv-base' %} class="is-active" aria-current="page"{% endif %}>Overview</a>
-                    <a href="{% url 'data_quality:contract-search' %}"{% if here == 'contract-search' %} class="is-active" aria-current="page"{% endif %}>Contracts</a>
-                    <a href="{% url 'data_quality:dataset-manage' %}"{% if here == 'dataset-manage' %} class="is-active" aria-current="page"{% endif %}>Manage</a>
                     {% comment %}
-                        Charts: {% url %} raises NoReverseMatch when the route
-                        is missing, and base.html is on every page, so writing
-                        it the plain way takes the whole site down. The "as"
-                        form stores an empty string instead of raising.
+                        Stage 3B: the ten destinations in three groups, by
+                        the job they serve. Each group is a labelled group
+                        (role="group"), so a screen reader announces
+                        "Data, group" before its links. The labels are <p>,
+                        not headings, so the page's own h1 stays the first
+                        heading in the outline. Link labels are unchanged
+                        and still match their pages' titles.
                     {% endcomment %}
-                    {% url 'data_quality:charts' as charts_url %}
-                    {% if charts_url %}
-                        <a href="{{ charts_url }}"{% if here == 'charts' %} class="is-active" aria-current="page"{% endif %}>Charts</a>
-                    {% endif %}
-                    {% comment %}
-                        Uploading is not built yet. Not a link, because there is
-                        nowhere to go; the small tag says so in visible text,
-                        where a hover tooltip reached neither keyboard nor touch
-                        users (the same rule as _unavailable_action.html).
-                    {% endcomment %}
-                    <span class="mainnav__planned">Upload <span class="mainnav__tag">Not<span class="visually-hidden"> available</span> yet</span></span>
-                    <a href="{% url 'data_quality:quality-history' %}"{% if here == 'quality-history' %} class="is-active" aria-current="page"{% endif %}>Quality History</a>
-                    <a href="{% url 'data_quality:reports' %}"{% if here == 'reports' %} class="is-active" aria-current="page"{% endif %}>Reports</a>
-                    <a href="{% url 'data_quality:handbook-ask' %}"{% if here == 'handbook-ask' %} class="is-active" aria-current="page"{% endif %}>Handbook</a>
-                    <a href="{% url 'data_quality:analytics' %}"{% if here == 'analytics' %} class="is-active" aria-current="page"{% endif %}>AI Analytics</a>
+                    <div class="mainnav__group" role="group" aria-labelledby="nav-group-data">
+                        {% comment %}
+                            Stage 3B.1: each group is named by its visible label
+                            (aria-labelledby), and the label itself is hidden from
+                            assistive technology, so "Data" is announced once, as
+                            the group's name, not again as a paragraph. An
+                            aria-labelledby reference still reads hidden text.
+                        {% endcomment %}
+                        <p class="mainnav__heading" id="nav-group-data" aria-hidden="true">Data</p>
+                        <a href="{% url 'data_quality:dataset-list' %}"{% if here == 'dataset-list' %} class="is-active" aria-current="page"{% endif %}>Datasets</a>
+                        <a href="{% url 'data_quality:contract-search' %}"{% if here == 'contract-search' %} class="is-active" aria-current="page"{% endif %}>Contracts</a>
+                        <a href="{% url 'data_quality:dataset-manage' %}"{% if here == 'dataset-manage' %} class="is-active" aria-current="page"{% endif %}>Manage</a>
+                        {% comment %}
+                            Uploading is not built yet. Not a link, because there is
+                            nowhere to go; the small tag says so in visible text,
+                            where a hover tooltip reached neither keyboard nor touch
+                            users (the same rule as _unavailable_action.html).
+                        {% endcomment %}
+                        <span class="mainnav__planned">Upload <span class="mainnav__tag">Not<span class="visually-hidden"> available</span> yet</span></span>
+                    </div>
+                    <div class="mainnav__group" role="group" aria-labelledby="nav-group-quality">
+                        <p class="mainnav__heading" id="nav-group-quality" aria-hidden="true">Quality</p>
+                        <a href="{% url 'data_quality:quality-history' %}"{% if here == 'quality-history' %} class="is-active" aria-current="page"{% endif %}>Quality History</a>
+                        {% comment %}
+                            Charts: {% url %} raises NoReverseMatch when the route
+                            is missing, and base.html is on every page, so writing
+                            it the plain way takes the whole site down. The "as"
+                            form stores an empty string instead of raising.
+                        {% endcomment %}
+                        {% url 'data_quality:charts' as charts_url %}
+                        {% if charts_url %}
+                            <a href="{{ charts_url }}"{% if here == 'charts' %} class="is-active" aria-current="page"{% endif %}>Charts</a>
+                        {% endif %}
+                        <a href="{% url 'data_quality:reports' %}"{% if here == 'reports' %} class="is-active" aria-current="page"{% endif %}>Reports</a>
+                    </div>
+                    <div class="mainnav__group" role="group" aria-labelledby="nav-group-ai">
+                        <p class="mainnav__heading" id="nav-group-ai" aria-hidden="true">AI</p>
+                        <a href="{% url 'data_quality:analytics' %}"{% if here == 'analytics' %} class="is-active" aria-current="page"{% endif %}>AI Analytics</a>
+                        {% comment %}
+                            Stage 3B.1: whether this server can answer handbook
+                            questions, from the same check the Handbook page uses
+                            (ai.retrieval.handbook_status, via templatetags/
+                            navigation.py). "Local only" when the local model is
+                            switched off, as on production; "Not set up" when it is
+                            on but the handbook search is not configured. Nothing
+                            is shown where the handbook works. The tag sits inside
+                            the link, so its full meaning is part of the link's
+                            name for a screen reader, like the Upload label's.
+                        {% endcomment %}
+                        {% handbook_status as handbook_unavailable %}
+                        <a href="{% url 'data_quality:handbook-ask' %}"{% if here == 'handbook-ask' %} class="is-active" aria-current="page"{% endif %}>Handbook{% if handbook_unavailable %} <span class="mainnav__tag">{% if handbook_unavailable == "off" %}Local only{% else %}Not set up{% endif %}<span class="visually-hidden">, not available on this server</span></span>{% endif %}</a>
+                    </div>
                 {% endif %}
             </nav>
             {% endwith %}
@@ -174,7 +249,7 @@ it in production. See docs/notes/notes.txt section 30.
         </script>
     {% endif %}
 
-    <main class="page" id="main">
+    <main class="page" id="main"{% block main_attrs %}{% endblock %}>
         {% comment %}
             django.contrib.messages, rendered once here so every page gets
             flash messages instead of each template repeating the loop.
@@ -191,6 +266,7 @@ it in production. See docs/notes/notes.txt section 30.
 
         {% block breadcrumbs %}{% endblock %}
 
+        {% block page_header %}
         <div class="page__header">
             <div>
                 <h1 class="page__title">{% block page_title %}DataPact{% endblock %}</h1>
@@ -198,12 +274,15 @@ it in production. See docs/notes/notes.txt section 30.
             </div>
             <div class="page__actions">{% block page_actions %}{% endblock %}</div>
         </div>
+        {% endblock %}
 
         {% block content %}{% endblock %}
     </main>
 
     <footer class="sitefoot">
-        DataPact &middot; INFO 490 Team 15 &middot; Hriday Agarwal, Ashok Chacko, Tejas Jaggi, Connor Slattery
+        <p class="sitefoot__brand">DataPact <span>Trust your data. Understand every failure.</span></p>
+        <p class="sitefoot__credit">INFO 490 Team 15 &middot; Hriday Agarwal, Ashok Chacko, Tejas Jaggi, Connor Slattery</p>
     </footer>
+    </div>
 </body>
 </html>

@@ -16,7 +16,7 @@ behavior.py and they render below automatically.
     </div>
 </div>
 {% if data.charts %}
-    <div class="analytics__grid" style="margin-top: 1.25rem;">
+    <div class="analytics__grid">
         {% for chart in data.charts %}
             {% with spec_id="spec-"|add:chart.id %}
                 {% include "data_quality/analytics/_chart.html" with chart=chart spec_id=spec_id only %}

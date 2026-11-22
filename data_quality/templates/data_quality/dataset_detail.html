@@ -6,7 +6,12 @@ Section 3 (Templates / UI) - Ashok Chacko
 
 Context expected (supplied by DatasetDetailView, a generic DetailView):
     dataset     one Dataset
-    contracts   that dataset's Contract versions, newest version first
+    contracts   that dataset's Contract versions, newest version first, each
+                with rule_count annotated (Stage 3G)
+    runs        its recorded ValidationRuns, newest first (Stage 3G)
+    standing    the "Where it stands" facts: active, latest_run,
+                latest_is_other, active_unrun, latest_run_violations
+                (Stage 3G; DatasetDetailView._standing says what each means)
     violations  its recorded Violations, newest run first (UX Stage 4)
     open_violation_count, violations_empty   for the violations summary
                 and its empty state (headline, message)
@@ -25,15 +30,24 @@ says in plain words beside each one that it is not available yet.
 {% block title %}{{ dataset.name }} - DataPact{% endblock %}
 
 {% block breadcrumbs %}
-    <p class="breadcrumbs">
-        <a href="{% url 'data_quality:dataset-list' %}">Datasets</a> / {{ dataset.name }}
-    </p>
+    {# Stage 3C: a breadcrumb landmark, parent first, this page last (aria-current). #}
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <ol>
+            <li><a href="{% url 'data_quality:dataset-list' %}">Datasets</a></li>
+            <li aria-current="page">{{ dataset.name }}</li>
+        </ol>
+    </nav>
 {% endblock %}
 
 {% block page_title %}{{ dataset.name }}{% endblock %}
 
+{% block main_attrs %} data-surface="dataset"{% endblock %}
+
 {% block page_subtitle %}
     <p class="page__subtitle">Source: {{ dataset.source_team }} &middot; Owner: {{ dataset.owner.username }}</p>
+    {% if dataset.description %}
+        <p class="dataset-lead">{{ dataset.description }}</p>
+    {% endif %}
 {% endblock %}
 
 {% block page_actions %}
@@ -41,58 +55,107 @@ says in plain words beside each one that it is not available yet.
 {% endblock %}
 
 {% block content %}
-    <div class="panel">
-        <div class="panel__head"><h2 class="panel__title">Dataset</h2></div>
+    {% comment %}
+        Stage 3G: where the dataset stands, in words, first. The version in
+        force (or "No active version": a Draft or Retired version never
+        governs), the newest recorded run with its own outcome and the
+        version it was checked against, and the violations with their scope
+        stated (all runs, and how many came from the latest one). Source and
+        owner are in the subtitle, so they are not repeated here.
+    {% endcomment %}
+    {% with active=standing.active run=standing.latest_run %}
+    <section class="panel" id="standing" aria-labelledby="standing-title">
+        <div class="panel__head"><h2 class="panel__title" id="standing-title">Where it stands</h2></div>
         <div class="panel__body">
-            <dl class="factlist">
-                <div>
-                    <dt>Source team</dt>
-                    <dd>{{ dataset.source_team }}</dd>
+            <dl class="standing">
+                <div class="standing__item">
+                    <dt>Contract in force</dt>
+                    <dd>
+                        {% if active %}
+                            <span class="standing__line"><span class="standing__value">v{{ active.version_number }}</span> {% include "data_quality/includes/_status_badge.html" with status=active.status label=active.get_status_display only %}</span>
+                            <span class="standing__note">{{ active.rule_count }} rule{{ active.rule_count|pluralize }}</span>
+                        {% else %}
+                            <span class="standing__value">No active version</span>
+                            <span class="standing__note">{% if contracts %}No version is Active, so none governs validation.{% else %}No contract versions yet.{% endif %}</span>
+                        {% endif %}
+                    </dd>
                 </div>
-                <div>
-                    <dt>Owner</dt>
-                    <dd>{{ dataset.owner.username }}</dd>
+                <div class="standing__item standing__item--run">
+                    <dt>Latest recorded run</dt>
+                    <dd>
+                        {% if run %}
+                            <span class="standing__value standing__file">{{ run.file_name }}</span>
+                            <span class="standing__line">{% include "data_quality/includes/_status_badge.html" with status=run.status label=run.get_status_display only %} <span>{{ run.started_at|date:"Y-m-d" }} &middot; checked against contract v{{ run.contract.version_number }}</span></span>
+                            {% if run.status == "ERROR" %}
+                                <span class="standing__note">This run ended in an error and may not have been fully checked.</span>
+                            {% endif %}
+                            {% if standing.latest_is_other %}
+                                <span class="standing__note standing__note--version">v{{ active.version_number }} is the version in force; this run used v{{ run.contract.version_number }}.{% if standing.active_unrun %} No run recorded under v{{ active.version_number }} yet.{% endif %}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="standing__value">No validation runs recorded yet</span>
+                        {% endif %}
+                    </dd>
                 </div>
-                <div>
+                <div class="standing__item">
+                    <dt>Violations</dt>
+                    <dd>
+                        {% if violations %}
+                            <span class="standing__value">{{ violations|length }} recorded across all runs</span>
+                            <span class="standing__note">{% if open_violation_count %}{{ open_violation_count }} open{% else %}None open{% endif %}{% if run %} &middot; {% if standing.latest_run_violations %}{{ standing.latest_run_violations }} from the latest run{% else %}none from the latest run{% endif %}{% endif %}</span>
+                        {% else %}
+                            <span class="standing__value">None recorded</span>
+                        {% endif %}
+                        <a class="standing__link" href="#violations">Go to violations</a>
+                    </dd>
+                </div>
+                <div class="standing__item standing__item--quiet">
                     <dt>Registered</dt>
                     <dd>{{ dataset.created_at|date:"Y-m-d" }}</dd>
                 </div>
-                <div>
-                    <dt>Contract versions</dt>
-                    <dd>{{ contracts|length }}</dd>
-                </div>
             </dl>
-            {% if dataset.description %}
-                <p class="prose" style="margin-top:1.25rem;">{{ dataset.description }}</p>
-            {% endif %}
         </div>
-    </div>
+    </section>
+    {% endwith %}
 
-    <div class="panel">
+    {% comment %}
+        Stage 3G: every version, newest first; the version is the row's
+        header. Below 40em each row becomes a labelled block (data-label);
+        the explicit roles keep cells tied to their headers once CSS changes
+        the display. The Contracts link searches dataset names containing
+        this one (a substring match), and says so.
+    {% endcomment %}
+    <section class="panel" id="versions" aria-labelledby="versions-title">
         <div class="panel__head">
-            <h2 class="panel__title">Contract versions</h2>
-            {% include "data_quality/includes/_unavailable_action.html" with label="View / edit rules" reason="Editing contract rules is not available yet." only %}
+            <h2 class="panel__title" id="versions-title">Contract versions</h2>
+            <div class="panel__tools">
+                {% if contracts %}
+                    <p class="versions-link"><a href="{% url 'data_quality:contract-search' %}?q={{ dataset.name|urlencode }}">Open in Contracts</a><span class="versions-link__note">Searches dataset names containing &ldquo;{{ dataset.name }}&rdquo;, so similar names can appear too.</span></p>
+                {% endif %}
+                {% include "data_quality/includes/_unavailable_action.html" with label="View / edit rules" reason="Editing contract rules is not available yet." only %}
+            </div>
         </div>
-        <table class="datatable">
+        <table class="datatable dtable dtable--versions"{% if contracts %} role="table"{% endif %}>
             {% if contracts %}
-                <thead>
-                    <tr>
-                        <th scope="col">Version</th>
-                        <th scope="col">Status</th>
-                        <th scope="col" class="num">Rules</th>
-                        <th scope="col">Change note</th>
+                <caption class="visually-hidden">Contract versions of {{ dataset.name }}, newest first</caption>
+                <thead role="rowgroup">
+                    <tr role="row">
+                        <th scope="col" role="columnheader">Version</th>
+                        <th scope="col" role="columnheader">Status</th>
+                        <th scope="col" role="columnheader" class="num">Rules</th>
+                        <th scope="col" role="columnheader">Change note</th>
                     </tr>
                 </thead>
             {% endif %}
-            <tbody>
+            <tbody{% if contracts %} role="rowgroup"{% endif %}>
                 {% for contract in contracts %}
-                    <tr>
-                        <td>v{{ contract.version_number }}</td>
-                        <td>
+                    <tr role="row">
+                        <th scope="row" role="rowheader" data-label="Version">v{{ contract.version_number }}</th>
+                        <td role="cell" data-label="Status">
                             {% include "data_quality/includes/_status_badge.html" with status=contract.status label=contract.get_status_display only %}
                         </td>
-                        <td class="num">{{ contract.rules.count }}</td>
-                        <td class="muted">{{ contract.change_note|default:"&mdash;" }}</td>
+                        <td role="cell" data-label="Rules" class="num">{{ contract.rule_count }}</td>
+                        <td role="cell" data-label="Change note" class="muted">{{ contract.change_note|default:"&mdash;" }}</td>
                     </tr>
                 {% empty %}
                     <tr class="is-emptyrow">
@@ -103,14 +166,60 @@ says in plain words beside each one that it is not available yet.
                 {% endfor %}
             </tbody>
         </table>
-    </div>
+    </section>
+
+    {% comment %}
+        Stage 3G: every recorded run of this dataset, newest first, each with
+        the version it was checked against and its own outcome. All runs are
+        listed (the count above the table says how many); none is cut off.
+    {% endcomment %}
+    <section class="panel" id="runs" aria-labelledby="runs-title">
+        <div class="panel__head"><h2 class="panel__title" id="runs-title">Recorded runs</h2></div>
+        {% if runs %}
+            <p class="results__summary">{{ runs|length }} run{{ runs|length|pluralize }} recorded, newest first. All are listed.</p>
+        {% endif %}
+        <table class="datatable dtable dtable--runs"{% if runs %} role="table"{% endif %}>
+            {% if runs %}
+                <caption class="visually-hidden">Recorded validation runs of {{ dataset.name }}, newest first</caption>
+                <thead role="rowgroup">
+                    <tr role="row">
+                        <th scope="col" role="columnheader">File</th>
+                        <th scope="col" role="columnheader">Date</th>
+                        <th scope="col" role="columnheader">Contract</th>
+                        <th scope="col" role="columnheader" class="num">Rows</th>
+                        <th scope="col" role="columnheader">Outcome</th>
+                    </tr>
+                </thead>
+            {% endif %}
+            <tbody{% if runs %} role="rowgroup"{% endif %}>
+                {% for run in runs %}
+                    <tr role="row">
+                        <th scope="row" role="rowheader" data-label="File">{{ run.file_name }}</th>
+                        <td role="cell" data-label="Date">{{ run.started_at|date:"Y-m-d" }}</td>
+                        <td role="cell" data-label="Contract">v{{ run.contract.version_number }}</td>
+                        <td role="cell" data-label="Rows" class="num">{{ run.row_count|floatformat:"0g" }}</td>
+                        <td role="cell" data-label="Outcome">{% include "data_quality/includes/_status_badge.html" with status=run.status label=run.get_status_display only %}</td>
+                    </tr>
+                {% empty %}
+                    <tr class="is-emptyrow">
+                        <td colspan="5">
+                            {% include "data_quality/includes/_empty_state.html" with headline="No validation runs recorded yet." message="Each run checks one file against a contract version. Recorded runs are listed here, newest first." only %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
 
     {% comment %}
         UX Stage 4: this dataset's recorded violations, newest run first.
         Each row names its run (file, date, contract version), because the
         same rule can fail in several files. The hidden part of each
-        Explain link gives it a name of its own (as in the Stage 3 lookup).
+        Investigate link gives it a name of its own (as in the Stage 3 lookup).
         No sample values or messages: they can hold the file's raw data.
+        Stage 3D: below 40em each row becomes a labelled block (data-label);
+        the explicit table roles keep the cells tied to their column names
+        once CSS changes the display. Desktop is the same table.
     {% endcomment %}
     <section class="panel" id="violations" aria-labelledby="violations-title">
         <div class="panel__head">
@@ -121,26 +230,26 @@ says in plain words beside each one that it is not available yet.
                 {{ violations|length }} violation{{ violations|length|pluralize }} recorded, newest run first.{% if open_violation_count %} {{ open_violation_count }} {{ open_violation_count|pluralize:"is,are" }} still open.{% endif %}
             </p>
         {% endif %}
-        <table class="datatable">
+        <table class="datatable vtable vtable--detail"{% if violations %} role="table"{% endif %}>
             {% if violations %}
-                <thead>
-                    <tr>
-                        <th scope="col">Validation run</th>
-                        <th scope="col">Column / rule</th>
-                        <th scope="col" class="num">Failed rows</th>
-                        <th scope="col">Resolution</th>
-                        <th scope="col">AI explanation</th>
+                <thead role="rowgroup">
+                    <tr role="row">
+                        <th scope="col" role="columnheader">Validation run</th>
+                        <th scope="col" role="columnheader">Column / rule</th>
+                        <th scope="col" role="columnheader" class="num">Failed rows</th>
+                        <th scope="col" role="columnheader">Resolution</th>
+                        <th scope="col" role="columnheader">Next step</th>
                     </tr>
                 </thead>
             {% endif %}
-            <tbody>
+            <tbody{% if violations %} role="rowgroup"{% endif %}>
                 {% for violation in violations %}
-                    <tr>
-                        <td>{{ violation.run.file_name }}<span class="cell__sub">{{ violation.run.started_at|date:"Y-m-d" }} &middot; contract v{{ violation.rule.contract.version_number }}</span></td>
-                        <td>{{ violation.rule.column_name }} - {{ violation.rule.get_rule_type_display }}</td>
-                        <td class="num">{{ violation.failed_row_count }}</td>
-                        <td>{% include "data_quality/includes/_status_badge.html" with status=violation.resolution label=violation.get_resolution_display only %}</td>
-                        <td><a href="{% url 'data_quality:violation-explain' violation.pk %}">Explain<span class="visually-hidden"> {{ violation.rule.column_name }} {{ violation.rule.get_rule_type_display }} in {{ violation.run.file_name }}, {{ violation.run.started_at|date:"Y-m-d" }}</span></a></td>
+                    <tr role="row">
+                        <td role="cell" data-label="Validation run" class="vtable__run">{{ violation.run.file_name }}<span class="cell__sub">{{ violation.run.started_at|date:"Y-m-d" }} &middot; contract v{{ violation.rule.contract.version_number }}</span></td>
+                        <td role="cell" data-label="Column / rule" class="vtable__rule">{{ violation.rule.column_name }} - {{ violation.rule.get_rule_type_display }}</td>
+                        <td role="cell" data-label="Failed rows" class="num">{{ violation.failed_row_count|floatformat:"0g" }}</td>
+                        <td role="cell" data-label="Resolution">{% include "data_quality/includes/_status_badge.html" with status=violation.resolution label=violation.get_resolution_display only %}</td>
+                        <td role="cell" data-label="Next step" class="vtable__next"><a href="{% url 'data_quality:violation-explain' violation.pk %}">Investigate<span class="visually-hidden"> {{ violation.rule.column_name }} {{ violation.rule.get_rule_type_display }} in {{ violation.run.file_name }}, {{ violation.run.started_at|date:"Y-m-d" }}</span></a></td>
                     </tr>
                 {% empty %}
                     <tr class="is-emptyrow">

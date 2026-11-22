@@ -1,71 +1,263 @@
 {% extends "data_quality/base.html" %}
 {% comment %}
 =============================================================================
-Dataset Overview - the contract-health view of the registry
-Section 3 (Templates / UI) - Ashok Chacko
+Workspace overview (product redesign, Stage 3C)
+Earlier: Dataset Overview, Section 3 (Templates / UI) - Ashok Chacko
 
 Context expected (supplied by DatasetOverviewView, a base django.views.View):
-    rows    a list of dicts, each one:
-              dataset          a Dataset
-              contract_count   how many contract versions it has
-              active_contract  the ACTIVE Contract, or None
+    rows                  a list of dicts, each one (the A2 contract table):
+                            dataset          a Dataset (with the registry's
+                                             run and violation annotations)
+                            contract_count   how many contract versions it has
+                            active_contract  the ACTIVE Contract, or None
+    open_violations       up to five open violations, newest run first
+    open_violation_count  how many violations are open in all
+    recent_runs           up to five runs, most recently recorded first, each
+                          with violation_count and open_count
+    run_count             how many runs are recorded in all
+    gaps                  {"no_active_contract", "no_runs", "latest_run_error"}:
+                          lists of datasets
+    has_gaps              whether any of those lists is non-empty
 
-Note the shape: this page cannot reuse dataset_list.html, because it is not
-showing a list of Datasets. It is showing values the view computed by walking
-dataset.contracts - which is exactly why the team used a hand-written View
-here instead of a generic ListView.
+Why a hand-written View still: rows, the gaps and the counts are values the
+view computes by walking relations, which a generic ListView would not.
+
+What the page answers: what needs a decision, what was checked most recently,
+and which datasets are not covered yet. Honesty rules it keeps:
+  - dates are absolute ("2026-09-04"), never "2 days ago", "live" or "today";
+  - runs are "recorded": DataPact does not check incoming files itself yet;
+  - a violation is decided by a person, in the admin. The AI can suggest a
+    cause on the Investigate page; it never records one, and this page
+    offers no Resolve action because the application has none.
+
+With no datasets at all, only the contract table's single "Register" empty
+state is shown (EmptyStateActionTests expects exactly one).
 =============================================================================
 {% endcomment %}
 
-{% block title %}Dataset Overview - DataPact{% endblock %}
+{% block title %}Workspace overview - DataPact{% endblock %}
 
-{% block page_title %}Dataset Overview{% endblock %}
+{% block main_attrs %} data-surface="workspace"{% endblock %}
+
+{% block page_title %}Workspace overview{% endblock %}
 
 {% block page_subtitle %}
-    <p class="page__subtitle">Contract coverage for every registered dataset.</p>
+    <p class="page__subtitle">
+        What needs a decision, what was checked most recently, and which datasets have no
+        contract or no runs yet. Runs are recorded results: DataPact does not check
+        incoming files automatically yet.
+    </p>
+{% endblock %}
+
+{% block page_actions %}
+    {% if open_violation_count %}
+        {% comment %}
+            The violation lookup with "Open" chosen. The lookup is a POST, so
+            the link selects Open and the page says to press Look up; it does
+            not run the lookup itself (the same link Home uses).
+        {% endcomment %}
+        <a class="btn btn--primary" href="{% url 'data_quality:contract-search' %}?resolution=OPEN#violation-lookup">Review open violations</a>
+    {% endif %}
 {% endblock %}
 
 {% block content %}
-    <p class="viewchip">Rendered by: <code>Base CBV - django.views.View (DatasetOverviewView)</code></p>
+    {% if rows %}
+    <div class="ws-grid">
+        <div class="ws-main">
 
-    <div class="panel">
-        <table class="datatable">
-            {% if rows %}
-                <thead>
-                    <tr>
-                        <th scope="col">Dataset</th>
-                        <th scope="col">Source team</th>
-                        <th scope="col" class="num">Contract versions</th>
-                        <th scope="col">Active contract</th>
-                    </tr>
-                </thead>
+            {# ---------------------------------------------------- needs a decision #}
+            <section class="ws-section" aria-labelledby="ws-attention">
+                <div class="ws-section__head">
+                    <h2 class="ws-section__title" id="ws-attention">Needs a decision</h2>
+                    <p class="ws-section__count{% if open_violation_count %} is-attention{% endif %}">
+                        {{ open_violation_count }} open violation{{ open_violation_count|pluralize }}
+                    </p>
+                </div>
+                {% if open_violations %}
+                    <ul class="ws-decisions" role="list">
+                        {% for violation in open_violations %}
+                            {% with run=violation.run rule=violation.rule dataset=violation.rule.contract.dataset %}
+                            <li class="ws-decision">
+                                <span class="open-count__mark ws-decision__mark" aria-hidden="true"></span>
+                                <div class="ws-decision__body">
+                                    <p class="ws-decision__title">
+                                        <a href="{{ dataset.get_absolute_url }}">{{ dataset.name }}</a>
+                                    </p>
+                                    <p class="ws-decision__what">
+                                        <code>{{ rule.column_name }}</code> &middot; {{ rule.get_rule_type_display }}
+                                        &middot; <strong>{{ violation.failed_row_count|floatformat:"0g" }}</strong> of {{ run.row_count|floatformat:"0g" }} rows failed
+                                    </p>
+                                    <p class="ws-decision__where">
+                                        {{ run.file_name }} &middot; recorded {{ run.started_at|date:"Y-m-d" }} &middot; contract v{{ rule.contract.version_number }}
+                                    </p>
+                                </div>
+                                <a class="btn btn--sm ws-decision__action" href="{% url 'data_quality:violation-explain' violation.pk %}">Investigate<span class="visually-hidden"> {{ rule.column_name }} in {{ dataset.name }}</span></a>
+                            </li>
+                            {% endwith %}
+                        {% endfor %}
+                    </ul>
+                    <div class="ws-section__foot">
+                        <p class="ws-note">A person records each decision in the DataPact admin. The AI can suggest a likely cause on the Investigate page; it never records one.</p>
+                        <p class="ws-more">
+                            {% if open_violation_count > open_violations|length %}Showing the {{ open_violations|length }} most recent of {{ open_violation_count }}. {% endif %}
+                            <a href="{% url 'data_quality:contract-search' %}?resolution=OPEN#violation-lookup">Look up all open violations</a>
+                        </p>
+                    </div>
+                {% else %}
+                    <p class="ws-empty"><span class="mark mark--filled" aria-hidden="true"></span>No open violations. Every recorded violation has a decision.</p>
+                {% endif %}
+            </section>
+
+            {# ------------------------------------------------------- recent runs #}
+            <section class="ws-section" aria-labelledby="ws-runs">
+                <div class="ws-section__head">
+                    <h2 class="ws-section__title" id="ws-runs">Most recently recorded runs</h2>
+                    <p class="ws-section__count">{{ run_count }} run{{ run_count|pluralize }} recorded</p>
+                </div>
+                {% if recent_runs %}
+                    <div class="panel ws-runs-panel">
+                        <table class="datatable ws-runs" role="table">
+                            <caption class="visually-hidden">The {{ recent_runs|length }} most recently recorded validation runs</caption>
+                            <thead role="rowgroup">
+                                <tr role="row">
+                                    <th scope="col" role="columnheader">Recorded</th>
+                                    <th scope="col" role="columnheader">Dataset and file</th>
+                                    <th scope="col" role="columnheader">Outcome</th>
+                                    <th scope="col" role="columnheader">Violations</th>
+                                </tr>
+                            </thead>
+                            <tbody role="rowgroup">
+                                {% for run in recent_runs %}
+                                    <tr role="row">
+                                        <td role="cell" data-label="Recorded" class="ws-runs__date">{{ run.started_at|date:"Y-m-d" }}</td>
+                                        <th scope="row" role="rowheader" class="ws-runs__dataset">
+                                            <a href="{{ run.contract.dataset.get_absolute_url }}">{{ run.contract.dataset.name }}</a>
+                                            <span class="cell__sub">{{ run.file_name }} &middot; contract v{{ run.contract.version_number }}</span>
+                                        </th>
+                                        <td role="cell" data-label="Outcome">
+                                            {% include "data_quality/includes/_status_badge.html" with status=run.status label=run.get_status_display only %}
+                                        </td>
+                                        <td role="cell" data-label="Violations">
+                                            {% if run.open_count %}
+                                                <span class="open-count"><span class="open-count__mark" aria-hidden="true"></span>{{ run.open_count }} open</span>{% if run.violation_count > run.open_count %} <span class="cell__sub">{{ run.violation_count }} recorded</span>{% endif %}
+                                            {% elif run.violation_count %}
+                                                {{ run.violation_count }} recorded <span class="cell__sub">all decided</span>
+                                            {% else %}
+                                                <span class="muted">None recorded</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="ws-more">
+                        {% if run_count > recent_runs|length %}Showing the {{ recent_runs|length }} most recent of {{ run_count }}. {% endif %}
+                        <a href="{% url 'data_quality:reports' %}">All runs and exports</a>
+                        <span aria-hidden="true">&middot;</span>
+                        <a href="{% url 'data_quality:quality-history' %}">Outcomes over all runs</a>
+                    </p>
+                {% else %}
+                    <p class="ws-empty"><span class="mark" aria-hidden="true"></span>No validation runs recorded yet. Uploading files to check is planned, not available.</p>
+                {% endif %}
+            </section>
+        </div>
+
+        {# --------------------------------------------------------- coverage gaps #}
+        <section class="ws-section ws-gaps" aria-labelledby="ws-gaps">
+            <div class="ws-section__head">
+                <h2 class="ws-section__title" id="ws-gaps">Coverage gaps</h2>
+            </div>
+            {% if has_gaps %}
+                {% if gaps.no_active_contract %}
+                    <div class="ws-gap">
+                        <h3 class="ws-gap__title"><span class="mark" aria-hidden="true"></span>No active contract</h3>
+                        <p class="ws-gap__why">Nothing to check its files against yet.</p>
+                        <ul role="list">
+                            {% for dataset in gaps.no_active_contract %}
+                                <li><a href="{{ dataset.get_absolute_url }}">{{ dataset.name }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                {% if gaps.no_runs %}
+                    <div class="ws-gap">
+                        <h3 class="ws-gap__title"><span class="mark" aria-hidden="true"></span>No runs recorded</h3>
+                        <p class="ws-gap__why">Never checked, so there is no result yet: not a failure.</p>
+                        <ul role="list">
+                            {% for dataset in gaps.no_runs %}
+                                <li><a href="{{ dataset.get_absolute_url }}">{{ dataset.name }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                {% if gaps.latest_run_error %}
+                    <div class="ws-gap">
+                        <h3 class="ws-gap__title"><span class="mark mark--half" aria-hidden="true"></span>Latest run ended in an error</h3>
+                        <p class="ws-gap__why">The file may not have been fully checked.</p>
+                        <ul role="list">
+                            {% for dataset in gaps.latest_run_error %}
+                                <li><a href="{{ dataset.get_absolute_url }}">{{ dataset.name }}</a> <span class="cell__sub">recorded {{ dataset.latest_run_at|date:"Y-m-d" }}</span></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            {% else %}
+                <p class="ws-empty"><span class="mark mark--filled" aria-hidden="true"></span>Every dataset has an active contract and a recorded run, and no latest run ended in an error.</p>
             {% endif %}
-            <tbody>
-                {% for row in rows %}
-                    <tr>
-                        <td>
-                            <a href="{{ row.dataset.get_absolute_url }}">{{ row.dataset.name }}</a>
-                        </td>
-                        <td>{{ row.dataset.source_team }}</td>
-                        <td class="num">{{ row.contract_count }}</td>
-                        <td>
-                            {% if row.active_contract %}
-                                {% include "data_quality/includes/_status_badge.html" with status="ACTIVE" prefix="v" label=row.active_contract.version_number only %}
-                            {% else %}
-                                {% comment %} Not a badge: having no active version is not a contract state (it used to wear the Draft badge). {% endcomment %}
-                                <span class="muted">None active</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% empty %}
-                    <tr class="is-emptyrow">
-                        <td colspan="4">
-                            {% url 'data_quality:dataset-manage' as register_url %}
-                            {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register dataset" action_url=register_url only %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        </section>
     </div>
+    {% endif %}
+
+    {# ------------------------------------------------- contract coverage (A2) #}
+    <section class="ws-section ws-coverage" aria-labelledby="ws-coverage">
+        {% if rows %}
+            <div class="ws-section__head">
+                <h2 class="ws-section__title" id="ws-coverage">Contract coverage</h2>
+                <p class="ws-section__count">Every dataset, how many contract versions it has had, and which one is in force.</p>
+            </div>
+        {% else %}
+            <h2 class="visually-hidden" id="ws-coverage">Contract coverage</h2>
+        {% endif %}
+        <div class="panel ws-coverage-panel">
+            <table class="datatable ws-coverage-table">
+                {% if rows %}
+                    <thead>
+                        <tr>
+                            <th scope="col">Dataset</th>
+                            <th scope="col">Source team</th>
+                            <th scope="col" class="num">Contract versions</th>
+                            <th scope="col">Active contract</th>
+                        </tr>
+                    </thead>
+                {% endif %}
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td>
+                                <a href="{{ row.dataset.get_absolute_url }}">{{ row.dataset.name }}</a>
+                            </td>
+                            <td data-label="Source team">{{ row.dataset.source_team }}</td>
+                            <td class="num" data-label="Contract versions">{{ row.contract_count }}</td>
+                            <td data-label="Active contract">
+                                {% if row.active_contract %}
+                                    {% include "data_quality/includes/_status_badge.html" with status="ACTIVE" prefix="v" label=row.active_contract.version_number only %}
+                                {% else %}
+                                    {% comment %} Not a badge: having no active version is not a contract state (it used to wear the Draft badge). {% endcomment %}
+                                    <span class="muted">None active</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr class="is-emptyrow">
+                            <td colspan="4">
+                                {% url 'data_quality:dataset-manage' as register_url %}
+                                {% include "data_quality/includes/_empty_state.html" with headline="No datasets registered yet." message="Register your first dataset to begin validating recurring data." action_label="+ Register dataset" action_url=register_url only %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
 {% endblock %}

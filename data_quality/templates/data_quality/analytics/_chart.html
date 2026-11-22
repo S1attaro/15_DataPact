@@ -1,11 +1,14 @@
 {% comment %}
 One Vega-Lite chart in a panel. Pass chart={"id", "title", "caption", "spec"}
 (see data_quality/analytics/charts.py: chart()). chart.wide spans the whole row.
+Stage 3I: the width is a class (panel--wide) instead of an inline style, and the
+chart element also carries the Charts page's "chart" class, so vega-embed's
+"..." menu is shown plainly and opens the way Stage 3E settled (datapact.css 23).
 {% endcomment %}
-<div class="panel"{% if chart.wide %} style="grid-column: 1 / -1;"{% endif %}>
+<div class="panel{% if chart.wide %} panel--wide{% endif %}">
     <div class="panel__head"><h3 class="panel__title">{{ chart.title }}</h3></div>
     <div class="panel__body">
-        <div class="vega-chart" id="chart-{{ chart.id }}" data-spec-id="spec-{{ chart.id }}">
+        <div class="chart vega-chart" id="chart-{{ chart.id }}" data-spec-id="spec-{{ chart.id }}">
             <p class="chart__fallback">This chart needs JavaScript and the Vega-Lite library.</p>
         </div>
         {{ chart.spec|json_script:spec_id }}

@@ -1,0 +1,15 @@
+Self-hosted typefaces (product redesign, November 2026)
+
+source-serif-4-var.woff2
+    Source Serif 4, variable (optical size 8-60, weight 200-900), Latin subset.
+    Designed by Frank Grießhammer for Adobe. SIL Open Font License 1.1.
+    https://github.com/adobe-fonts/source-serif
+
+archivo-var.woff2
+    Archivo, variable (width 62-125%, weight 100-900), Latin subset.
+    Designed by Omnibus-Type. SIL Open Font License 1.1.
+    https://github.com/Omnibus-Type/Archivo
+
+Both files were downloaded once from Google Fonts (fonts.gstatic.com) and are served by
+WhiteNoise with the rest of the static files, so pages make no request to a font host.
+License text: https://openfontlicense.org/open-font-license-official-text/

@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count, Q
+from django.db.models import Case, CharField, Count, OuterRef, Q, Subquery, Value, When
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -32,44 +32,187 @@ class DatasetOverviewView(LoginRequiredMixin, View):
     Dataset itself stores, so anything that has to be derived by walking a
     relation (active contract, counts) needs a view that builds its own
     context by hand - this is exactly that case.
+
+    Product redesign, Stage 3C: the page became the workspace overview. The
+    context the A2 table needs is unchanged ("rows", each with "dataset",
+    "contract_count" and "active_contract"); around it the view now builds,
+    by hand as before:
+
+      open_violations / open_violation_count  the five most recent open
+                       violations (newest run first) and the total
+      recent_runs / run_count  the five most recently recorded runs with
+                       their violation and open-violation counts, and the total
+      gaps             datasets with no active contract, with no recorded run,
+                       or whose latest run ended in an error
+
+    Five queries in all, however many rows there are: the datasets (with the
+    registry's run and violation annotations), their contracts (prefetched),
+    the open violations, their count, and the recent runs. The gaps and the
+    run total are read from the dataset rows already fetched.
     """
 
     template_name = "data_quality/dataset_overview.html"
+    LIST_SIZE = 5
 
     def get(self, request):
-        datasets = Dataset.objects.select_related("owner").prefetch_related("contracts")
+        datasets = registry_queryset().prefetch_related("contracts")
 
         rows = []
+        gaps = {"no_active_contract": [], "no_runs": [], "latest_run_error": []}
+        run_count = 0
         for dataset in datasets:
+            contracts = dataset.contracts.all()
             active_contract = next(
-                (c for c in dataset.contracts.all() if c.status == Contract.Status.ACTIVE),
+                (c for c in contracts if c.status == Contract.Status.ACTIVE),
                 None,
             )
             rows.append(
                 {
                     "dataset": dataset,
-                    "contract_count": len(dataset.contracts.all()),
+                    "contract_count": len(contracts),
                     "active_contract": active_contract,
                 }
             )
+            run_count += dataset.run_count
+            if active_contract is None:
+                gaps["no_active_contract"].append(dataset)
+            if not dataset.run_count:
+                gaps["no_runs"].append(dataset)
+            elif dataset.latest_run_status == ValidationRun.Status.ERROR:
+                gaps["latest_run_error"].append(dataset)
 
-        context = {"rows": rows}
+        open_violations = Violation.objects.filter(resolution=Violation.Resolution.OPEN)
+        recent_runs = (
+            ValidationRun.objects.select_related("contract", "contract__dataset")
+            .annotate(
+                violation_count=Count("violations", distinct=True),
+                open_count=Count(
+                    "violations",
+                    filter=Q(violations__resolution=Violation.Resolution.OPEN),
+                    distinct=True,
+                ),
+            )
+            .order_by("-started_at", "-pk")[: self.LIST_SIZE]
+        )
+
+        context = {
+            "rows": rows,
+            "open_violations": list(
+                open_violations.select_related(
+                    "run", "rule", "rule__contract", "rule__contract__dataset"
+                ).order_by("-run__started_at", "-run_id", "-failed_row_count", "pk")[: self.LIST_SIZE]
+            ),
+            "open_violation_count": open_violations.count(),
+            "recent_runs": list(recent_runs),
+            "run_count": run_count,
+            "gaps": gaps,
+            "has_gaps": any(gaps.values()),
+        }
         return render(request, self.template_name, context)
+
+
+def registry_queryset():
+    """
+    Every dataset with the facts the registry shows beside it, in ONE query
+    (product redesign, Stage 3A). Read-only annotations over existing
+    relations; nothing here changes what a dataset, run or violation means.
+
+      active_version        version_number of the ACTIVE contract, or None
+      run_count             validation runs recorded against any version
+      latest_run_at/status  the most recent run (started_at, then pk)
+      latest_run_label      that status's display name ("Failed")
+      open_violation_count  violations still OPEN, the same definition the
+                            dataset page and the home page use
+
+    Ordered by name, as Dataset.Meta.ordering is, written out so the
+    aggregation cannot drop it.
+    """
+    runs = ValidationRun.objects.filter(contract__dataset=OuterRef("pk")).order_by("-started_at", "-pk")
+    active = Contract.objects.filter(
+        dataset=OuterRef("pk"), status=Contract.Status.ACTIVE
+    ).order_by("-version_number")
+    return (
+        Dataset.objects.select_related("owner")
+        .annotate(
+            active_version=Subquery(active.values("version_number")[:1]),
+            run_count=Count("contracts__runs", distinct=True),
+            latest_run_at=Subquery(runs.values("started_at")[:1]),
+            latest_run_status=Subquery(runs.values("status")[:1]),
+            open_violation_count=Count(
+                "contracts__rules__violations",
+                filter=Q(contracts__rules__violations__resolution=Violation.Resolution.OPEN),
+                distinct=True,
+            ),
+        )
+        .annotate(
+            latest_run_label=Case(
+                *(When(latest_run_status=value, then=Value(label)) for value, label in ValidationRun.Status.choices),
+                default=Value(""),
+                output_field=CharField(),
+            )
+        )
+        .order_by(*Dataset._meta.ordering)
+    )
 
 
 class DatasetListView(LoginRequiredMixin, ListView):
     """
-    Generic CBV: plain registry list of every Dataset, newest-name-first
-    (Dataset.Meta.ordering). Mirrors wireframe screen 1 (Dashboard / Dataset
-    Registry).
+    Generic CBV: the dataset registry, ordered by name (Dataset.Meta.ordering).
+    Mirrors wireframe screen 1 (Dashboard / Dataset Registry).
+
+    Product redesign, Stage 3A: each row also carries its active contract
+    version, latest run and open violations (registry_queryset()), and the
+    page can be narrowed with two GET parameters:
+
+      q     text found in the dataset's name, source team or owner's username
+      show  "open" keeps only datasets with at least one open violation
+
+    Both are plain GET, so a filtered view is a link that can be shared, and
+    the form works without JavaScript.
     """
 
     model = Dataset
     template_name = "data_quality/dataset_list.html"
     context_object_name = "datasets"
 
+    SHOW_OPEN = "open"
+    MAX_QUERY = 100
+
+    def filters(self):
+        query = self.request.GET.get("q", "").strip()[: self.MAX_QUERY]
+        show = self.request.GET.get("show", "")
+        return query, (show if show == self.SHOW_OPEN else "")
+
     def get_queryset(self):
-        return Dataset.objects.select_related("owner")
+        query, show = self.filters()
+        datasets = registry_queryset()
+        if query:
+            datasets = datasets.filter(
+                Q(name__icontains=query)
+                | Q(source_team__icontains=query)
+                | Q(owner__username__icontains=query)
+            )
+        if show == self.SHOW_OPEN:
+            datasets = datasets.filter(open_violation_count__gt=0)
+        return datasets
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        query, show = self.filters()
+        # The summary describes the whole registry, never just the filtered
+        # rows, so it reads the same whatever the search box holds.
+        everything = list(registry_queryset())
+        context["registry_columns"] = True
+        context["registry"] = {
+            "query": query,
+            "show": show,
+            "filtered": bool(query or show),
+            "total": len(everything),
+            "with_active_contract": sum(1 for d in everything if d.active_version is not None),
+            "with_runs": sum(1 for d in everything if d.run_count),
+            "needing_decision": sum(1 for d in everything if d.open_violation_count),
+        }
+        return context
 
 
 class DatasetDetailView(LoginRequiredMixin, DetailView):
@@ -88,7 +231,22 @@ class DatasetDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["contracts"] = self.object.contracts.all()
+        # Stage 3G: the rule count is annotated in the same query (it was one
+        # COUNT per version from the template), and the list is evaluated once
+        # so the table, the summary and the empty states read the same rows.
+        contracts = list(
+            self.object.contracts.annotate(rule_count=Count("rules")).order_by("-version_number")
+        )
+        context["contracts"] = contracts
+
+        # Stage 3G: every recorded run, newest first, in one query. Nothing is
+        # cut off: the page says how many there are and lists them all.
+        runs = list(
+            ValidationRun.objects.filter(contract__dataset=self.object)
+            .select_related("contract")
+            .order_by("-started_at", "-pk")
+        )
+        context["runs"] = runs
 
         # UX Stage 4: every violation recorded against any of this dataset's
         # contract versions, newest run first (a run's rows kept together,
@@ -104,17 +262,17 @@ class DatasetDetailView(LoginRequiredMixin, DetailView):
         context["open_violation_count"] = sum(
             1 for v in violations if v.resolution == Violation.Resolution.OPEN
         )
+        context["standing"] = self._standing(contracts, runs, violations)
         if not violations:
             # Only an empty list needs to know whether any run happened, and
             # whether one ended in an error (so that is not read as a pass).
-            runs = ValidationRun.objects.filter(contract__dataset=self.object).aggregate(
-                total=Count("id"), errors=Count("id", filter=Q(status=ValidationRun.Status.ERROR))
-            )
-            run_count = runs["total"]
+            # Stage 3G: read from the runs already fetched, not a second query.
+            run_count = len(runs)
+            error_count = sum(1 for run in runs if run.status == ValidationRun.Status.ERROR)
             if run_count:
                 message = f"{run_count} validation run{'s' if run_count != 1 else ''} recorded, none with a violation."
-                if runs["errors"]:
-                    message += f" {runs['errors']} ended in an error and may not have been fully checked."
+                if error_count:
+                    message += f" {error_count} ended in an error and may not have been fully checked."
                 context["violations_empty"] = ("No violations recorded for this dataset.", message)
             else:
                 context["violations_empty"] = (
@@ -122,6 +280,33 @@ class DatasetDetailView(LoginRequiredMixin, DetailView):
                     "Violations appear here when a run finds a file that breaks one of its contract rules.",
                 )
         return context
+
+    @staticmethod
+    def _standing(contracts, runs, violations):
+        """
+        Stage 3G: the facts behind "Where it stands", worked out from the
+        lists the page already holds (no further queries).
+
+        active          the version in force: the highest-numbered Active one
+                        (the same choice the Contracts page makes), or None.
+        latest_run      the newest recorded run, or None.
+        latest_is_other the latest run was checked against a version that is
+                        not the active one.
+        active_unrun    no recorded run at all used the active version. Only
+                        then may the page say "No run recorded under vN yet";
+                        an older run under it rules the sentence out.
+        """
+        active = next((c for c in contracts if c.status == Contract.Status.ACTIVE), None)
+        latest_run = runs[0] if runs else None
+        return {
+            "active": active,
+            "latest_run": latest_run,
+            "latest_is_other": bool(active and latest_run and latest_run.contract_id != active.pk),
+            "active_unrun": bool(active and not any(run.contract_id == active.pk for run in runs)),
+            "latest_run_violations": (
+                sum(1 for v in violations if v.run_id == latest_run.pk) if latest_run else 0
+            ),
+        }
 
 # ---------------------------------------------------------------
 # Section 2: ORM queries, search (GET + POST), aggregations
@@ -140,6 +325,19 @@ class ContractSearchView(LoginRequiredMixin, View):
             .annotate(total=Count("id"))
             .order_by("status")
         )
+
+    @staticmethod
+    def _with_active_version(contracts):
+        """
+        Stage 3F: each version also carries its dataset's ACTIVE version number
+        (dataset_active_version, None when the dataset has none), so the grouped
+        table can name the version in force even when a status filter leaves it
+        out. A correlated subquery: the same single query, not one per dataset.
+        """
+        active = Contract.objects.filter(
+            dataset=OuterRef("dataset"), status=Contract.Status.ACTIVE
+        ).order_by("-version_number").values("version_number")[:1]
+        return contracts.annotate(dataset_active_version=Subquery(active))
 
     def get(self, request):
         contracts = Contract.objects.select_related("dataset")
@@ -165,7 +363,7 @@ class ContractSearchView(LoginRequiredMixin, View):
         context = {
             "total_contracts": contracts.count(),
             "status_breakdown": self._status_breakdown(),
-            "filtered_contracts": filtered_contracts,
+            "filtered_contracts": self._with_active_version(filtered_contracts),
             "query": query,
             "status": status,
             "status_choices": Contract.Status.choices,
@@ -197,7 +395,7 @@ class ContractSearchView(LoginRequiredMixin, View):
         context = {
             "total_contracts": contracts.count(),
             "status_breakdown": self._status_breakdown(),
-            "filtered_contracts": contracts,
+            "filtered_contracts": self._with_active_version(contracts),
             "query": "",
             "status": "",
             "status_choices": Contract.Status.choices,
@@ -285,11 +483,14 @@ def dataset_render(request):
     render(). It reuses dataset_list.html on purpose - the template does not
     care whether a generic CBV or a function supplied the "datasets" key.
     """
-    datasets = Dataset.objects.select_related("owner")
+    datasets = registry_queryset()
     context = {
         "datasets": datasets,
-        # Optional caption dataset_list.html shows under the title; without it
-        # the template names the ListView, which would be wrong here.
+        # The registry's quality columns (Stage 3A); the search form stays on
+        # the ListView, which is the view that reads its parameters.
+        "registry_columns": True,
+        # Names this view in its own context (the A2 record of which view
+        # rendered the page). The page no longer prints it (Stage 3A).
         "view_label": "Function-based view - render()",
     }
     return render(request, "data_quality/dataset_list.html", context)
@@ -386,8 +587,14 @@ def run_outcomes_chart(request):
     image is derived from the database and changes whenever a run is recorded,
     so writing it out would mean owning a cache and its invalidation for a
     picture that takes milliseconds to draw.
+
+    Stage 3E: ``?layout=narrow`` returns the same chart drawn for a phone
+    (Quality History asks for it through <picture> below 40em, so a browser
+    fetches one image, never both). Without it, or with any other value, the
+    response is the desktop image, as before.
     """
-    return HttpResponse(charts.render_run_outcomes_png(), content_type="image/png")
+    layout = "narrow" if request.GET.get("layout") == "narrow" else "wide"
+    return HttpResponse(charts.render_run_outcomes_png(layout), content_type="image/png")
 
 
 # ---------------------------------------------------------------
@@ -539,20 +746,23 @@ def charts_page(request):
     """The two Vega-Lite charts, embedded on one page."""
     context = {
         "chart_specs": [
+            # Stage 3E: each panel is headed by the question its chart
+            # answers (the chart carries its own name), and the captions say
+            # what to read off it instead of which API it calls.
             {
                 "number": 1,
-                "title": "Validation run outcomes",
+                "title": "How did the checked files turn out?",
                 "caption": (
-                    "How every checked file turned out. Reads the aggregate at "
-                    "/api/run-outcomes/."
+                    "Each bar counts the validation runs that ended in that outcome. "
+                    "A run is one file checked against one contract version."
                 ),
             },
             {
                 "number": 2,
-                "title": "Rows checked vs rows failed",
+                "title": "Do bigger files fail more often?",
                 "caption": (
-                    "One point per validation run. Reads /api/run-volume/, and "
-                    "shows that the biggest files are not the ones that break."
+                    "One point per validation run, placed by its size and by how many "
+                    "rows failed. On this data the biggest files are not the ones that break."
                 ),
             },
         ],

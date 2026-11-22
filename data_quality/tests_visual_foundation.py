@@ -151,7 +151,8 @@ class NumericColumnTests(DiscoveryData):
     def test_number_columns_align_their_headers_with_their_numbers(self):
         cases = (
             (reverse("data_quality:dataset-cbv-base"), '<th scope="col" class="num">Contract versions</th>'),
-            (reverse("data_quality:dataset-detail", args=[self.enrollment.pk]), '<th scope="col" class="num">Rules</th>'),
+            # Stage 3G: the explicit role keeps the header tied to its cells in the phone layout.
+            (reverse("data_quality:dataset-detail", args=[self.enrollment.pk]), '<th scope="col" role="columnheader" class="num">Rules</th>'),
             (reverse("data_quality:quality-history"), '<th scope="col" class="num">Validation runs</th>'),
         )
         for url, header in cases:
