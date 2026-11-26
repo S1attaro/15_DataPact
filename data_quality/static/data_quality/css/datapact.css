@@ -2511,3 +2511,33 @@ button[aria-disabled="true"] { cursor: progress; }
     .panel--auth .panel__body,
     .page[data-surface="account"] form { padding: 1.1rem; }
 }
+
+/* Split view on a dataset page (Hriday). On a wide screen, Investigate opens
+   the violation in a panel on the right instead of a new page, and the
+   violations table stays in view on the left. Clicking another row swaps
+   the panel. Narrow screens and no-JavaScript keep the normal link. The
+   panel starts with the hidden attribute; the script removes it. While it
+   is open the script also hides the Resolution cells (the panel shows the
+   resolution), so every Investigate link stays in view. */
+@media (min-width: 64em) {
+    :root { --vpanel-w: min(44vw, 640px); }
+    body.has-vpanel #main { max-width: none; padding-right: calc(var(--vpanel-w) + 1.5rem); }
+    body.has-vpanel .sitefoot { padding-right: calc(var(--vpanel-w) + 1.5rem); }
+    body.has-vpanel .vpanel {
+        position: fixed; top: 0; right: 0; bottom: 0; z-index: 40;
+        display: flex; flex-direction: column;
+        width: var(--vpanel-w);
+        background: var(--canvas);
+        border-left: 2px solid var(--line-strong);
+    }
+    .vpanel__bar {
+        display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+        padding: 0.7rem 1.25rem; background: var(--surface); border-bottom: 1px solid var(--line);
+    }
+    .vpanel__label { margin: 0; font-size: var(--text-label); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+    .vpanel__body { flex: 1 1 auto; overflow-y: auto; padding: 1.25rem 1.5rem 2.5rem; }
+    .vpanel__body[aria-busy="true"] { opacity: 0.55; }
+    .vpanel__body .page__title { font-size: 1.6rem; }
+    #violations tr.is-selected { background: var(--key-wash); }
+    #violations tr.is-selected > td:first-child { border-left: 3px solid var(--accent); }
+}

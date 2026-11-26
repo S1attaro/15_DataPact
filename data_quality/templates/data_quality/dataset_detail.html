@@ -261,4 +261,119 @@ says in plain words beside each one that it is not available yet.
             </tbody>
         </table>
     </section>
+
+    {% if violations %}
+    {% comment %}
+        Split view (Hriday): on a wide screen, Investigate loads the violation
+        page into this panel instead of leaving the dataset. Clicking another
+        row swaps the panel; the Explain buttons inside still work. Without
+        JavaScript, or below 64em, the link opens the full page as before.
+    {% endcomment %}
+    <aside class="vpanel" id="vpanel" aria-label="Violation details" hidden>
+        <div class="vpanel__bar">
+            <p class="vpanel__label">Violation details</p>
+            <div>
+                <a class="btn" id="vpanel-full" href="#">Open full page</a>
+                <button type="button" class="btn" id="vpanel-close">Close</button>
+            </div>
+        </div>
+        <div class="vpanel__body" id="vpanel-body" tabindex="-1"></div>
+    </aside>
+    <script>
+        (function () {
+            var panel = document.getElementById("vpanel");
+            var body = document.getElementById("vpanel-body");
+            var fullLink = document.getElementById("vpanel-full");
+            var wide = window.matchMedia("(min-width: 64em)");
+            var links = document.querySelectorAll(".vtable__next a");
+            var current = null;
+
+            // Keep only the page's own content: drop the breadcrumbs, flash
+            // messages and scripts, which belong to a full page.
+            function show(html, focusAnswer) {
+                var doc = new DOMParser().parseFromString(html, "text/html");
+                var main = doc.getElementById("main");
+                if (!main) { body.textContent = "Could not load this violation."; return; }
+                main.querySelectorAll(".breadcrumbs, .messages, script").forEach(function (el) { el.remove(); });
+                body.innerHTML = main.innerHTML;
+                body.setAttribute("aria-busy", "false");
+                var answer = focusAnswer && body.querySelector("#ai-suggestion");
+                if (answer) { answer.scrollIntoView({ block: "start" }); answer.focus({ preventScroll: true }); }
+                else { body.scrollTop = 0; }
+                wireForm();
+            }
+
+            function load(url, options, focusAnswer) {
+                body.setAttribute("aria-busy", "true");
+                return fetch(url, Object.assign({ credentials: "same-origin" }, options || {}))
+                    .then(function (r) { return r.text(); })
+                    .then(function (html) { show(html, focusAnswer); })
+                    .catch(function () {
+                        body.setAttribute("aria-busy", "false");
+                        body.textContent = "Could not load this violation. Use Open full page instead.";
+                    });
+            }
+
+            // The Explain buttons post the form; send it from here so the
+            // answer lands in the panel instead of replacing the page.
+            function wireForm() {
+                var form = body.querySelector("#explain-form");
+                if (!form) return;
+                var status = body.querySelector("#explain-status");
+                form.addEventListener("submit", function (event) {
+                    event.preventDefault();
+                    if (form.getAttribute("aria-busy") === "true") return;
+                    var button = event.submitter;
+                    var data = new FormData(form);
+                    if (button && button.name) data.set(button.name, button.value);
+                    form.setAttribute("aria-busy", "true");
+                    if (status) status.textContent = (button && button.getAttribute("data-wait")) || "Asking the model…";
+                    load(form.action.split("#")[0], { method: "POST", body: data }, true);
+                });
+            }
+
+            // The panel already shows the resolution, so while it is open the
+            // table drops that column and keeps every Investigate link in view.
+            function setResolutionColumn(hide) {
+                document.querySelectorAll("#violations th:nth-child(4), #violations td:nth-child(4)")
+                    .forEach(function (cell) { cell.hidden = hide; });
+            }
+
+            function open(link) {
+                var row = link.closest("tr");
+                if (current) current.classList.remove("is-selected");
+                current = row;
+                row.classList.add("is-selected");
+                fullLink.href = link.href;
+                panel.hidden = false;
+                document.body.classList.add("has-vpanel");
+                setResolutionColumn(true);
+                load(link.href);
+            }
+
+            function close() {
+                document.body.classList.remove("has-vpanel");
+                panel.hidden = true;
+                setResolutionColumn(false);
+                body.innerHTML = "";
+                if (current) { current.classList.remove("is-selected"); current.querySelector(".vtable__next a").focus(); }
+                current = null;
+            }
+
+            links.forEach(function (link) {
+                link.addEventListener("click", function (event) {
+                    // Narrow screens, and Cmd/Ctrl-click for a new tab, keep the link.
+                    if (!wide.matches || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+                    event.preventDefault();
+                    open(link);
+                });
+            });
+            document.getElementById("vpanel-close").addEventListener("click", close);
+            document.addEventListener("keydown", function (event) {
+                if (event.key === "Escape" && !panel.hidden) close();
+            });
+            wide.addEventListener("change", function (event) { if (!event.matches && !panel.hidden) close(); });
+        })();
+    </script>
+    {% endif %}
 {% endblock %}
